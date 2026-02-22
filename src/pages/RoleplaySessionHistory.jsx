@@ -7,10 +7,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-    Search, Calendar, Clock, Users, Play, 
+import {
+    Search, Calendar, Clock, Users, Play,
     BarChart3, Filter, ChevronRight, Eye,
-    Video, MessageSquare, Star, TrendingUp
+    Video, MessageSquare, Star, TrendingUp, Mic
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
