@@ -1,14 +1,14 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Video, Phone, ExternalLink, Mic, MicOff, VideoOff, Users, Copy, CheckCircle, Monitor, MonitorSpeaker } from 'lucide-react';
+import { Video, Phone, ExternalLink, Mic, MicOff, VideoOff, Users, Copy, CheckCircle, Monitor, MonitorSpeaker, Link2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { createMeetingLinks } from '@/api/functions';
 import { webrtcSignaling } from '@/api/functions';
 
-export default function VideoCallIntegration({ session, currentUser, isInitiator }) {
+const VideoCallIntegration = forwardRef(({ session, currentUser, isInitiator }, ref) => {
     const [callMode, setCallMode] = useState(null); // 'webrtc' | 'external'
     const [callActive, setCallActive] = useState(false);
     const [audioEnabled, setAudioEnabled] = useState(true);
@@ -154,25 +154,7 @@ export default function VideoCallIntegration({ session, currentUser, isInitiator
     };
 
     const endWebRTCCall = () => {
-        // Clean up WebRTC resources
-        if (localStreamRef.current) {
-            localStreamRef.current.getTracks().forEach(track => track.stop());
-        }
-        
-        if (peerConnectionRef.current) {
-            peerConnectionRef.current.close();
-        }
-        
-        if (websocketRef.current) {
-            websocketRef.current.send(JSON.stringify({
-                type: 'leave-room',
-                roomId: `roleplay_${session.id}`
-            }));
-            websocketRef.current.close();
-        }
-        
-        setCallActive(false);
-        setCallMode(null);
+        cleanup();
         toast.success('Call ended');
     };
 
@@ -225,26 +207,48 @@ export default function VideoCallIntegration({ session, currentUser, isInitiator
         }
     };
 
+    // Cleanup function
+    const cleanup = () => {
+        if (localStreamRef.current) {
+            localStreamRef.current.getTracks().forEach(track => {
+                track.stop();
+                console.log('Stopped track:', track.kind);
+            });
+            localStreamRef.current = null;
+        }
+
+        if (peerConnectionRef.current) {
+            peerConnectionRef.current.close();
+            peerConnectionRef.current = null;
+        }
+
+        if (websocketRef.current) {
+            try {
+                websocketRef.current.send(JSON.stringify({
+                    type: 'leave-room',
+                    roomId: `roleplay_${session.id}`
+                }));
+                websocketRef.current.close();
+            } catch (e) {
+                console.log('WebSocket already closed');
+            }
+            websocketRef.current = null;
+        }
+
+        setCallActive(false);
+        setCallMode(null);
+    };
+
+    // Expose cleanup to parent via ref
+    useImperativeHandle(ref, () => ({
+        cleanup
+    }));
+
     // Clean up on unmount or when call state changes
     useEffect(() => {
         return () => {
             if (callActive && callMode === 'webrtc') {
-                // Clean up WebRTC resources
-                if (localStreamRef.current) {
-                    localStreamRef.current.getTracks().forEach(track => track.stop());
-                }
-                
-                if (peerConnectionRef.current) {
-                    peerConnectionRef.current.close();
-                }
-                
-                if (websocketRef.current) {
-                    websocketRef.current.send(JSON.stringify({
-                        type: 'leave-room',
-                        roomId: `roleplay_${session.id}`
-                    }));
-                    websocketRef.current.close();
-                }
+                cleanup();
             }
         };
     }, [callActive, callMode, session.id]);
@@ -355,24 +359,44 @@ export default function VideoCallIntegration({ session, currentUser, isInitiator
                                 />
                             </div>
                         </div>
-                        
+
+                        <div className="bg-slate-50 p-3 rounded-lg">
+                            <p className="text-sm font-medium mb-2">Share Meeting Link</p>
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    readOnly
+                                    value={`${window.location.origin}/roleplaysession?sessionId=${session.id}`}
+                                    className="flex-1 px-3 py-2 text-sm border rounded"
+                                />
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => copyToClipboard(`${window.location.origin}/roleplaysession?sessionId=${session.id}`)}
+                                >
+                                    <Link2 className="w-4 h-4 mr-1" />
+                                    Copy
+                                </Button>
+                            </div>
+                        </div>
+
                         <div className="flex justify-center gap-3">
-                            <Button 
-                                variant={audioEnabled ? "default" : "destructive"} 
+                            <Button
+                                variant={audioEnabled ? "default" : "destructive"}
                                 size="sm"
                                 onClick={toggleAudio}
                             >
                                 {audioEnabled ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
                             </Button>
-                            <Button 
-                                variant={videoEnabled ? "default" : "destructive"} 
+                            <Button
+                                variant={videoEnabled ? "default" : "destructive"}
                                 size="sm"
                                 onClick={toggleVideo}
                             >
                                 {videoEnabled ? <Video className="w-4 h-4" /> : <VideoOff className="w-4 h-4" />}
                             </Button>
-                            <Button 
-                                variant="destructive" 
+                            <Button
+                                variant="destructive"
                                 onClick={endWebRTCCall}
                             >
                                 End Call
@@ -448,4 +472,8 @@ export default function VideoCallIntegration({ session, currentUser, isInitiator
             </CardContent>
         </Card>
     );
-}
+});
+
+VideoCallIntegration.displayName = 'VideoCallIntegration';
+
+export default VideoCallIntegration;

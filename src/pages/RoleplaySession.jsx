@@ -25,6 +25,7 @@ export default function RoleplaySessionPage() {
     const [feedback, setFeedback] = useState('');
     const [sessionComplete, setSessionComplete] = useState(false);
     const navigate = useNavigate();
+    const videoCallRef = useRef(null);
 
     const extractLeadFromSessionNotes = (notes) => {
         // This helper might not be needed if lead_id is always present
@@ -122,6 +123,10 @@ export default function RoleplaySessionPage() {
 
     const handleEndSession = async () => {
         try {
+            if (videoCallRef.current?.cleanup) {
+                videoCallRef.current.cleanup();
+            }
+
             await RoleplaySession.update(session.id, {
                 session_status: 'completed',
                 session_duration: sessionTime
@@ -177,9 +182,14 @@ export default function RoleplaySessionPage() {
         <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
             <div className="max-w-6xl mx-auto">
                 <div className="mb-6">
-                    <Button variant="ghost" onClick={() => navigate(createPageUrl('CoachingHub'))} className="mb-4">
-                        <ArrowLeft className="w-4 h-4 mr-2" />Back to Coaching Hub
-                    </Button>
+                    <div className="flex gap-2 mb-4">
+                        <Button variant="ghost" onClick={() => navigate(createPageUrl('RoleplaySessionHistory'))}>
+                            <ArrowLeft className="w-4 h-4 mr-2" />Session History
+                        </Button>
+                        <Button variant="ghost" onClick={() => navigate(createPageUrl('CoachingHub'))}>
+                            <ArrowLeft className="w-4 h-4 mr-2" />Coaching Hub
+                        </Button>
+                    </div>
                     
                     <div className="flex items-center gap-4 mb-4">
                         <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center"><Users className="w-8 h-8 text-white" /></div>
@@ -213,7 +223,7 @@ export default function RoleplaySessionPage() {
                                 ) : sessionActive ? (
                                     <div className="text-center space-y-4">
                                         <div className="bg-green-50 p-6 rounded-lg"><h3 className="font-semibold text-green-800 mb-2">Session Active</h3><p className="text-green-700">You are in a live roleplay session. The session is being recorded.</p></div>
-                                        <VideoCallIntegration session={session} currentUser={currentUser} isInitiator={isInitiator} />
+                                        <VideoCallIntegration ref={videoCallRef} session={session} currentUser={currentUser} isInitiator={isInitiator} />
                                         <Button onClick={handleEndSession} variant="destructive" size="lg"><Square className="w-5 h-5 mr-2" />End Session</Button>
                                     </div>
                                 ) : (

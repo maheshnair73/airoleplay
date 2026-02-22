@@ -186,6 +186,72 @@ export default function RoleplaySessionHistory() {
                     </Button>
                 </div>
 
+                {/* Stats Overview */}
+                {sessions.length > 0 && (
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                        <Card>
+                            <CardContent className="p-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                        <Users className="w-5 h-5 text-blue-600" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm text-slate-500">Total Sessions</p>
+                                        <p className="text-2xl font-bold text-slate-900">{sessions.length}</p>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardContent className="p-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                                        <Star className="w-5 h-5 text-green-600" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm text-slate-500">Completed</p>
+                                        <p className="text-2xl font-bold text-slate-900">
+                                            {sessions.filter(s => s.session_status === 'completed').length}
+                                        </p>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardContent className="p-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                                        <Clock className="w-5 h-5 text-purple-600" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm text-slate-500">Total Time</p>
+                                        <p className="text-2xl font-bold text-slate-900">
+                                            {Math.floor(sessions.reduce((sum, s) => sum + (s.session_duration || 0), 0) / 60)}m
+                                        </p>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardContent className="p-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+                                        <TrendingUp className="w-5 h-5 text-orange-600" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm text-slate-500">Avg Duration</p>
+                                        <p className="text-2xl font-bold text-slate-900">
+                                            {sessions.filter(s => s.session_duration).length > 0
+                                                ? Math.floor(sessions.reduce((sum, s) => sum + (s.session_duration || 0), 0) / sessions.filter(s => s.session_duration).length / 60)
+                                                : 0}m
+                                        </p>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                )}
+
                 <Tabs defaultValue="all" className="space-y-6">
                     <div className="flex justify-between items-center">
                         <TabsList>
