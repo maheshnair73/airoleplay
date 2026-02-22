@@ -24,7 +24,6 @@ export default function AIRoleplayAnalysisDetailed() {
   const [analysisResults, setAnalysisResults] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [sessionTypeFilter, setSessionTypeFilter] = useState('all');
 
   useEffect(() => {
     loadData();
@@ -278,20 +277,10 @@ export default function AIRoleplayAnalysisDetailed() {
               Analyze AI, Human-to-Human, and Multi-Party roleplay sessions using proven sales methodologies
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            <Button variant="outline" onClick={loadData}>
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh
-            </Button>
-            <Button variant="outline">
-              <Download className="h-4 w-4 mr-2" />
-              Export Report
-            </Button>
-            <Button variant="outline">
-              <Settings className="h-4 w-4 mr-2" />
-              Configure
-            </Button>
-          </div>
+          <Button variant="outline" onClick={loadData}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh
+          </Button>
         </div>
 
         <Card>
@@ -300,41 +289,7 @@ export default function AIRoleplayAnalysisDetailed() {
             <CardDescription>Choose a roleplay session and analysis framework to review</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="mb-4">
-              <label className="text-sm font-medium mb-2 block">Filter by Session Type</label>
-              <div className="flex gap-2">
-                <Button
-                  variant={sessionTypeFilter === 'all' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setSessionTypeFilter('all')}
-                >
-                  All Sessions
-                </Button>
-                <Button
-                  variant={sessionTypeFilter === 'ai' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setSessionTypeFilter('ai')}
-                >
-                  AI Roleplay
-                </Button>
-                <Button
-                  variant={sessionTypeFilter === 'human' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setSessionTypeFilter('human')}
-                >
-                  Human-to-Human
-                </Button>
-                <Button
-                  variant={sessionTypeFilter === 'multi' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setSessionTypeFilter('multi')}
-                >
-                  Multi-Party
-                </Button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium mb-2 block">Roleplay Session</label>
                 <Select
@@ -348,24 +303,16 @@ export default function AIRoleplayAnalysisDetailed() {
                     <SelectValue placeholder="Select a session" />
                   </SelectTrigger>
                   <SelectContent>
-                    {sessions
-                      .filter(session => {
-                        if (sessionTypeFilter === 'all') return true;
-                        if (sessionTypeFilter === 'ai') return session.session_type === 'ai_roleplay' || !session.session_type;
-                        if (sessionTypeFilter === 'human') return session.session_type === 'human_roleplay';
-                        if (sessionTypeFilter === 'multi') return session.session_type === 'multi_party';
-                        return true;
-                      })
-                      .map((session) => {
-                        const sessionTypeLabel = session.session_type === 'human_roleplay' ? '👥 Human' :
-                                                 session.session_type === 'multi_party' ? '🎭 Multi' :
-                                                 '🤖 AI';
-                        return (
-                          <SelectItem key={session.id} value={session.id}>
-                            {sessionTypeLabel} - {session.scenario_name || session.bot_name} - {new Date(session.created_at).toLocaleDateString()}
-                          </SelectItem>
-                        );
-                      })}
+                    {sessions.map((session) => {
+                      const sessionTypeLabel = session.session_type === 'human_roleplay' ? '👥' :
+                                               session.session_type === 'multi_party' ? '🎭' :
+                                               '🤖';
+                      return (
+                        <SelectItem key={session.id} value={session.id}>
+                          {sessionTypeLabel} {session.scenario_name || session.bot_name} - {new Date(session.created_at).toLocaleDateString()}
+                        </SelectItem>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
               </div>
@@ -385,12 +332,15 @@ export default function AIRoleplayAnalysisDetailed() {
                   </SelectContent>
                 </Select>
               </div>
+            </div>
 
-              <div className="flex items-end">
+            {selectedSession && (
+              <div className="mt-4">
                 <Button
-                  className="w-full"
                   onClick={analyzeSession}
-                  disabled={!selectedSession || isAnalyzing}
+                  disabled={isAnalyzing}
+                  size="lg"
+                  className="w-full"
                 >
                   {isAnalyzing ? (
                     <>
@@ -405,7 +355,7 @@ export default function AIRoleplayAnalysisDetailed() {
                   )}
                 </Button>
               </div>
-            </div>
+            )}
           </CardContent>
         </Card>
 
@@ -469,17 +419,14 @@ export default function AIRoleplayAnalysisDetailed() {
               </Card>
             </div>
 
-            <Tabs defaultValue="framework" className="space-y-4">
-              <TabsList className="grid w-full grid-cols-6">
-                <TabsTrigger value="framework">Framework Scores</TabsTrigger>
-                <TabsTrigger value="speaker">Speaker Analysis</TabsTrigger>
-                <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
-                <TabsTrigger value="strengths">Strengths</TabsTrigger>
-                <TabsTrigger value="opportunities">Missed Opportunities</TabsTrigger>
-                <TabsTrigger value="avoid">Should Avoid</TabsTrigger>
+            <Tabs defaultValue="overview" className="space-y-4">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="insights">Insights & Recommendations</TabsTrigger>
+                <TabsTrigger value="speaker">Speaker Breakdown</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="framework" className="space-y-4">
+              <TabsContent value="overview" className="space-y-4">
                 <Card>
                   <CardHeader>
                     <CardTitle>
@@ -499,6 +446,157 @@ export default function AIRoleplayAnalysisDetailed() {
                         <Progress value={score} className="h-2" />
                       </div>
                     ))}
+                  </CardContent>
+                </Card>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {analysisResults.strengths.map((strength, idx) => (
+                    <Card key={idx} className="border-green-200 bg-green-50">
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <CheckCircle2 className="h-5 w-5 text-green-600" />
+                          {strength.area}
+                        </CardTitle>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-slate-600">Score:</span>
+                          <Badge className="bg-green-600 text-white">{strength.score}%</Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-2">
+                          <ul className="space-y-2">
+                            {strength.examples.map((example, i) => (
+                              <li key={i} className="text-sm text-slate-700 flex items-start gap-2">
+                                <ThumbsUp className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                                {example}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </TabsContent>
+
+              <TabsContent value="insights" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Recommendations</CardTitle>
+                    <CardDescription>Action items to improve your performance</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {analysisResults.recommendations.map((rec, idx) => (
+                        <div key={idx} className="border-l-4 border-blue-500 bg-blue-50 p-4 rounded-r-lg">
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <Lightbulb className="h-5 w-5 text-blue-600" />
+                              <h4 className="font-semibold text-lg">{rec.title}</h4>
+                            </div>
+                            <Badge className={getPriorityColor(rec.priority)}>
+                              {rec.priority}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-slate-600 mb-2">Category: {rec.category}</p>
+                          <p className="text-slate-700">{rec.description}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Improvement Areas</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {analysisResults.improvement_areas.map((area, idx) => (
+                        <div key={idx} className="border-l-4 border-orange-500 bg-orange-50 p-4 rounded-r-lg">
+                          <h4 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                            <TrendingUp className="h-5 w-5 text-orange-600" />
+                            {area.area}
+                          </h4>
+                          <div className="flex items-center gap-4 mb-3">
+                            <div className="flex-1">
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="text-sm text-slate-600">Current: {area.current_score}%</span>
+                                <span className="text-sm text-green-600 font-medium">Target: {area.target_score}%</span>
+                              </div>
+                              <Progress value={area.current_score} className="h-2" />
+                            </div>
+                          </div>
+                          <ul className="space-y-1">
+                            {area.examples.map((example, i) => (
+                              <li key={i} className="text-sm text-slate-600 flex items-start gap-2">
+                                <span className="text-blue-600 mt-1">•</span>
+                                {example}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Missed Opportunities</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {analysisResults.missed_opportunities.map((opp, idx) => (
+                        <div key={idx} className="border-l-4 border-yellow-500 bg-yellow-50 p-3 rounded-r-lg">
+                          <div className="flex items-start gap-3">
+                            <AlertCircle className="h-5 w-5 text-yellow-600 mt-1 flex-shrink-0" />
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <Clock className="h-4 w-4 text-slate-600" />
+                                <span className="text-sm text-slate-600">
+                                  {Math.floor(opp.timestamp / 60)}:{(opp.timestamp % 60).toString().padStart(2, '0')}
+                                </span>
+                                <Badge className={getPriorityColor(opp.impact)}>
+                                  {opp.impact} impact
+                                </Badge>
+                              </div>
+                              <p className="text-slate-700">{opp.opportunity}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Patterns to Avoid</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {analysisResults.should_avoid.map((pattern, idx) => (
+                        <div key={idx} className="border-l-4 border-red-500 bg-red-50 p-3 rounded-r-lg">
+                          <div className="flex items-start gap-3">
+                            <XCircle className="h-5 w-5 text-red-600 mt-1 flex-shrink-0" />
+                            <div className="flex-1">
+                              <div className="flex items-center justify-between mb-2">
+                                <h4 className="font-semibold">{pattern.pattern}</h4>
+                                <Badge variant="destructive">{pattern.occurrences} times</Badge>
+                              </div>
+                              <p className="text-sm text-slate-600 mb-2">{pattern.impact}</p>
+                              <div className="bg-white p-2 rounded border border-green-200">
+                                <p className="text-sm text-green-700">
+                                  <ThumbsUp className="h-3 w-3 inline mr-1" />
+                                  {pattern.suggestion}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -550,180 +648,6 @@ export default function AIRoleplayAnalysisDetailed() {
                     </Card>
                   ))}
                 </div>
-              </TabsContent>
-
-              <TabsContent value="recommendations" className="space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Personalized Recommendations</CardTitle>
-                    <CardDescription>Action items to improve your sales conversations</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <ScrollArea className="h-[500px] pr-4">
-                      <div className="space-y-4">
-                        {analysisResults.recommendations.map((rec, idx) => (
-                          <div key={idx} className="border-l-4 border-blue-500 bg-blue-50 p-4 rounded-r-lg">
-                            <div className="flex items-start justify-between mb-2">
-                              <div className="flex items-center gap-2">
-                                <Lightbulb className="h-5 w-5 text-blue-600" />
-                                <h4 className="font-semibold text-lg">{rec.title}</h4>
-                              </div>
-                              <Badge className={getPriorityColor(rec.priority)}>
-                                {rec.priority}
-                              </Badge>
-                            </div>
-                            <p className="text-sm text-slate-600 mb-2">Category: {rec.category}</p>
-                            <p className="text-slate-700">{rec.description}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </ScrollArea>
-                  </CardContent>
-                </Card>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {analysisResults.improvement_areas.map((area, idx) => (
-                    <Card key={idx}>
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                          <TrendingUp className="h-5 w-5 text-orange-600" />
-                          {area.area}
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-slate-600">Current Score</span>
-                          <span className="font-bold">{area.current_score}%</span>
-                        </div>
-                        <Progress value={area.current_score} className="h-2" />
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-slate-600">Target Score</span>
-                          <span className="font-bold text-green-600">{area.target_score}%</span>
-                        </div>
-                        <div className="space-y-2 mt-4">
-                          <p className="text-sm font-medium">Examples:</p>
-                          <ul className="space-y-1">
-                            {area.examples.map((example, i) => (
-                              <li key={i} className="text-sm text-slate-600 flex items-start gap-2">
-                                <span className="text-blue-600 mt-1">•</span>
-                                {example}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </TabsContent>
-
-              <TabsContent value="strengths" className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {analysisResults.strengths.map((strength, idx) => (
-                    <Card key={idx} className="border-green-200 bg-green-50">
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                          <CheckCircle2 className="h-5 w-5 text-green-600" />
-                          {strength.area}
-                        </CardTitle>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-slate-600">Score:</span>
-                          <Badge className="bg-green-600 text-white">{strength.score}%</Badge>
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-2">
-                          <p className="text-sm font-medium">What you did well:</p>
-                          <ul className="space-y-2">
-                            {strength.examples.map((example, i) => (
-                              <li key={i} className="text-sm text-slate-700 flex items-start gap-2">
-                                <ThumbsUp className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-                                {example}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </TabsContent>
-
-              <TabsContent value="opportunities" className="space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Missed Opportunities</CardTitle>
-                    <CardDescription>
-                      Key moments where you could have dug deeper or asked different questions
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <ScrollArea className="h-[500px] pr-4">
-                      <div className="space-y-4">
-                        {analysisResults.missed_opportunities.map((opp, idx) => (
-                          <div key={idx} className="border-l-4 border-yellow-500 bg-yellow-50 p-4 rounded-r-lg">
-                            <div className="flex items-start gap-3">
-                              <AlertCircle className="h-5 w-5 text-yellow-600 mt-1 flex-shrink-0" />
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-2">
-                                  <Clock className="h-4 w-4 text-slate-600" />
-                                  <span className="text-sm text-slate-600">
-                                    {Math.floor(opp.timestamp / 60)}:{(opp.timestamp % 60).toString().padStart(2, '0')}
-                                  </span>
-                                  <Badge className={getPriorityColor(opp.impact)}>
-                                    {opp.impact} impact
-                                  </Badge>
-                                </div>
-                                <p className="text-slate-700">{opp.opportunity}</p>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </ScrollArea>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="avoid" className="space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Patterns to Avoid</CardTitle>
-                    <CardDescription>
-                      Behaviors that may be limiting your effectiveness
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {analysisResults.should_avoid.map((pattern, idx) => (
-                        <div key={idx} className="border-l-4 border-red-500 bg-red-50 p-4 rounded-r-lg">
-                          <div className="flex items-start gap-3">
-                            <XCircle className="h-5 w-5 text-red-600 mt-1 flex-shrink-0" />
-                            <div className="flex-1 space-y-2">
-                              <div className="flex items-center justify-between">
-                                <h4 className="font-semibold text-lg">{pattern.pattern}</h4>
-                                <Badge variant="destructive">{pattern.occurrences} times</Badge>
-                              </div>
-                              <div className="space-y-2">
-                                <div>
-                                  <p className="text-sm font-medium text-slate-600">Impact:</p>
-                                  <p className="text-sm text-slate-700">{pattern.impact}</p>
-                                </div>
-                                <div className="bg-white p-3 rounded border border-green-200">
-                                  <p className="text-sm font-medium text-green-700 mb-1">
-                                    <ThumbsUp className="h-4 w-4 inline mr-1" />
-                                    Suggestion:
-                                  </p>
-                                  <p className="text-sm text-slate-700">{pattern.suggestion}</p>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
               </TabsContent>
             </Tabs>
           </>
