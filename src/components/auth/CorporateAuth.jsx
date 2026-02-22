@@ -83,25 +83,44 @@ export default function CorporateAuthMessage() {
         e.preventDefault();
         setIsLoading(true);
         try {
-            await User.signIn(email, password);
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email: email,
+                password: password,
+            });
+
+            if (error) throw error;
+
             toast.success('Welcome back!');
-            window.location.reload();
+            setTimeout(() => {
+                window.location.href = '/';
+            }, 500);
         } catch (error) {
+            console.error('Login error:', error);
             toast.error(error.message || 'Failed to sign in');
-        } finally {
             setIsLoading(false);
         }
     };
 
     const handleQuickLogin = async (demoUser) => {
+        setEmail(demoUser.email);
+        setPassword(demoUser.password);
+
         setIsLoading(true);
         try {
-            await User.signIn(demoUser.email, demoUser.password);
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email: demoUser.email,
+                password: demoUser.password,
+            });
+
+            if (error) throw error;
+
             toast.success(`Signed in as ${demoUser.label}`);
-            window.location.reload();
+            setTimeout(() => {
+                window.location.href = '/';
+            }, 500);
         } catch (error) {
+            console.error('Login error:', error);
             toast.error(error.message || 'Failed to sign in with demo account');
-        } finally {
             setIsLoading(false);
         }
     };
