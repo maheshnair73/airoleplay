@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { base44 } from '@/api/base44Client';
+import { MultiPartyScenario } from '@/api/entities';
 import { Link, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { 
@@ -26,7 +26,7 @@ export default function MultiPartyRoleplay() {
     const loadScenarios = async () => {
         setIsLoading(true);
         try {
-            const allScenarios = await base44.entities.MultiPartyScenario.list('-created_date');
+            const allScenarios = await MultiPartyScenario.list();
             setScenarios(allScenarios);
         } catch (error) {
             console.error('Error loading scenarios:', error);

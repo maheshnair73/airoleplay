@@ -1,133 +1,142 @@
-import { base44 } from './base44Client';
-
-
-export const Lead = base44.entities.Lead;
-
-export const AIInsight = base44.entities.AIInsight;
-
-export const DigitalSalesRoom = base44.entities.DigitalSalesRoom;
-
-export const PitchSubmission = base44.entities.PitchSubmission;
-
-export const PerformanceReview = base44.entities.PerformanceReview;
-
-export const CoachingTask = base44.entities.CoachingTask;
-
-export const TaskSubmission = base44.entities.TaskSubmission;
-
-export const UserGroup = base44.entities.UserGroup;
-
-export const Scorecard = base44.entities.Scorecard;
-
-export const ScorecardResult = base44.entities.ScorecardResult;
-
-export const SalesMethodology = base44.entities.SalesMethodology;
-
-export const LeadActivity = base44.entities.LeadActivity;
-
-export const Document = base44.entities.Document;
-
-export const DocumentView = base44.entities.DocumentView;
-
-export const DocumentTemplate = base44.entities.DocumentTemplate;
-
-export const RFPRequest = base44.entities.RFPRequest;
-
-export const CallRecord = base44.entities.CallRecord;
-
-export const DialerIntegration = base44.entities.DialerIntegration;
-
-export const CallAnalysisTemplate = base44.entities.CallAnalysisTemplate;
-
-export const SalesKnowledgeBase = base44.entities.SalesKnowledgeBase;
-
-export const SalesRoomMessage = base44.entities.SalesRoomMessage;
-
-export const SalesRoomEngagement = base44.entities.SalesRoomEngagement;
-
-export const RoleplaySession = base44.entities.RoleplaySession;
-
-export const EmailComposition = base44.entities.EmailComposition;
-
-export const EmailTemplate = base44.entities.EmailTemplate;
-
-export const EmailConnection = base44.entities.EmailConnection;
-
-export const InboundEmail = base44.entities.InboundEmail;
-
-export const ModuleAccess = base44.entities.ModuleAccess;
-
-export const DocumentAnnotation = base44.entities.DocumentAnnotation;
-
-export const Company = base44.entities.Company;
-
-export const CompanyUser = base44.entities.CompanyUser;
-
-export const Subscription = base44.entities.Subscription;
-
-export const Payment = base44.entities.Payment;
-
-export const PlanFeature = base44.entities.PlanFeature;
-
-export const Campaign = base44.entities.Campaign;
-
-export const Product = base44.entities.Product;
-
-export const Competitor = base44.entities.Competitor;
-
-export const DocumentVersion = base44.entities.DocumentVersion;
-
-export const DocumentCollaborator = base44.entities.DocumentCollaborator;
-
-export const DocumentActivity = base44.entities.DocumentActivity;
-
-export const DocumentComment = base44.entities.DocumentComment;
-
-export const DocumentApproval = base44.entities.DocumentApproval;
-
-export const SharedPitch = base44.entities.SharedPitch;
-
-export const SharedQuestion = base44.entities.SharedQuestion;
-
-export const SharedObjection = base44.entities.SharedObjection;
-
-export const AIAgentSubscription = base44.entities.AIAgentSubscription;
-
-export const AIAgentActivity = base44.entities.AIAgentActivity;
-
-export const RoleplayBot = base44.entities.RoleplayBot;
-
-export const GameProfile = base44.entities.GameProfile;
-
-export const Achievement = base44.entities.Achievement;
-
-export const UserAchievement = base44.entities.UserAchievement;
-
-export const Challenge = base44.entities.Challenge;
-
-export const ChallengeParticipation = base44.entities.ChallengeParticipation;
-
-export const Leaderboard = base44.entities.Leaderboard;
-
-export const GameNotification = base44.entities.GameNotification;
-
-export const GameAction = base44.entities.GameAction;
-
-export const KPIDefinition = base44.entities.KPIDefinition;
-
-export const CalendarConnection = base44.entities.CalendarConnection;
-
-export const CommunityProfile = base44.entities.CommunityProfile;
-
-export const Meeting = base44.entities.Meeting;
-
-export const MultiPartyScenario = base44.entities.MultiPartyScenario;
-
-export const MultiPartySession = base44.entities.MultiPartySession;
-
-export const Deal = base44.entities.Deal;
-
-
-
-// auth sdk:
-export const User = base44.auth;
+import { supabase } from '@/lib/supabase';
+
+function createEntity(tableName) {
+  return {
+    async list() {
+      const { data, error } = await supabase.from(tableName).select('*');
+      if (error) throw error;
+      return data || [];
+    },
+
+    async get(id) {
+      const { data, error } = await supabase.from(tableName).select('*').eq('id', id).maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+
+    async filter(filters) {
+      let query = supabase.from(tableName).select('*');
+
+      Object.entries(filters).forEach(([key, value]) => {
+        query = query.eq(key, value);
+      });
+
+      const { data, error } = await query;
+      if (error) throw error;
+      return data || [];
+    },
+
+    async create(data) {
+      const { data: result, error } = await supabase.from(tableName).insert(data).select().single();
+      if (error) throw error;
+      return result;
+    },
+
+    async update(id, data) {
+      const { data: result, error } = await supabase.from(tableName).update(data).eq('id', id).select().single();
+      if (error) throw error;
+      return result;
+    },
+
+    async delete(id) {
+      const { error } = await supabase.from(tableName).delete().eq('id', id);
+      if (error) throw error;
+      return true;
+    }
+  };
+}
+
+export const Lead = createEntity('leads');
+export const AIInsight = createEntity('ai_insights');
+export const DigitalSalesRoom = createEntity('digital_sales_rooms');
+export const PitchSubmission = createEntity('pitch_submissions');
+export const PerformanceReview = createEntity('performance_reviews');
+export const CoachingTask = createEntity('coaching_tasks');
+export const TaskSubmission = createEntity('task_submissions');
+export const UserGroup = createEntity('user_groups');
+export const Scorecard = createEntity('scorecards');
+export const ScorecardResult = createEntity('scorecard_results');
+export const SalesMethodology = createEntity('sales_methodologies');
+export const LeadActivity = createEntity('lead_activities');
+export const Document = createEntity('documents');
+export const DocumentView = createEntity('document_views');
+export const DocumentTemplate = createEntity('document_templates');
+export const RFPRequest = createEntity('rfp_requests');
+export const CallRecord = createEntity('call_records');
+export const DialerIntegration = createEntity('dialer_integrations');
+export const CallAnalysisTemplate = createEntity('call_analysis_templates');
+export const SalesKnowledgeBase = createEntity('sales_knowledge_base');
+export const SalesRoomMessage = createEntity('sales_room_messages');
+export const SalesRoomEngagement = createEntity('sales_room_engagements');
+export const RoleplaySession = createEntity('roleplay_sessions');
+export const EmailComposition = createEntity('email_compositions');
+export const EmailTemplate = createEntity('email_templates');
+export const EmailConnection = createEntity('email_connections');
+export const InboundEmail = createEntity('inbound_emails');
+export const ModuleAccess = createEntity('module_access');
+export const DocumentAnnotation = createEntity('document_annotations');
+export const Company = createEntity('companies');
+export const CompanyUser = createEntity('company_users');
+export const Subscription = createEntity('subscriptions');
+export const Payment = createEntity('payments');
+export const PlanFeature = createEntity('plan_features');
+export const Campaign = createEntity('campaigns');
+export const Product = createEntity('products');
+export const Competitor = createEntity('competitors');
+export const DocumentVersion = createEntity('document_versions');
+export const DocumentCollaborator = createEntity('document_collaborators');
+export const DocumentActivity = createEntity('document_activities');
+export const DocumentComment = createEntity('document_comments');
+export const DocumentApproval = createEntity('document_approvals');
+export const SharedPitch = createEntity('shared_pitches');
+export const SharedQuestion = createEntity('shared_questions');
+export const SharedObjection = createEntity('shared_objections');
+export const AIAgentSubscription = createEntity('ai_agent_subscriptions');
+export const AIAgentActivity = createEntity('ai_agent_activities');
+export const RoleplayBot = createEntity('roleplay_bots');
+export const GameProfile = createEntity('game_profiles');
+export const Achievement = createEntity('achievements');
+export const UserAchievement = createEntity('user_achievements');
+export const Challenge = createEntity('challenges');
+export const ChallengeParticipation = createEntity('challenge_participations');
+export const Leaderboard = createEntity('leaderboards');
+export const GameNotification = createEntity('game_notifications');
+export const GameAction = createEntity('game_actions');
+export const KPIDefinition = createEntity('kpi_definitions');
+export const CalendarConnection = createEntity('calendar_connections');
+export const CommunityProfile = createEntity('community_profiles');
+export const Meeting = createEntity('meetings');
+export const MultiPartyScenario = createEntity('multi_party_scenarios');
+export const MultiPartySession = createEntity('multi_party_sessions');
+export const Deal = createEntity('deals');
+
+export const User = {
+  async me() {
+    const { data: { user }, error } = await supabase.auth.getUser();
+    if (error) throw error;
+    return user;
+  },
+
+  async list() {
+    const { data, error } = await supabase.from('users').select('*');
+    if (error) throw error;
+    return data || [];
+  },
+
+  async signIn(email, password) {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    return data;
+  },
+
+  async signUp(email, password) {
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    if (error) throw error;
+    return data;
+  },
+
+  async signOut() {
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+  }
+};

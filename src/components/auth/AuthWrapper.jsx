@@ -13,12 +13,7 @@ export default function AuthWrapper({ children }) {
                 const currentUser = await User.me();
                 setUser(currentUser);
             } catch (error) {
-                // For preview purposes, create a mock user
-                setUser({
-                    email: 'demo@preview.com',
-                    name: 'Demo User',
-                    role: 'user'
-                });
+                setUser(null);
             } finally {
                 setIsLoading(false);
             }
@@ -29,7 +24,7 @@ export default function AuthWrapper({ children }) {
     if (isLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
-                <Loader2 className="w-8 h-8 animate-spin text-violet-500" />
+                <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
             </div>
         );
     }

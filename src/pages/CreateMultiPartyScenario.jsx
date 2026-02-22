@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { base44 } from '@/api/base44Client';
+import { MultiPartyScenario } from '@/api/entities';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { 
@@ -89,7 +89,7 @@ export default function CreateMultiPartyScenario() {
     const loadScenario = async () => {
         setIsLoading(true);
         try {
-            const scenario = await base44.entities.MultiPartyScenario.get(editId);
+            const scenario = await MultiPartyScenario.get(editId);
             setScenarioData({
                 ...scenario,
                 buyer_personas: scenario.buyer_personas || [],
@@ -242,10 +242,10 @@ export default function CreateMultiPartyScenario() {
         setIsSaving(true);
         try {
             if (editId) {
-                await base44.entities.MultiPartyScenario.update(editId, scenarioData);
+                await MultiPartyScenario.update(editId, scenarioData);
                 toast.success('Scenario updated successfully');
             } else {
-                await base44.entities.MultiPartyScenario.create(scenarioData);
+                await MultiPartyScenario.create(scenarioData);
                 toast.success('Scenario created successfully');
             }
             navigate(createPageUrl('MultiPartyRoleplay'));

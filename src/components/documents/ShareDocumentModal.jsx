@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
-import { base44 } from '@/api/base44Client';
+import { Document } from '@/api/entities';
 import { createPageUrl } from '@/utils';
 
 export function ShareDocumentModal({ open, onOpenChange, document }) {
@@ -64,7 +64,7 @@ export function ShareDocumentModal({ open, onOpenChange, document }) {
                 expiresAt = securitySettings.expiryDate.toISOString();
             }
 
-            await base44.entities.Document.update(document.id, {
+            await Document.update(document.id, {
                 expires_at: expiresAt,
                 require_email: securitySettings.requireEmail,
                 password: securitySettings.password || null,
