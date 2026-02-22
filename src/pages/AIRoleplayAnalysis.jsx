@@ -534,25 +534,505 @@ export default function AIRoleplayAnalysis() {
                 bot_configuration: JSON.stringify({ ...JSON.parse(baseMockSession.bot_configuration), name: 'John Doe', title: 'IT Manager', roleplay_type: 'discovery', personality: 'Analytical, Detail-oriented' })
             },
             '3': {
-                scenario: 'Product Demo Walkthrough',
+                scenario: 'SPIN Selling Discovery',
                 session_duration: 510,
-                call_type: 'demo',
-                analysis_results: { ...baseMockSession.analysis_results, overall_score: 91 },
-                bot_configuration: JSON.stringify({ ...JSON.parse(baseMockSession.bot_configuration), name: 'Sarah Chen', title: 'Product Owner', roleplay_type: 'demo', personality: 'Detail-oriented, Technical' })
+                call_type: 'discovery',
+                analysis_results: {
+                    ...baseMockSession.analysis_results,
+                    overall_score: 83,
+                    evaluation_framework: "SPIN Selling",
+                    scorecard: [
+                        {
+                            category: "Situation Questions",
+                            score: 3,
+                            maxScore: 3,
+                            criteria: [
+                                {
+                                    text: "Asked about current situation/context?",
+                                    passed: true,
+                                    explanation: "The rep effectively asked about the prospect's current sales process and team structure. They started with open-ended questions to understand the baseline situation.",
+                                    details: [
+                                        "Asked: 'Could you tell me a bit about your current sales process?'",
+                                        "Inquired about team size and structure",
+                                        "Asked about current tools and systems in use"
+                                    ],
+                                    improvement: "Excellent situation discovery! Continue this approach of starting with broad, open-ended questions to understand context."
+                                },
+                                {
+                                    text: "Gathered background information?",
+                                    passed: true,
+                                    explanation: "The rep gathered comprehensive background about the company's sales operations, current conversion rates, and existing tool stack (ZoomInfo).",
+                                    details: [],
+                                    improvement: "Great job gathering context. Could also ask: 'How long has your team been using this current process?' to understand change readiness."
+                                },
+                                {
+                                    text: "Understood existing processes?",
+                                    passed: true,
+                                    explanation: "The rep demonstrated clear understanding of how the prospect currently qualifies leads and manages their sales pipeline.",
+                                    details: [],
+                                    improvement: "Excellent process mapping! Consider asking: 'Walk me through what happens from the moment a lead comes in to when it's assigned to a rep.'"
+                                }
+                            ]
+                        },
+                        {
+                            category: "Problem Questions",
+                            score: 2,
+                            maxScore: 3,
+                            criteria: [
+                                {
+                                    text: "Identified specific problems/challenges?",
+                                    passed: true,
+                                    explanation: "The rep identified multiple specific problems: low 8% conversion rate, time wasted on unqualified leads, and team burnout.",
+                                    details: [
+                                        "Low conversion rate (8% vs. target of 15-20%)",
+                                        "Time wasted on leads that don't convert",
+                                        "Top performers experiencing burnout",
+                                        "Inaccurate data from current tools"
+                                    ],
+                                    improvement: "Strong problem identification! Could probe deeper: 'Which of these problems is causing the most immediate pain right now?'"
+                                },
+                                {
+                                    text: "Explored pain points in depth?",
+                                    passed: true,
+                                    explanation: "The rep dug into the details of each problem, understanding both the tactical challenges and emotional impact (team morale).",
+                                    details: [],
+                                    improvement: "Good depth! Could explore further: 'Tell me more about how the burnout is manifesting. Are you seeing increased turnover?'"
+                                },
+                                {
+                                    text: "Got prospect to articulate difficulties?",
+                                    passed: false,
+                                    explanation: "While the rep identified problems, they could have let the prospect articulate more of the difficulties in their own words rather than jumping in with solutions.",
+                                    details: [],
+                                    improvement: "Ask more open-ended questions like: 'What's been the most frustrating part of dealing with this issue?' Let the prospect talk more."
+                                }
+                            ]
+                        },
+                        {
+                            category: "Implication Questions",
+                            score: 1,
+                            maxScore: 3,
+                            criteria: [
+                                {
+                                    text: "Explored consequences of the problem?",
+                                    passed: true,
+                                    explanation: "The rep touched on consequences like missed revenue targets and team attrition, but could have explored these implications more deeply.",
+                                    details: [],
+                                    improvement: "Dig deeper into implications: 'If this 8% conversion rate continues, what impact will that have on your annual revenue targets?' and 'What happens to team morale if nothing changes?'"
+                                },
+                                {
+                                    text: "Discussed impact on business/team?",
+                                    passed: false,
+                                    explanation: "The rep didn't sufficiently explore the broader business impact beyond the immediate sales metrics. No discussion of customer satisfaction, company reputation, or strategic goals.",
+                                    details: [],
+                                    improvement: "Ask: 'How is this affecting other parts of the business?' and 'What does your leadership team think about these conversion rates?'"
+                                },
+                                {
+                                    text: "Built urgency around solving the issue?",
+                                    passed: false,
+                                    explanation: "The rep didn't create a strong sense of urgency or explore what happens if the problem isn't solved soon.",
+                                    details: [],
+                                    improvement: "Build urgency: 'If we're talking again in 6 months and nothing has changed, what will that mean for your role?' and 'Is there a point where this becomes critical?'"
+                                }
+                            ]
+                        },
+                        {
+                            category: "Need-Payoff Questions",
+                            score: 2,
+                            maxScore: 3,
+                            criteria: [
+                                {
+                                    text: "Asked about value of solving the problem?",
+                                    passed: true,
+                                    explanation: "The rep asked about the target conversion rate (15-20%), which implies the value of improvement, though they could have been more explicit about quantifying the value.",
+                                    details: [],
+                                    improvement: "Be more direct: 'If you could wave a magic wand and have perfect lead qualification, what would that be worth to your business?'"
+                                },
+                                {
+                                    text: "Got prospect to describe ideal outcome?",
+                                    passed: true,
+                                    explanation: "The prospect mentioned wanting to reach 15-20% conversion rate and have better lead quality, describing their ideal state.",
+                                    details: [],
+                                    improvement: "Expand: 'Paint me a picture of what success looks like 6 months from now. What's changed?' Let them visualize the solution."
+                                },
+                                {
+                                    text: "Linked solution to business impact?",
+                                    passed: false,
+                                    explanation: "The rep didn't explicitly link improved conversion rates to broader business outcomes like revenue growth, profitability, or competitive advantage.",
+                                    details: [],
+                                    improvement: "Connect the dots: 'If we can help you get to that 15% conversion rate, what does that mean for your annual revenue?' and 'How would that change your position in the market?'"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                bot_configuration: JSON.stringify({ ...JSON.parse(baseMockSession.bot_configuration), name: 'Sarah Chen', title: 'Product Owner', roleplay_type: 'discovery', personality: 'Detail-oriented, Technical' })
             },
             '4': {
-                scenario: 'Follow-up Call Strategy',
-                session_duration: 320,
-                call_type: 'follow_up',
-                analysis_results: { ...baseMockSession.analysis_results, overall_score: 79 },
-                bot_configuration: JSON.stringify({ ...JSON.parse(baseMockSession.bot_configuration), name: 'Michael Lee', title: 'CFO', roleplay_type: 'follow_up', personality: 'Budget-focused, Strategic' })
+                scenario: 'MEDDPICC Enterprise Deal',
+                session_duration: 620,
+                call_type: 'enterprise_discovery',
+                analysis_results: {
+                    ...baseMockSession.analysis_results,
+                    overall_score: 75,
+                    evaluation_framework: "MEDDPICC",
+                    scorecard: [
+                        {
+                            category: "Metrics",
+                            score: 2,
+                            maxScore: 3,
+                            criteria: [
+                                {
+                                    text: "Identified quantifiable business metrics?",
+                                    passed: true,
+                                    explanation: "Rep identified the 8% conversion rate and 15-20% target, providing clear baseline metrics.",
+                                    details: [],
+                                    improvement: "Also quantify the number of leads, deals, and revenue impact to build a stronger business case."
+                                },
+                                {
+                                    text: "Discussed ROI or cost savings?",
+                                    passed: false,
+                                    explanation: "No specific ROI calculation or cost-benefit analysis was discussed.",
+                                    details: [],
+                                    improvement: "Calculate: 'With 1000 monthly leads at 8% vs 15%, that's 80 vs 150 deals. At $10K average deal size, that's $700K additional monthly revenue.'"
+                                },
+                                {
+                                    text: "Established measurable success criteria?",
+                                    passed: true,
+                                    explanation: "Target conversion rate of 15-20% serves as a clear success metric.",
+                                    details: [],
+                                    improvement: "Add timeframe: 'When do you need to achieve this 15% conversion rate by?'"
+                                }
+                            ]
+                        },
+                        {
+                            category: "Economic Buyer",
+                            score: 1,
+                            maxScore: 3,
+                            criteria: [
+                                {
+                                    text: "Identified the economic buyer?",
+                                    passed: true,
+                                    explanation: "Speaking with VP of Sales who likely has budget authority, though not explicitly confirmed.",
+                                    details: [],
+                                    improvement: "Confirm: 'As VP of Sales, do you own the budget for sales tools, or is that shared with another department?'"
+                                },
+                                {
+                                    text: "Understood budget authority?",
+                                    passed: false,
+                                    explanation: "No discussion about budget allocation, approval limits, or financial authority.",
+                                    details: [],
+                                    improvement: "Ask: 'What's the approval process for investments in this range?' and 'Is there allocated budget for solving this problem?'"
+                                },
+                                {
+                                    text: "Confirmed ability to make financial decisions?",
+                                    passed: false,
+                                    explanation: "Did not confirm if VP has sole authority or needs approval from CFO/CEO.",
+                                    details: [],
+                                    improvement: "Clarify: 'For a solution like this, what's your involvement in the final purchasing decision?'"
+                                }
+                            ]
+                        },
+                        {
+                            category: "Decision Criteria",
+                            score: 2,
+                            maxScore: 3,
+                            criteria: [
+                                {
+                                    text: "Uncovered evaluation criteria?",
+                                    passed: true,
+                                    explanation: "Prospect mentioned integration requirements and ROI expectations as key criteria.",
+                                    details: [],
+                                    improvement: "Get complete list: 'What else will be important in your evaluation besides integration and ROI?'"
+                                },
+                                {
+                                    text: "Understood what matters most in selection?",
+                                    passed: true,
+                                    explanation: "Rep understood that integration with existing tools and demonstrable ROI are priorities.",
+                                    details: [],
+                                    improvement: "Prioritize: 'If you had to rank these factors, which is the absolute must-have?'"
+                                },
+                                {
+                                    text: "Identified competing priorities?",
+                                    passed: false,
+                                    explanation: "No discussion of what other solutions or projects the prospect is evaluating.",
+                                    details: [],
+                                    improvement: "Ask: 'Are you looking at any other vendors?' and 'What other initiatives are competing for this budget?'"
+                                }
+                            ]
+                        },
+                        {
+                            category: "Decision Process",
+                            score: 1,
+                            maxScore: 3,
+                            criteria: [
+                                {
+                                    text: "Mapped out the buying process?",
+                                    passed: false,
+                                    explanation: "Only scheduled a demo, didn't map the full process from demo to signature.",
+                                    details: [],
+                                    improvement: "Map it out: 'After the demo, what happens? Who reviews it? What are the steps to get to a signed agreement?'"
+                                },
+                                {
+                                    text: "Identified timeline and steps?",
+                                    passed: true,
+                                    explanation: "Demo scheduled for Tuesday 2 PM is a clear next step.",
+                                    details: [],
+                                    improvement: "Get full timeline: 'What's your ideal timeline from demo to implementation?' and 'Are there any deadlines driving this?'"
+                                },
+                                {
+                                    text: "Understood stakeholders involved?",
+                                    passed: false,
+                                    explanation: "No discussion of who else will be involved in evaluation and decision.",
+                                    details: [],
+                                    improvement: "Map stakeholders: 'Who else should join the demo?' and 'Whose buy-in do you need before moving forward?'"
+                                }
+                            ]
+                        },
+                        {
+                            category: "Paper Process",
+                            score: 0,
+                            maxScore: 3,
+                            criteria: [
+                                {
+                                    text: "Understood contracting/legal process?",
+                                    passed: false,
+                                    explanation: "No discussion of legal review, procurement, or contracting processes.",
+                                    details: [],
+                                    improvement: "Ask: 'Once we align on a solution, what does your legal and procurement process look like?'"
+                                },
+                                {
+                                    text: "Identified approval requirements?",
+                                    passed: false,
+                                    explanation: "No discussion of what approvals are needed or who needs to sign off.",
+                                    details: [],
+                                    improvement: "Clarify: 'What approvals will you need to get this through?' and 'Have you purchased similar solutions before?'"
+                                },
+                                {
+                                    text: "Discussed procurement procedures?",
+                                    passed: false,
+                                    explanation: "No mention of procurement team, vendor onboarding, or security reviews.",
+                                    details: [],
+                                    improvement: "Explore: 'Does your procurement team need to be involved?' and 'Are there any security or compliance reviews required?'"
+                                }
+                            ]
+                        },
+                        {
+                            category: "Identify Pain",
+                            score: 3,
+                            maxScore: 3,
+                            criteria: [
+                                {
+                                    text: "Discovered compelling pain points?",
+                                    passed: true,
+                                    explanation: "Excellent pain discovery: low conversion rates, wasted time, team burnout, poor data quality.",
+                                    details: [],
+                                    improvement: "Outstanding! This level of pain discovery creates strong motivation to change."
+                                },
+                                {
+                                    text: "Quantified impact of current situation?",
+                                    passed: true,
+                                    explanation: "Quantified the conversion rate gap and discussed impact on team performance.",
+                                    details: [],
+                                    improvement: "Perfect. Could add: 'What's the cost of a sales rep leaving due to burnout?'"
+                                },
+                                {
+                                    text: "Created urgency to change?",
+                                    passed: true,
+                                    explanation: "Rep established urgency around team burnout and missed targets.",
+                                    details: [],
+                                    improvement: "Great urgency building! Consider adding: 'What happens if this isn't solved by end of quarter?'"
+                                }
+                            ]
+                        },
+                        {
+                            category: "Champion",
+                            score: 1,
+                            maxScore: 3,
+                            criteria: [
+                                {
+                                    text: "Identified internal champion?",
+                                    passed: false,
+                                    explanation: "Didn't ask about or identify someone who would champion the solution internally.",
+                                    details: [],
+                                    improvement: "Ask: 'Who in your organization is most excited about solving this?' and 'Who would help drive this internally?'"
+                                },
+                                {
+                                    text: "Built relationship with advocate?",
+                                    passed: true,
+                                    explanation: "Rep built good rapport with the VP of Sales, who could potentially be a champion.",
+                                    details: [],
+                                    improvement: "Strengthen the relationship: 'What would you need from me to build a strong business case with your team?'"
+                                },
+                                {
+                                    text: "Confirmed champion's influence?",
+                                    passed: false,
+                                    explanation: "Didn't validate the VP's ability to influence other stakeholders or drive the deal.",
+                                    details: [],
+                                    improvement: "Validate: 'How have you successfully brought in new solutions in the past?' and 'What's your relationship with the CFO?'"
+                                }
+                            ]
+                        },
+                        {
+                            category: "Competition",
+                            score: 1,
+                            maxScore: 3,
+                            criteria: [
+                                {
+                                    text: "Identified competitive alternatives?",
+                                    passed: true,
+                                    explanation: "Prospect mentioned using ZoomInfo currently, which is a competitive solution.",
+                                    details: [],
+                                    improvement: "Explore further: 'Besides ZoomInfo, are you evaluating any other data or lead qualification tools?'"
+                                },
+                                {
+                                    text: "Understood competitive landscape?",
+                                    passed: false,
+                                    explanation: "Rep didn't explore what other vendors the prospect might be considering or their status quo bias.",
+                                    details: [],
+                                    improvement: "Ask: 'Are you looking at other providers?' and 'Have you considered just improving your current ZoomInfo usage?'"
+                                },
+                                {
+                                    text: "Positioned against competition?",
+                                    passed: false,
+                                    explanation: "No clear differentiation from competitors or discussion of unique value proposition.",
+                                    details: [],
+                                    improvement: "Position: 'Unlike traditional data providers that just give you contact info, we focus on predictive lead scoring to improve conversion.'"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                bot_configuration: JSON.stringify({ ...JSON.parse(baseMockSession.bot_configuration), name: 'Michael Lee', title: 'CFO', roleplay_type: 'enterprise_discovery', personality: 'Budget-focused, Strategic' })
             },
             '5': {
-                scenario: 'Objection Handling Practice',
+                scenario: 'BANT Qualification Call',
                 session_duration: 380,
-                call_type: 'objection_handling',
-                analysis_results: { ...baseMockSession.analysis_results, overall_score: 68 },
-                bot_configuration: JSON.stringify({ ...JSON.parse(baseMockSession.bot_configuration), name: 'Emily White', title: 'Procurement Specialist', roleplay_type: 'objection_handling', personality: 'Challenging, Cost-conscious' })
+                call_type: 'qualification',
+                analysis_results: {
+                    ...baseMockSession.analysis_results,
+                    overall_score: 68,
+                    evaluation_framework: "BANT",
+                    scorecard: [
+                        {
+                            category: "Budget",
+                            score: 1,
+                            maxScore: 3,
+                            criteria: [
+                                {
+                                    text: "Discussed available budget?",
+                                    passed: false,
+                                    explanation: "The rep did not ask about budget availability or financial constraints during the conversation.",
+                                    details: [],
+                                    improvement: "Early in discovery, ask: 'Have you allocated budget for addressing this lead qualification challenge?' or 'What budget range are you working with for this type of solution?'"
+                                },
+                                {
+                                    text: "Understood financial constraints?",
+                                    passed: true,
+                                    explanation: "Rep indirectly gauged financial interest when prospect asked about ROI, but didn't explicitly discuss budget constraints.",
+                                    details: [],
+                                    improvement: "Be direct: 'Are there any budget constraints I should be aware of as we explore options?'"
+                                },
+                                {
+                                    text: "Confirmed funding allocation?",
+                                    passed: false,
+                                    explanation: "No discussion about whether funds are already allocated or need to be secured.",
+                                    details: [],
+                                    improvement: "Ask: 'Is there budget already set aside for this initiative, or would this need to come from a different source?'"
+                                }
+                            ]
+                        },
+                        {
+                            category: "Authority",
+                            score: 2,
+                            maxScore: 3,
+                            criteria: [
+                                {
+                                    text: "Identified decision maker(s)?",
+                                    passed: true,
+                                    explanation: "Speaking with VP of Sales who is likely a key decision maker, though didn't confirm if others are involved.",
+                                    details: [],
+                                    improvement: "Clarify: 'Are you the sole decision maker on this, or are there others who need to be involved?'"
+                                },
+                                {
+                                    text: "Understood approval process?",
+                                    passed: true,
+                                    explanation: "Rep established next steps with demo, implying understanding of the process, but didn't map it explicitly.",
+                                    details: [],
+                                    improvement: "Map it: 'After the demo, what's your internal approval process? Who else needs to weigh in?'"
+                                },
+                                {
+                                    text: "Confirmed stakeholder involvement?",
+                                    passed: false,
+                                    explanation: "Didn't ask who else from the team or company needs to be involved in the decision.",
+                                    details: [],
+                                    improvement: "Ask: 'Besides yourself, who else should we include in these conversations?' and 'Whose opinion will be most important in this decision?'"
+                                }
+                            ]
+                        },
+                        {
+                            category: "Need",
+                            score: 3,
+                            maxScore: 3,
+                            criteria: [
+                                {
+                                    text: "Identified business need?",
+                                    passed: true,
+                                    explanation: "Excellent needs identification: low conversion rate, poor lead quality, team burnout.",
+                                    details: [
+                                        "8% conversion rate (target 15-20%)",
+                                        "Wasted time on bad leads",
+                                        "Team burnout and morale issues",
+                                        "Data quality problems with current tools"
+                                    ],
+                                    improvement: "Outstanding needs discovery! This creates a compelling reason to buy."
+                                },
+                                {
+                                    text: "Understood pain points?",
+                                    passed: true,
+                                    explanation: "Rep thoroughly explored multiple pain points and their impact on the business and team.",
+                                    details: [],
+                                    improvement: "Excellent work. Continue to explore both quantitative (metrics) and qualitative (morale) pain points."
+                                },
+                                {
+                                    text: "Confirmed problem severity?",
+                                    passed: true,
+                                    explanation: "The magnitude of the problem is clear: nearly doubling conversion rate needed, top performers burning out.",
+                                    details: [],
+                                    improvement: "Perfect severity assessment. The gap between 8% and 15-20% creates urgency."
+                                }
+                            ]
+                        },
+                        {
+                            category: "Timeline",
+                            score: 1,
+                            maxScore: 3,
+                            criteria: [
+                                {
+                                    text: "Established buying timeline?",
+                                    passed: false,
+                                    explanation: "Rep scheduled a demo but didn't ask about the overall timeline for making a decision.",
+                                    details: [],
+                                    improvement: "Ask: 'What's your ideal timeline for having a solution in place?' and 'When do you need to start seeing results?'"
+                                },
+                                {
+                                    text: "Identified key dates/milestones?",
+                                    passed: true,
+                                    explanation: "Demo scheduled for Tuesday at 2 PM is a clear milestone, though broader timeline wasn't discussed.",
+                                    details: [],
+                                    improvement: "Expand timeline discussion: 'Are there any important dates coming up that we should work around?' (e.g., end of quarter, annual planning)"
+                                },
+                                {
+                                    text: "Understood urgency?",
+                                    passed: false,
+                                    explanation: "While pain was identified, the urgency around when they need to solve it wasn't clearly established.",
+                                    details: [],
+                                    improvement: "Create urgency: 'How long can you continue with an 8% conversion rate before it becomes critical?' and 'What's driving your timeline?'"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                bot_configuration: JSON.stringify({ ...JSON.parse(baseMockSession.bot_configuration), name: 'Emily White', title: 'Procurement Specialist', roleplay_type: 'qualification', personality: 'Process-oriented, Budget-conscious' })
             },
             '6': {
                 scenario: 'Pricing Discussion',
