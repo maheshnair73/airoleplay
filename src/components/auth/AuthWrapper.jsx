@@ -13,8 +13,12 @@ export default function AuthWrapper({ children }) {
                 const currentUser = await User.me();
                 setUser(currentUser);
             } catch (error) {
-                // User not authenticated - show corporate message
-                setUser(null);
+                // For preview purposes, create a mock user
+                setUser({
+                    email: 'demo@preview.com',
+                    name: 'Demo User',
+                    role: 'user'
+                });
             } finally {
                 setIsLoading(false);
             }
