@@ -83,8 +83,13 @@ const PrivateLayout = ({ children, currentPageName }) => {
     }, []);
 
     const handleLogout = async () => {
-        await User.logout();
-        window.location.href = createPageUrl('Welcome');
+        try {
+            await User.signOut();
+            window.location.href = '/';
+        } catch (error) {
+            console.error('Logout error:', error);
+            window.location.href = '/';
+        }
     };
 
     const handleRoleSwitch = (newRole) => {
@@ -159,48 +164,6 @@ const PrivateLayout = ({ children, currentPageName }) => {
                     <BrainCircuit className="w-8 h-8 text-blue-500" />
                     <span className="text-xl font-bold text-white">effySales Pro</span>
                 </Link>
-            </div>
-
-            <div className="px-4 py-3 border-b border-slate-700">
-                <div className="flex items-center justify-between">
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="text-left text-slate-300 hover:text-white hover:bg-slate-700 p-2 text-sm">
-                                <Shield className="w-4 h-4 mr-2" />
-                                Demo: {effectiveRole}
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)]">
-                            <DropdownMenuItem onClick={() => handleRoleSwitch('sales_agent')}>
-                                Switch to Sales Agent
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleRoleSwitch('company_admin')}>
-                                Switch to Company Admin
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleRoleSwitch('super_admin')}>
-                                Switch to Super Admin
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => handleRoleSwitch('user')}>
-                                Legacy: User
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleRoleSwitch('admin')}>
-                                Legacy: Admin
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleRoleSwitch('saas_admin')}>
-                                Legacy: SaaS Admin
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={resetToDefaultRole}
-                        className="text-xs text-slate-400 hover:text-slate-200 px-2 py-1"
-                    >
-                        Reset
-                    </Button>
-                </div>
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 space-y-6">
