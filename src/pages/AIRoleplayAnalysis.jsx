@@ -10,7 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
     ArrowLeft, Play, Pause, Volume2, MessageSquare,
     CheckCircle, XCircle, BarChart3, Clock, Target,
-    Brain, TrendingUp, Award, FileText, Bot, Repeat, PlusCircle
+    Brain, TrendingUp, Award, FileText, Bot, Repeat, PlusCircle,
+    ChevronRight, AlertCircle
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
@@ -204,34 +205,117 @@ export default function AIRoleplayAnalysis() {
                 scorecard: [
                     {
                         category: "Opener",
-                        score: "1/2",
+                        score: 0,
+                        maxScore: 2,
                         criteria: [
-                            { text: "Permission based opener?", passed: false },
-                            { text: "Used research on prospect?", passed: true }
+                            {
+                                text: "Permission based opener?",
+                                passed: false,
+                                explanation: "After reviewing the transcript, I can see that the sales rep (Mahesh Michael) did not use a permission-based opener. A permission-based opener would involve asking the prospect for permission to take a few minutes of their time before explaining the purpose of the call. Instead, the conversation flow was:",
+                                details: [
+                                    "The prospect answered and asked who was calling",
+                                    "The rep introduced himself and asked how the prospect was doing",
+                                    "They exchanged pleasantries about being busy",
+                                    "The prospect directly asked what the call was about",
+                                    "The rep then launched into explaining his reason for calling without first asking for permission to take a few minutes of the prospect's time"
+                                ],
+                                improvement: "The sales rep should have used a permission-based opener after the initial greeting exchange. For example, after the prospect mentioned being busy, the rep could have said: 'I understand you're busy. Would it be okay if I took just 2 minutes to explain why I'm calling, and then you can decide if it makes sense to continue?' This shows respect for the prospect's time and gives them control over the conversation."
+                            },
+                            {
+                                text: "Used research on prospect?",
+                                passed: false,
+                                explanation: "After analyzing the transcript, I found no evidence that the sales rep (Mahesh Michael) had conducted any prior research on the prospect. Throughout the conversation, the rep:",
+                                details: [
+                                    "Started with a generic greeting without mentioning the prospect's name",
+                                    "Made a general assumption about the prospect being busy due to 'month end' without specific knowledge of their role",
+                                    "Presented a CRM product without knowing that the prospect works in engineering, not sales",
+                                    "When the prospect mentioned they work on the engineering side, the rep immediately ended the call rather than pivoting the conversation based on this new information"
+                                ],
+                                improvement: "The sales rep should conduct thorough research before making calls to ensure they're speaking with the right person about relevant solutions. Specifically: (1) Identify the prospect's name, role, and department before calling (2) Research the company to understand their tech stack and potential pain points (3) Verify that the prospect's role aligns with the solution being offered"
+                            }
                         ]
                     },
                     {
                         category: "Social Proof",
-                        score: "0/2",
+                        score: 0,
+                        maxScore: 2,
                         criteria: [
-                            { text: "Provided social proof?", passed: false },
-                            { text: "Asked if social proof was relevant?", passed: false }
+                            {
+                                text: "Provided social proof?",
+                                passed: false,
+                                explanation: "After carefully reviewing the transcript, I found no instances where the sales rep provided any social proof to the prospect. Social proof would include mentioning:",
+                                details: [
+                                    "Customer testimonials or success stories",
+                                    "Case studies of similar companies",
+                                    "Industry statistics showing product effectiveness",
+                                    "Names of other clients using the product",
+                                    "Reviews or ratings from existing customers"
+                                ],
+                                improvement: "The sales rep should incorporate social proof early in the conversation to build credibility. For example, they could say something like: 'We've implemented this with several engineering-focused companies like [Company X] who saw a 30% reduction in data entry time and improved lead conversion rates. Their engineering teams particularly appreciated how it integrated with their existing systems.' Additionally, the rep should have asked if the prospect would like to see specific examples relevant to their industry."
+                            },
+                            {
+                                text: "Asked if social proof was relevant?",
+                                passed: false,
+                                explanation: "The rep only provided a general description of the CRM product's features (interactive, voice-enabled data entry) but did not reference any existing customers, success metrics, or other forms of social validation that would help establish credibility and value.",
+                                details: [],
+                                improvement: "After providing social proof, always validate its relevance by asking questions like: 'Does this sound similar to challenges your team faces?' or 'Would it be helpful to see how other engineering teams have used this?'"
+                            }
                         ]
                     },
                     {
                         category: "Discovery",
-                        score: "1/2",
+                        score: 0,
+                        maxScore: 1,
                         criteria: [
-                            { text: "SDR asked for preconceptions of product?", passed: false },
-                            { text: "Asked for success criteria for next call?", passed: true }
+                            {
+                                text: "SDR asked for preconceptions of product?",
+                                passed: false,
+                                explanation: "The rep did not ask about the prospect's existing perceptions, assumptions, or prior knowledge about their product category or company. Understanding preconceptions helps address potential biases or misconceptions early in the conversation.",
+                                details: [],
+                                improvement: "Before presenting the solution, ask: 'Have you heard of [our company] before?' or 'What has been your experience with similar CRM tools?' This helps uncover any preconceptions that might need to be addressed."
+                            }
+                        ]
+                    },
+                    {
+                        category: "Takeaway",
+                        score: 0,
+                        maxScore: 2,
+                        criteria: [
+                            {
+                                text: "Re-confirmed that the time works for the prospect?",
+                                passed: false,
+                                explanation: "While the prospect initially engaged in the conversation, the rep never explicitly re-confirmed whether the timing was still good after the prospect mentioned being busy. This is important to ensure you're not losing the prospect's attention or goodwill.",
+                                details: [],
+                                improvement: "After the initial exchange, especially when a prospect mentions being busy, ask: 'Is this still a good time for a quick conversation, or would you prefer I call back at a better time?' This demonstrates respect and can actually increase engagement."
+                            },
+                            {
+                                text: "Asked for success criteria for next call?",
+                                passed: false,
+                                explanation: "The rep did not attempt to schedule a next call or define what success criteria would look like for a follow-up conversation. The call ended abruptly when Mahesh decided to hang up after learning the product wasn't relevant to the prospect's role.",
+                                details: [],
+                                improvement: "Even when a prospect isn't the right fit, ask for a referral or define next steps: 'Would it make sense for me to reach out to someone on your sales or CRM team instead?' This keeps doors open and shows professionalism."
+                            }
                         ]
                     },
                     {
                         category: "Closing",
-                        score: "1/2",
+                        score: 0,
+                        maxScore: 2,
                         criteria: [
-                            { text: "Next steps agreed upon?", passed: true },
-                            { text: "Follow-up meeting booked?", passed: false }
+                            {
+                                text: "Next steps agreed upon?",
+                                passed: false,
+                                explanation: "No next steps were agreed upon. The call ended when Mahesh Michael decided to hang up after learning that the recipient worked on the engineering side and didn't handle sales or customer relationship management directly.",
+                                details: [],
+                                improvement: "Before ending the call, always try to secure next steps, even if it's just getting a referral to the right person or permission to send information."
+                            },
+                            {
+                                text: "Follow-up meeting booked?",
+                                passed: false,
+                                explanation: "No follow-up meeting was scheduled. The conversation ended quickly when Mahesh realized the product wasn't relevant to the recipient's role.",
+                                details: [],
+                                improvement: "Even when speaking with the wrong person, attempt to book time with the right stakeholder or get an introduction."
+                            }
                         ]
                     }
                 ]
@@ -459,30 +543,93 @@ export default function AIRoleplayAnalysis() {
         </div>
     );
 
-    const ScorecardView = ({ scorecard }) => (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-            {scorecard?.map((category, idx) => (
-                <div key={idx}>
-                    <div className="flex justify-between items-baseline mb-2">
-                        <h4 className="font-semibold text-slate-800">{category.category}</h4>
-                        <span className="text-sm font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md">{category.score}</span>
+    const ScorecardView = ({ scorecard }) => {
+        const [expandedCriteria, setExpandedCriteria] = useState({});
+
+        const toggleCriteria = (categoryIdx, criterionIdx) => {
+            const key = `${categoryIdx}-${criterionIdx}`;
+            setExpandedCriteria(prev => ({
+                ...prev,
+                [key]: !prev[key]
+            }));
+        };
+
+        return (
+            <div className="space-y-6">
+                {scorecard?.map((category, categoryIdx) => (
+                    <div key={categoryIdx} className="border rounded-lg overflow-hidden">
+                        <div className="bg-slate-50 px-6 py-4 flex justify-between items-center border-b">
+                            <h4 className="font-semibold text-slate-800 text-lg">{category.category}</h4>
+                            <span className="text-sm font-bold text-slate-600 bg-white px-3 py-1.5 rounded-md border">
+                                {category.score}/{category.maxScore}
+                            </span>
+                        </div>
+                        <div className="divide-y">
+                            {category.criteria?.map((criterion, criterionIdx) => {
+                                const key = `${categoryIdx}-${criterionIdx}`;
+                                const isExpanded = expandedCriteria[key];
+
+                                return (
+                                    <div key={criterionIdx} className="bg-white">
+                                        <button
+                                            onClick={() => toggleCriteria(categoryIdx, criterionIdx)}
+                                            className="w-full flex items-center gap-3 p-4 hover:bg-slate-50 transition-colors text-left"
+                                        >
+                                            {criterion.passed ? (
+                                                <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+                                            ) : (
+                                                <XCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
+                                            )}
+                                            <span className="text-sm text-slate-700 flex-1">{criterion.text}</span>
+                                            <ChevronRight className={`w-5 h-5 text-slate-400 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                                        </button>
+
+                                        {isExpanded && (
+                                            <div className="px-4 pb-4 bg-slate-50/50 border-t">
+                                                <div className="mt-4 space-y-4">
+                                                    {criterion.explanation && (
+                                                        <div>
+                                                            <h5 className="font-semibold text-sm text-slate-900 mb-2">
+                                                                Why were you scored this way?
+                                                            </h5>
+                                                            <p className="text-sm text-slate-700 leading-relaxed">
+                                                                {criterion.explanation}
+                                                            </p>
+                                                        </div>
+                                                    )}
+
+                                                    {criterion.details && criterion.details.length > 0 && (
+                                                        <div>
+                                                            <ol className="list-decimal list-inside space-y-1 text-sm text-slate-700">
+                                                                {criterion.details.map((detail, detailIdx) => (
+                                                                    <li key={detailIdx} className="leading-relaxed">{detail}</li>
+                                                                ))}
+                                                            </ol>
+                                                        </div>
+                                                    )}
+
+                                                    {criterion.improvement && (
+                                                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                                            <h5 className="font-semibold text-sm text-blue-900 mb-2">
+                                                                What could you do differently next time?
+                                                            </h5>
+                                                            <p className="text-sm text-blue-800 leading-relaxed">
+                                                                {criterion.improvement}
+                                                            </p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
                     </div>
-                    <div className="space-y-2">
-                        {category.criteria?.map((criterion, criterionIdx) => (
-                            <div key={criterionIdx} className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border">
-                                {criterion.passed ? (
-                                    <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
-                                ) : (
-                                    <XCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
-                                )}
-                                <span className="text-sm text-slate-700">{criterion.text}</span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            ))}
-        </div>
-    );
+                ))}
+            </div>
+        );
+    };
 
     const handlePracticeAgain = () => {
         if (!session) return; // Ensure session data is available
@@ -673,14 +820,37 @@ export default function AIRoleplayAnalysis() {
                     <TabsContent value="feedback" className="space-y-6">
                         <Card>
                             <CardHeader>
-                                <CardTitle>Performance Summary</CardTitle>
+                                <CardTitle>AI Feedback Summary</CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <div className="prose max-w-none prose-slate mb-8">
-                                    <p>{session.analysis_results?.summary || 'No summary available.'}</p>
-                                </div>
+                                <ul className="space-y-3 mb-8">
+                                    <li className="flex items-start gap-3">
+                                        <div className="w-1.5 h-1.5 bg-slate-400 rounded-full mt-2 flex-shrink-0" />
+                                        <p className="text-sm text-slate-700">
+                                            You provided a concise description of your product's key benefits (interactive CRM that saves time through voice input).
+                                        </p>
+                                    </li>
+                                    <li className="flex items-start gap-3">
+                                        <div className="w-1.5 h-1.5 bg-slate-400 rounded-full mt-2 flex-shrink-0" />
+                                        <p className="text-sm text-slate-700">
+                                            You introduced yourself clearly at the beginning of the call.
+                                        </p>
+                                    </li>
+                                    <li className="flex items-start gap-3">
+                                        <div className="w-1.5 h-1.5 bg-slate-400 rounded-full mt-2 flex-shrink-0" />
+                                        <p className="text-sm text-slate-700">
+                                            You attempted to build some initial rapport by acknowledging the prospect's busy schedule.
+                                        </p>
+                                    </li>
+                                </ul>
 
-                                <h3 className="text-lg font-semibold text-slate-800 mb-4 border-b pb-2">Evaluation Scorecard</h3>
+                                <h3 className="text-lg font-semibold text-slate-800 mb-6 flex items-center gap-2">
+                                    <Award className="w-5 h-5 text-blue-600" />
+                                    Scorecard
+                                    <button className="ml-auto text-xs text-blue-600 hover:underline">
+                                        View full scorecard
+                                    </button>
+                                </h3>
                                 {session.analysis_results?.scorecard?.length > 0 ? (
                                     <ScorecardView scorecard={session.analysis_results.scorecard} />
                                 ) : (
