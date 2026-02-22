@@ -242,9 +242,11 @@ export default function HumanRoleplay() {
 
         setIsCreating(true);
         try {
+            const isValidUUID = lead.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(lead.id);
+
             const sessionPayload = {
                 session_type: 'human_human',
-                lead_id: lead.id,
+                lead_id: isValidUUID ? lead.id : null,
                 initiator_email: currentUser.email,
                 prospect_player_email: sessionData.prospect_player_email,
                 session_status: 'pending_invite',
@@ -252,11 +254,12 @@ export default function HumanRoleplay() {
                 prospect_notes: sessionData.prospect_notes,
                 scheduled_for: scheduleOption === 'later' && sessionData.scheduled_for ? sessionData.scheduled_for : new Date().toISOString(),
                 meeting_details: meetingDetails,
-                invitee_list: inviteList
+                invitee_list: inviteList,
+                scenario_type: !isValidUUID ? lead.company_name || 'Practice Session' : null
             };
 
             const session = await RoleplaySession.create(sessionPayload);
-            
+
             toast.success('Roleplay session created! Participants have been notified.');
             navigate(createPageUrl(`RoleplaySession?sessionId=${session.id}`));
         } catch (error) {
