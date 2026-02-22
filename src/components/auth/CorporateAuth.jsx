@@ -4,38 +4,72 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { User } from '@/api/entities';
 import { supabase } from '@/lib/supabase';
-import { Building2, Loader2, ShieldCheck, Users, UserCircle } from 'lucide-react';
+import { Building2, Loader2, ShieldCheck, Users, UserCircle, Info } from 'lucide-react';
 import { toast } from 'sonner';
 
 const DEMO_USERS = [
     {
-        email: 'superadmin@effysalespro.com',
-        password: 'demo123',
-        role: 'super_admin',
-        label: 'Super Admin',
-        bgColor: 'bg-gradient-to-br from-slate-700 to-slate-900',
-        icon: ShieldCheck,
-        description: 'Full system access'
-    },
-    {
         email: 'admin@effysalespro.com',
         password: 'demo123',
         role: 'company_admin',
-        label: 'Company Admin',
-        bgColor: 'bg-gradient-to-br from-blue-600 to-blue-700',
-        icon: Users,
+        label: 'Admin',
+        bgColor: 'bg-white border-2 border-blue-200',
+        textColor: 'text-blue-700',
+        icon: ShieldCheck,
         description: 'Company management'
     },
     {
-        email: 'agent@effysalespro.com',
+        email: 'ba@effysalespro.com',
+        password: 'demo123',
+        role: 'sales_manager',
+        label: 'BA',
+        bgColor: 'bg-white border-2 border-blue-200',
+        textColor: 'text-blue-700',
+        icon: Users,
+        description: 'Business Analyst'
+    },
+    {
+        email: 'manager@effysalespro.com',
+        password: 'demo123',
+        role: 'sales_manager',
+        label: 'Manager',
+        bgColor: 'bg-white border-2 border-teal-200',
+        textColor: 'text-teal-700',
+        icon: Users,
+        description: 'Team Manager'
+    },
+    {
+        email: 'agent1@effysalespro.com',
         password: 'demo123',
         role: 'sales_agent',
-        label: 'Sales Agent',
-        bgColor: 'bg-gradient-to-br from-emerald-500 to-emerald-600',
+        label: 'Agent 1',
+        bgColor: 'bg-white border-2 border-teal-200',
+        textColor: 'text-teal-700',
         icon: UserCircle,
-        description: 'Sales operations'
+        description: 'Sales Agent'
+    },
+    {
+        email: 'agent2@effysalespro.com',
+        password: 'demo123',
+        role: 'sales_agent',
+        label: 'Agent 2',
+        bgColor: 'bg-white border-2 border-amber-200',
+        textColor: 'text-amber-700',
+        icon: UserCircle,
+        description: 'Sales Agent'
+    },
+    {
+        email: 'vendor@effysalespro.com',
+        password: 'demo123',
+        role: 'vendor',
+        label: 'Vendor',
+        bgColor: 'bg-white border-2 border-amber-200',
+        textColor: 'text-amber-700',
+        icon: Building2,
+        description: 'Vendor Access'
     }
 ];
 
@@ -200,30 +234,33 @@ export default function CorporateAuthMessage() {
                             </div>
 
                             {demoUsersExist ? (
-                                <div className="grid grid-cols-1 gap-3">
-                                    {DEMO_USERS.map((demoUser) => {
-                                        const Icon = demoUser.icon;
-                                        return (
-                                            <Button
-                                                key={demoUser.email}
-                                                onClick={() => handleQuickLogin(demoUser)}
-                                                disabled={isLoading}
-                                                variant="outline"
-                                                className={`h-auto py-3 ${demoUser.bgColor} text-white border-0 hover:opacity-90 transition-all duration-200 shadow-md hover:shadow-lg`}
-                                            >
-                                                <div className="flex items-center justify-between w-full">
-                                                    <div className="flex items-center gap-3">
-                                                        <Icon className="h-5 w-5" />
-                                                        <div className="text-left">
-                                                            <div className="font-semibold">{demoUser.label}</div>
-                                                            <div className="text-xs opacity-90">{demoUser.description}</div>
+                                <TooltipProvider>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {DEMO_USERS.map((demoUser) => {
+                                            return (
+                                                <Tooltip key={demoUser.email}>
+                                                    <TooltipTrigger asChild>
+                                                        <Button
+                                                            onClick={() => handleQuickLogin(demoUser)}
+                                                            disabled={isLoading}
+                                                            variant="outline"
+                                                            className={`h-auto py-4 ${demoUser.bgColor} ${demoUser.textColor} hover:shadow-lg transition-all duration-200 font-semibold text-base relative group`}
+                                                        >
+                                                            {demoUser.label}
+                                                            <Info className="h-3 w-3 absolute top-2 right-2 opacity-40 group-hover:opacity-70" />
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent side="bottom" className="bg-slate-800 text-white p-3">
+                                                        <div className="space-y-1 text-xs">
+                                                            <div><span className="font-semibold">Email:</span> {demoUser.email}</div>
+                                                            <div><span className="font-semibold">Password:</span> {demoUser.password}</div>
                                                         </div>
-                                                    </div>
-                                                </div>
-                                            </Button>
-                                        );
-                                    })}
-                                </div>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            );
+                                        })}
+                                    </div>
+                                </TooltipProvider>
                             ) : (
                                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
                                     <p className="text-sm text-slate-700 font-medium text-center">
