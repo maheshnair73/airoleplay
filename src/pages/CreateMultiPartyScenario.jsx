@@ -302,18 +302,28 @@ export default function CreateMultiPartyScenario() {
                         <ArrowLeft className="w-4 h-4" />
                         Back to Multi-Party Roleplay
                     </button>
-                    
+
                     <h1 className="text-4xl font-bold text-slate-900">
                         {editId ? 'Edit' : 'Create'} Multi-Party Scenario
                     </h1>
                     <p className="text-slate-600 mt-2">Design a complex team selling scenario with multiple stakeholders</p>
                 </div>
 
-                <Card className="mb-6">
-                    <CardHeader>
-                        <CardTitle>Basic Information</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
+                <Tabs defaultValue="basic" className="w-full">
+                    <TabsList className="grid w-full grid-cols-5 mb-6">
+                        <TabsTrigger value="basic">Basic Info</TabsTrigger>
+                        <TabsTrigger value="participants">Participants</TabsTrigger>
+                        <TabsTrigger value="dynamics">Dynamics</TabsTrigger>
+                        <TabsTrigger value="objectives">Objectives</TabsTrigger>
+                        <TabsTrigger value="tags">Tags</TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="basic">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Basic Information</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
                         <div>
                             <Label>Scenario Name *</Label>
                             <Input
@@ -392,15 +402,17 @@ export default function CreateMultiPartyScenario() {
                                 />
                             </div>
                         </div>
-                    </CardContent>
-                </Card>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
 
-                <Card className="mb-6">
-                    <CardHeader>
-                        <CardTitle>Scenario Participants *</CardTitle>
-                        <CardDescription>Add buyer personas (prospects/clients) and seller personas (your sales team)</CardDescription>
-                    </CardHeader>
-                    <CardContent>
+                    <TabsContent value="participants">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Scenario Participants *</CardTitle>
+                                <CardDescription>Add buyer personas (prospects/clients) and seller personas (your sales team)</CardDescription>
+                            </CardHeader>
+                            <CardContent>
                         <Tabs defaultValue="buyers" className="w-full">
                             <TabsList className="grid w-full grid-cols-2 mb-6">
                                 <TabsTrigger value="buyers">
@@ -689,15 +701,17 @@ export default function CreateMultiPartyScenario() {
                                 </div>
                             </TabsContent>
                         </Tabs>
-                    </CardContent>
-                </Card>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
 
-                <Card className="mb-6">
-                    <CardHeader>
-                        <CardTitle>Conversation Dynamics</CardTitle>
-                        <CardDescription>Control how AI personas interact</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
+                    <TabsContent value="dynamics">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Conversation Dynamics</CardTitle>
+                                <CardDescription>Control how AI personas interact</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
                         <div className="flex items-center justify-between">
                             <div>
                                 <Label>Allow AI Interruptions</Label>
@@ -765,14 +779,16 @@ export default function CreateMultiPartyScenario() {
                                 </SelectContent>
                             </Select>
                         </div>
-                    </CardContent>
-                </Card>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
 
-                <Card className="mb-6">
-                    <CardHeader>
-                        <CardTitle>Learning Objectives</CardTitle>
-                    </CardHeader>
-                    <CardContent>
+                    <TabsContent value="objectives">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Learning Objectives</CardTitle>
+                            </CardHeader>
+                            <CardContent>
                         <Tabs defaultValue="general" className="w-full">
                             <TabsList className="grid w-full grid-cols-2 mb-4">
                                 <TabsTrigger value="general">General Skills</TabsTrigger>
@@ -831,14 +847,16 @@ export default function CreateMultiPartyScenario() {
                                 </div>
                             </TabsContent>
                         </Tabs>
-                    </CardContent>
-                </Card>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
 
-                <Card className="mb-6">
-                    <CardHeader>
-                        <CardTitle>Tags</CardTitle>
-                    </CardHeader>
-                    <CardContent>
+                    <TabsContent value="tags">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Tags</CardTitle>
+                            </CardHeader>
+                            <CardContent>
                         {scenarioData.tags?.length > 0 && (
                             <div className="flex flex-wrap gap-2 mb-4">
                                 {scenarioData.tags.map((tag, idx) => (
@@ -862,10 +880,12 @@ export default function CreateMultiPartyScenario() {
                                 <Plus className="w-4 h-4" />
                             </Button>
                         </div>
-                    </CardContent>
-                </Card>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+                </Tabs>
 
-                <div className="flex gap-3 justify-end">
+                <div className="flex gap-3 justify-end mt-6">
                     <Button variant="outline" onClick={() => navigate(createPageUrl('MultiPartyRoleplay'))}>
                         Cancel
                     </Button>
