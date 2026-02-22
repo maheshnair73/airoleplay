@@ -30,10 +30,13 @@ export default function RoleplaySessionHistory() {
 
     const loadData = async () => {
         try {
+            console.log('Loading roleplay sessions...');
             const [sessionData, userData] = await Promise.all([
                 RoleplaySession.list('-created_at'),
                 User.me()
             ]);
+            console.log('Loaded sessions:', sessionData?.length || 0, 'sessions');
+            console.log('Current user:', userData?.email);
             setSessions(sessionData);
             setCurrentUser(userData);
         } catch (error) {
