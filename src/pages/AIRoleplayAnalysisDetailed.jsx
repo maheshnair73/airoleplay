@@ -24,6 +24,7 @@ export default function AIRoleplayAnalysisDetailed() {
   const [analysisResults, setAnalysisResults] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [sessionTypeFilter, setSessionTypeFilter] = useState('all');
 
   useEffect(() => {
     loadData();
@@ -273,7 +274,9 @@ export default function AIRoleplayAnalysisDetailed() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-slate-900">Call Analysis</h1>
-            <p className="text-slate-600 mt-1">Deep insights using proven sales methodologies</p>
+            <p className="text-slate-600 mt-1">
+              Analyze AI, Human-to-Human, and Multi-Party roleplay sessions using proven sales methodologies
+            </p>
           </div>
           <div className="flex items-center gap-3">
             <Button variant="outline" onClick={loadData}>
@@ -297,6 +300,40 @@ export default function AIRoleplayAnalysisDetailed() {
             <CardDescription>Choose a roleplay session and analysis framework to review</CardDescription>
           </CardHeader>
           <CardContent>
+            <div className="mb-4">
+              <label className="text-sm font-medium mb-2 block">Filter by Session Type</label>
+              <div className="flex gap-2">
+                <Button
+                  variant={sessionTypeFilter === 'all' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setSessionTypeFilter('all')}
+                >
+                  All Sessions
+                </Button>
+                <Button
+                  variant={sessionTypeFilter === 'ai' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setSessionTypeFilter('ai')}
+                >
+                  AI Roleplay
+                </Button>
+                <Button
+                  variant={sessionTypeFilter === 'human' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setSessionTypeFilter('human')}
+                >
+                  Human-to-Human
+                </Button>
+                <Button
+                  variant={sessionTypeFilter === 'multi' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setSessionTypeFilter('multi')}
+                >
+                  Multi-Party
+                </Button>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="text-sm font-medium mb-2 block">Roleplay Session</label>
@@ -311,11 +348,24 @@ export default function AIRoleplayAnalysisDetailed() {
                     <SelectValue placeholder="Select a session" />
                   </SelectTrigger>
                   <SelectContent>
-                    {sessions.map((session) => (
-                      <SelectItem key={session.id} value={session.id}>
-                        {session.scenario_name || session.bot_name} - {new Date(session.created_at).toLocaleDateString()}
-                      </SelectItem>
-                    ))}
+                    {sessions
+                      .filter(session => {
+                        if (sessionTypeFilter === 'all') return true;
+                        if (sessionTypeFilter === 'ai') return session.session_type === 'ai_roleplay' || !session.session_type;
+                        if (sessionTypeFilter === 'human') return session.session_type === 'human_roleplay';
+                        if (sessionTypeFilter === 'multi') return session.session_type === 'multi_party';
+                        return true;
+                      })
+                      .map((session) => {
+                        const sessionTypeLabel = session.session_type === 'human_roleplay' ? '👥 Human' :
+                                                 session.session_type === 'multi_party' ? '🎭 Multi' :
+                                                 '🤖 AI';
+                        return (
+                          <SelectItem key={session.id} value={session.id}>
+                            {sessionTypeLabel} - {session.scenario_name || session.bot_name} - {new Date(session.created_at).toLocaleDateString()}
+                          </SelectItem>
+                        );
+                      })}
                   </SelectContent>
                 </Select>
               </div>
