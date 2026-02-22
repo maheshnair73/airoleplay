@@ -11,7 +11,7 @@ import {
   BarChart3, TrendingUp, TrendingDown, AlertCircle, CheckCircle2,
   XCircle, MessageSquare, User, Clock, Target, Award, Brain,
   Lightbulb, AlertTriangle, ThumbsUp, ThumbsDown, Settings,
-  Download, Filter, RefreshCw
+  Download, Filter, RefreshCw, History, Calendar, Eye, Search
 } from 'lucide-react';
 import { RoleplaySession } from '@/api/entities';
 import { supabase } from '@/lib/supabase';
@@ -24,6 +24,13 @@ export default function AIRoleplayAnalysisDetailed() {
   const [analysisResults, setAnalysisResults] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisHistory, setAnalysisHistory] = useState([]);
+  const [historyFilters, setHistoryFilters] = useState({
+    sessionType: 'all',
+    framework: 'all',
+    dateRange: 'all',
+    searchTerm: ''
+  });
 
   useEffect(() => {
     loadData();
@@ -32,9 +39,10 @@ export default function AIRoleplayAnalysisDetailed() {
   const loadData = async () => {
     try {
       setIsLoading(true);
-      const [sessionsData, frameworksData] = await Promise.all([
+      const [sessionsData, frameworksData, historyData] = await Promise.all([
         RoleplaySession.list('-created_at'),
-        supabase.from('analysis_frameworks').select('*').eq('is_active', true)
+        supabase.from('analysis_frameworks').select('*').eq('is_active', true),
+        loadAnalysisHistory()
       ]);
 
       setSessions(sessionsData || []);
@@ -47,6 +55,37 @@ export default function AIRoleplayAnalysisDetailed() {
       console.error('Error loading data:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadAnalysisHistory = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('session_analysis_results')
+        .select(`
+          *,
+          roleplay_sessions (
+            id,
+            scenario_name,
+            bot_name,
+            session_type,
+            created_at,
+            duration
+          ),
+          analysis_frameworks (
+            id,
+            framework_name
+          )
+        `)
+        .order('analyzed_at', { ascending: false });
+
+      if (error) throw error;
+
+      setAnalysisHistory(data || []);
+      return data;
+    } catch (error) {
+      console.error('Error loading analysis history:', error);
+      return [];
     }
   };
 
@@ -256,6 +295,50 @@ export default function AIRoleplayAnalysisDetailed() {
     return 'bg-blue-100 text-blue-800';
   };
 
+  const loadAnalysisFromHistory = async (historyItem) => {
+    setSelectedSession(sessions.find(s => s.id === historyItem.session_id));
+    setSelectedFramework(historyItem.framework_id);
+    setAnalysisResults(historyItem);
+  };
+
+  const filteredHistory = analysisHistory.filter(item => {
+    if (historyFilters.sessionType !== 'all' && item.roleplay_sessions?.session_type !== historyFilters.sessionType) {
+      return false;
+    }
+    if (historyFilters.framework !== 'all' && item.framework_id !== historyFilters.framework) {
+      return false;
+    }
+    if (historyFilters.searchTerm) {
+      const searchLower = historyFilters.searchTerm.toLowerCase();
+      const matchesScenario = item.roleplay_sessions?.scenario_name?.toLowerCase().includes(searchLower);
+      const matchesBot = item.roleplay_sessions?.bot_name?.toLowerCase().includes(searchLower);
+      if (!matchesScenario && !matchesBot) return false;
+    }
+    return true;
+  });
+
+  const getSessionTypeIcon = (type) => {
+    if (type === 'human_roleplay') return '👥';
+    if (type === 'multi_party') return '🎭';
+    return '🤖';
+  };
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInHours = (now - date) / (1000 * 60 * 60);
+
+    if (diffInHours < 24) {
+      return 'Today';
+    } else if (diffInHours < 48) {
+      return 'Yesterday';
+    } else if (diffInHours < 168) {
+      return `${Math.floor(diffInHours / 24)} days ago`;
+    } else {
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -418,6 +501,152 @@ export default function AIRoleplayAnalysisDetailed() {
                 </CardContent>
               </Card>
             </div>
+
+            <Card className="mb-6">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <History className="h-5 w-5 text-blue-600" />
+                      Call History
+                    </CardTitle>
+                    <CardDescription>View all previously analyzed sessions</CardDescription>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={loadAnalysisHistory}>
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Refresh History
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                      <Input
+                        placeholder="Search sessions..."
+                        value={historyFilters.searchTerm}
+                        onChange={(e) => setHistoryFilters({ ...historyFilters, searchTerm: e.target.value })}
+                        className="pl-9"
+                      />
+                    </div>
+
+                    <Select
+                      value={historyFilters.sessionType}
+                      onValueChange={(value) => setHistoryFilters({ ...historyFilters, sessionType: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Session Type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Types</SelectItem>
+                        <SelectItem value="ai_roleplay">AI Roleplay</SelectItem>
+                        <SelectItem value="human_roleplay">Human-to-Human</SelectItem>
+                        <SelectItem value="multi_party">Multi-Party</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    <Select
+                      value={historyFilters.framework}
+                      onValueChange={(value) => setHistoryFilters({ ...historyFilters, framework: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Framework" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Frameworks</SelectItem>
+                        {frameworks.map((framework) => (
+                          <SelectItem key={framework.id} value={framework.id}>
+                            {framework.framework_name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    <Button
+                      variant="outline"
+                      onClick={() => setHistoryFilters({
+                        sessionType: 'all',
+                        framework: 'all',
+                        dateRange: 'all',
+                        searchTerm: ''
+                      })}
+                    >
+                      <Filter className="h-4 w-4 mr-2" />
+                      Clear Filters
+                    </Button>
+                  </div>
+
+                  <Separator />
+
+                  <ScrollArea className="h-96">
+                    {filteredHistory.length > 0 ? (
+                      <div className="space-y-2">
+                        {filteredHistory.map((historyItem) => (
+                          <div
+                            key={historyItem.id}
+                            className="border rounded-lg p-4 hover:bg-slate-50 transition-colors cursor-pointer"
+                            onClick={() => loadAnalysisFromHistory(historyItem)}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-3 mb-2">
+                                  <span className="text-2xl">
+                                    {getSessionTypeIcon(historyItem.roleplay_sessions?.session_type)}
+                                  </span>
+                                  <div>
+                                    <h4 className="font-semibold text-slate-900">
+                                      {historyItem.roleplay_sessions?.scenario_name || historyItem.roleplay_sessions?.bot_name || 'Unknown Session'}
+                                    </h4>
+                                    <div className="flex items-center gap-3 text-sm text-slate-600">
+                                      <span className="flex items-center gap-1">
+                                        <Calendar className="h-3 w-3" />
+                                        {formatDate(historyItem.analyzed_at)}
+                                      </span>
+                                      <span className="flex items-center gap-1">
+                                        <Clock className="h-3 w-3" />
+                                        {Math.floor((historyItem.roleplay_sessions?.duration || 0) / 60)}m
+                                      </span>
+                                      <Badge variant="outline" className="text-xs">
+                                        {historyItem.analysis_frameworks?.framework_name}
+                                      </Badge>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-4">
+                                <div className="text-right">
+                                  <div className={`text-2xl font-bold ${getScoreColor(historyItem.overall_score || 0)}`}>
+                                    {historyItem.overall_score || 0}%
+                                  </div>
+                                  <div className="text-xs text-slate-500">Score</div>
+                                </div>
+                                <Button size="sm" variant="outline">
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  View
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-12">
+                        <History className="h-12 w-12 text-slate-300 mx-auto mb-4" />
+                        <h3 className="text-lg font-medium text-slate-600 mb-2">
+                          No Analysis History Found
+                        </h3>
+                        <p className="text-slate-500">
+                          {historyFilters.searchTerm || historyFilters.sessionType !== 'all' || historyFilters.framework !== 'all'
+                            ? 'Try adjusting your filters'
+                            : 'Analyze a session to see your history here'}
+                        </p>
+                      </div>
+                    )}
+                  </ScrollArea>
+                </div>
+              </CardContent>
+            </Card>
 
             <Tabs defaultValue="overview" className="space-y-4">
               <TabsList className="grid w-full grid-cols-3">
