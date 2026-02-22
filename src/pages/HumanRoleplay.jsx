@@ -17,6 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { createMeetingLinks } from '@/api/functions';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 export default function HumanRoleplay() {
     const [lead, setLead] = useState(null);
@@ -35,6 +36,8 @@ export default function HumanRoleplay() {
     const [inviteList, setInviteList] = useState([]);
     const [newInviteeEmail, setNewInviteeEmail] = useState('');
     const [scheduleOption, setScheduleOption] = useState('now');
+    const [showAddColleagueDialog, setShowAddColleagueDialog] = useState(false);
+    const [newColleague, setNewColleague] = useState({ email: '', name: '' });
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -120,44 +123,61 @@ export default function HumanRoleplay() {
     }, []);
 
     const handleCreateMeeting = async () => {
+        if (!sessionData.prospect_player_email) {
+            toast.error('Please select someone to play the prospect role first');
+            return;
+        }
+
         if (meetingPlatform === 'our_platform') {
-            // Create a public session URL that doesn't require login
             const publicSessionUrl = `${window.location.origin}${createPageUrl('PublicRoleplaySession')}?sessionId=new`;
-            
+
             setMeetingDetails({
                 platform: 'our_platform',
                 meetingLink: publicSessionUrl
             });
-            
+
+            const prospectUser = users.find(u => u.email === sessionData.prospect_player_email);
             const initialInvites = [
-                { email: currentUser.email, name: currentUser.full_name, role: 'Sales Rep', status: 'accepted' },
-                { email: sessionData.prospect_player_email, name: users.find(u => u.email === sessionData.prospect_player_email)?.full_name || sessionData.prospect_player_email, role: 'Prospect Player', status: 'pending' }
+                { email: currentUser.email, name: currentUser.full_name || currentUser.email, role: 'Sales Rep', status: 'accepted' },
+                { email: sessionData.prospect_player_email, name: prospectUser?.full_name || sessionData.prospect_player_email, role: 'Prospect Player', status: 'pending' }
             ];
             setInviteList(initialInvites);
+            toast.success('Session link created! You can now add more participants or start the session.');
             return;
         }
 
         setIsCreating(true);
         try {
-            const response = await createMeetingLinks({
-                sessionId: 'temp-session-id',
+            let meetingLink = '';
+
+            switch(meetingPlatform) {
+                case 'meet':
+                    meetingLink = 'https://meet.google.com/new';
+                    break;
+                case 'zoom':
+                    meetingLink = 'https://zoom.us/start/webmeeting';
+                    break;
+                case 'teams':
+                    meetingLink = 'https://teams.microsoft.com/';
+                    break;
+                default:
+                    meetingLink = '#';
+            }
+
+            const prospectUser = users.find(u => u.email === sessionData.prospect_player_email);
+
+            setMeetingDetails({
                 platform: meetingPlatform,
-                sessionDetails: {
-                    title: `Roleplay Session - ${lead.contact_name}`,
-                    participants: [currentUser.email, sessionData.prospect_player_email],
-                    duration: 30
-                }
+                meetingLink: meetingLink
             });
 
-            setMeetingDetails(response);
-            
             const initialInvites = [
-                { email: currentUser.email, name: currentUser.full_name, role: 'Sales Rep', status: 'accepted' },
-                { email: sessionData.prospect_player_email, name: users.find(u => u.email === sessionData.prospect_player_email)?.full_name || sessionData.prospect_player_email, role: 'Prospect Player', status: 'pending' }
+                { email: currentUser.email, name: currentUser.full_name || currentUser.email, role: 'Sales Rep', status: 'accepted' },
+                { email: sessionData.prospect_player_email, name: prospectUser?.full_name || sessionData.prospect_player_email, role: 'Prospect Player', status: 'pending' }
             ];
             setInviteList(initialInvites);
-            
-            toast.success(`${meetingPlatform.charAt(0).toUpperCase() + meetingPlatform.slice(1)} meeting created successfully!`);
+
+            toast.success(`Meeting setup complete! Open ${meetingPlatform} and share the link with participants.`);
         } catch (error) {
             console.error('Error creating meeting:', error);
             toast.error(`Failed to create meeting: ${error.message || 'Unknown error'}`);
@@ -188,6 +208,26 @@ export default function HumanRoleplay() {
         setInviteList(prev => [...prev, newInvite]);
         setNewInviteeEmail('');
         toast.success('New participant added');
+    };
+
+    const handleAddNewColleague = () => {
+        if (!newColleague.email || !newColleague.name) {
+            toast.error('Please fill in all fields');
+            return;
+        }
+
+        const colleagueUser = {
+            id: `temp-${Date.now()}`,
+            email: newColleague.email,
+            full_name: newColleague.name,
+            role: 'sales_agent'
+        };
+
+        setUsers(prev => [...prev, colleagueUser]);
+        setSessionData({...sessionData, prospect_player_email: newColleague.email});
+        setNewColleague({ email: '', name: '' });
+        setShowAddColleagueDialog(false);
+        toast.success('Colleague added successfully');
     };
 
     const handleCreateSession = async () => {
@@ -346,23 +386,75 @@ export default function HumanRoleplay() {
                             <CardContent className="space-y-6">
                                 <div>
                                     <label className="block text-sm font-medium text-slate-700 mb-2">Who will play the prospect?</label>
-                                    <Select 
-                                        value={sessionData.prospect_player_email} 
-                                        onValueChange={(value) => setSessionData({...sessionData, prospect_player_email: value})}
-                                    >
-                                        <SelectTrigger><SelectValue placeholder="Select a colleague or manager..." /></SelectTrigger>
-                                        <SelectContent>
-                                            {users.map(user => (
-                                                <SelectItem key={user.id} value={user.email}>
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="w-6 h-6 bg-slate-200 rounded-full flex items-center justify-center text-xs font-medium">{(user.full_name || user.email).charAt(0).toUpperCase()}</div>
-                                                        <span>{user.full_name || user.email}</span>
-                                                        {user.role?.includes('admin') && <Badge variant="outline" className="text-xs">Manager</Badge>}
+                                    <div className="flex gap-2">
+                                        <Select
+                                            value={sessionData.prospect_player_email}
+                                            onValueChange={(value) => {
+                                                if (value === 'add_new') {
+                                                    setShowAddColleagueDialog(true);
+                                                } else {
+                                                    setSessionData({...sessionData, prospect_player_email: value});
+                                                }
+                                            }}
+                                            className="flex-1"
+                                        >
+                                            <SelectTrigger><SelectValue placeholder="Select a colleague or manager..." /></SelectTrigger>
+                                            <SelectContent>
+                                                {users.map(user => (
+                                                    <SelectItem key={user.id} value={user.email}>
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="w-6 h-6 bg-slate-200 rounded-full flex items-center justify-center text-xs font-medium">{(user.full_name || user.email).charAt(0).toUpperCase()}</div>
+                                                            <span>{user.full_name || user.email}</span>
+                                                            {user.role?.includes('admin') && <Badge variant="outline" className="text-xs">Manager</Badge>}
+                                                        </div>
+                                                    </SelectItem>
+                                                ))}
+                                                <SelectItem value="add_new">
+                                                    <div className="flex items-center gap-2 text-blue-600 font-medium">
+                                                        <Plus className="w-4 h-4" />
+                                                        <span>Add New Colleague</span>
                                                     </div>
                                                 </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    <Dialog open={showAddColleagueDialog} onOpenChange={setShowAddColleagueDialog}>
+                                        <DialogContent>
+                                            <DialogHeader>
+                                                <DialogTitle>Add New Colleague</DialogTitle>
+                                            </DialogHeader>
+                                            <div className="space-y-4 py-4">
+                                                <div>
+                                                    <Label htmlFor="colleague-name">Full Name</Label>
+                                                    <Input
+                                                        id="colleague-name"
+                                                        placeholder="John Doe"
+                                                        value={newColleague.name}
+                                                        onChange={(e) => setNewColleague({...newColleague, name: e.target.value})}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Label htmlFor="colleague-email">Email Address</Label>
+                                                    <Input
+                                                        id="colleague-email"
+                                                        type="email"
+                                                        placeholder="john@company.com"
+                                                        value={newColleague.email}
+                                                        onChange={(e) => setNewColleague({...newColleague, email: e.target.value})}
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="flex gap-2 justify-end">
+                                                <Button variant="outline" onClick={() => setShowAddColleagueDialog(false)}>
+                                                    Cancel
+                                                </Button>
+                                                <Button onClick={handleAddNewColleague}>
+                                                    Add Colleague
+                                                </Button>
+                                            </div>
+                                        </DialogContent>
+                                    </Dialog>
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
