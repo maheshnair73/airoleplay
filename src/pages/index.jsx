@@ -590,7 +590,8 @@ function PagesContent() {
                 <Route path="/HumanRoleplay" element={<HumanRoleplay />} />
                 
                 <Route path="/RoleplaySession" element={<RoleplaySession />} />
-                
+                <Route path="/roleplaysession" element={<RoleplaySession />} />
+
                 <Route path="/RoleplaySessionPage" element={<RoleplaySessionPage />} />
                 
                 <Route path="/CallPreparation" element={<CallPreparation />} />
