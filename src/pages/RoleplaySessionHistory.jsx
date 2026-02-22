@@ -30,13 +30,10 @@ export default function RoleplaySessionHistory() {
 
     const loadData = async () => {
         try {
-            console.log('Loading roleplay sessions...');
             const [sessionData, userData] = await Promise.all([
                 RoleplaySession.list('-created_at'),
                 User.me()
             ]);
-            console.log('Loaded sessions:', sessionData?.length || 0, 'sessions');
-            console.log('Current user:', userData?.email);
             setSessions(sessionData);
             setCurrentUser(userData);
         } catch (error) {
@@ -48,7 +45,6 @@ export default function RoleplaySessionHistory() {
 
     const filterSessions = useCallback(() => {
         let filtered = sessions;
-        console.log('Filtering sessions. Total:', sessions?.length, 'FilterBy:', filterBy);
 
         if (searchTerm) {
             filtered = filtered.filter(session =>
@@ -75,7 +71,6 @@ export default function RoleplaySessionHistory() {
             filtered = filtered.filter(session => session.session_type === 'human_human');
         }
 
-        console.log('After filtering:', filtered?.length, 'sessions');
         setFilteredSessions(filtered);
     }, [sessions, searchTerm, filterBy, currentUser?.email]);
 
@@ -231,6 +226,69 @@ export default function RoleplaySessionHistory() {
                     </Button>
                 </div>
 
+                {/* Roleplay Options */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => window.location.href = createPageUrl('AIRoleplay')}>
+                        <CardContent className="p-6">
+                            <div className="flex items-center gap-4 mb-4">
+                                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                                    <Mic className="w-6 h-6 text-blue-600" />
+                                </div>
+                                <div>
+                                    <h3 className="font-semibold text-lg text-slate-900">Single AI Roleplay</h3>
+                                    <p className="text-sm text-slate-500">Practice with AI coach</p>
+                                </div>
+                            </div>
+                            <p className="text-sm text-slate-600 mb-4">
+                                One-on-one practice sessions with an AI sales coach. Perfect for honing your pitch, handling objections, and mastering discovery calls.
+                            </p>
+                            <Button className="w-full" variant="outline">
+                                Start Practice <ChevronRight className="w-4 h-4 ml-2" />
+                            </Button>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => window.location.href = createPageUrl('MultiPartyRoleplay')}>
+                        <CardContent className="p-6">
+                            <div className="flex items-center gap-4 mb-4">
+                                <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                                    <Users className="w-6 h-6 text-purple-600" />
+                                </div>
+                                <div>
+                                    <h3 className="font-semibold text-lg text-slate-900">Multi-Party AI</h3>
+                                    <p className="text-sm text-slate-500">Complex deal scenarios</p>
+                                </div>
+                            </div>
+                            <p className="text-sm text-slate-600 mb-4">
+                                Practice with multiple AI stakeholders in complex B2B scenarios. Navigate executive committees, technical buyers, and decision-makers.
+                            </p>
+                            <Button className="w-full" variant="outline">
+                                Start Scenario <ChevronRight className="w-4 h-4 ml-2" />
+                            </Button>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => window.location.href = createPageUrl('HumanRoleplay')}>
+                        <CardContent className="p-6">
+                            <div className="flex items-center gap-4 mb-4">
+                                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                                    <Video className="w-6 h-6 text-green-600" />
+                                </div>
+                                <div>
+                                    <h3 className="font-semibold text-lg text-slate-900">Human-to-Human</h3>
+                                    <p className="text-sm text-slate-500">Peer practice sessions</p>
+                                </div>
+                            </div>
+                            <p className="text-sm text-slate-600 mb-4">
+                                Practice with team members via video call. Get real-time feedback from peers and managers while AI analyzes your conversation.
+                            </p>
+                            <Button className="w-full" variant="outline">
+                                Start Session <ChevronRight className="w-4 h-4 ml-2" />
+                            </Button>
+                        </CardContent>
+                    </Card>
+                </div>
+
                 {/* Stats Overview */}
                 {sessions.length > 0 && (
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
@@ -336,11 +394,8 @@ export default function RoleplaySessionHistory() {
                                     <p className="text-slate-500 mb-4">
                                         {searchTerm || filterBy !== 'all'
                                             ? 'Try adjusting your filters'
-                                            : 'Start your first roleplay session to see history here'
+                                            : 'Use one of the three options above to start your first roleplay session'
                                         }
-                                    </p>
-                                    <p className="text-xs text-slate-400 mb-2">
-                                        Debug: Total={sessions.length}, Filtered={filteredSessions.length}, Filter={filterBy}, User={currentUser?.email || 'none'}
                                     </p>
                                     <Button asChild>
                                         <Link to={createPageUrl('HumanRoleplay')}>Start First Session</Link>
