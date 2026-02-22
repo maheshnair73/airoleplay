@@ -114,11 +114,26 @@ export const User = {
   async me() {
     const { data: { user }, error } = await supabase.auth.getUser();
     if (error) throw error;
+
+    if (user) {
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      return {
+        ...user,
+        ...profile,
+        role: profile?.role || 'sales_agent'
+      };
+    }
+
     return user;
   },
 
   async list() {
-    const { data, error } = await supabase.from('users').select('*');
+    const { data, error } = await supabase.from('user_profiles').select('*');
     if (error) throw error;
     return data || [];
   },
@@ -138,5 +153,9 @@ export const User = {
   async signOut() {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
+  },
+
+  async logout() {
+    return this.signOut();
   }
 };

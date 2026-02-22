@@ -55,10 +55,10 @@ const PrivateLayout = ({ children, currentPageName }) => {
             try {
                 const currentUser = await User.me();
                 setUser(currentUser);
-                setDemoRole(currentUser.role);
+                setDemoRole(currentUser.role || 'sales_agent');
             } catch (e) {
                 setUser(null);
-                setDemoRole('user');
+                setDemoRole('sales_agent');
             }
         };
         fetchUser();
@@ -92,10 +92,10 @@ const PrivateLayout = ({ children, currentPageName }) => {
     };
 
     const resetToDefaultRole = () => {
-        setDemoRole(user?.role || 'user');
+        setDemoRole(user?.role || 'sales_agent');
     };
 
-    const effectiveRole = demoRole || user?.role || 'user';
+    const effectiveRole = demoRole || user?.role || 'sales_agent';
 
     const toggleSubmenu = (menuPage) => {
         setExpandedMenus(prev => {
@@ -171,23 +171,30 @@ const PrivateLayout = ({ children, currentPageName }) => {
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)]">
-                            <DropdownMenuItem onClick={() => handleRoleSwitch('user')}>
-                                Switch to User
+                            <DropdownMenuItem onClick={() => handleRoleSwitch('sales_agent')}>
+                                Switch to Sales Agent
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleRoleSwitch('admin')}>
-                                Switch to Admin
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleRoleSwitch('saas_admin')}>
-                                Switch to SaaS Admin
+                            <DropdownMenuItem onClick={() => handleRoleSwitch('company_admin')}>
+                                Switch to Company Admin
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleRoleSwitch('super_admin')}>
                                 Switch to Super Admin
                             </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => handleRoleSwitch('user')}>
+                                Legacy: User
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleRoleSwitch('admin')}>
+                                Legacy: Admin
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleRoleSwitch('saas_admin')}>
+                                Legacy: SaaS Admin
+                            </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
-                    <Button 
-                        variant="ghost" 
-                        size="sm" 
+                    <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={resetToDefaultRole}
                         className="text-xs text-slate-400 hover:text-slate-200 px-2 py-1"
                     >
@@ -206,7 +213,7 @@ const PrivateLayout = ({ children, currentPageName }) => {
                     </div>
                 ))}
                 
-                {(effectiveRole === 'admin' || effectiveRole === 'saas_admin') && (
+                {(effectiveRole === 'admin' || effectiveRole === 'saas_admin' || effectiveRole === 'company_admin') && (
                     <div>
                         <h3 className="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">EFFYAI CALLS</h3>
                         <nav className="space-y-1">
@@ -214,8 +221,8 @@ const PrivateLayout = ({ children, currentPageName }) => {
                         </nav>
                     </div>
                 )}
-                
-                {(effectiveRole === 'admin' || effectiveRole === 'saas_admin') && (
+
+                {(effectiveRole === 'admin' || effectiveRole === 'saas_admin' || effectiveRole === 'company_admin') && (
                      <div>
                         <h3 className="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Administration</h3>
                         <nav className="space-y-1">
