@@ -117,6 +117,9 @@ export const Meeting = createEntity('meetings');
 export const MultiPartyScenario = createEntity('multi_party_scenarios');
 export const MultiPartySession = createEntity('multi_party_sessions');
 export const Deal = createEntity('deals');
+export const AnalysisFramework = createEntity('analysis_frameworks');
+export const AnalysisConfiguration = createEntity('analysis_configurations');
+export const SessionAnalysisResult = createEntity('session_analysis_results');
 
 export const User = {
   async me() {

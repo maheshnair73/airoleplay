@@ -82,6 +82,8 @@ import CallInsights from "./CallInsights";
 
 import AIRoleplayAnalysis from "./AIRoleplayAnalysis";
 
+import AIRoleplayAnalysisDetailed from "./AIRoleplayAnalysisDetailed";
+
 import DocumentPublicView from "./DocumentPublicView";
 
 import ContentLibrary from "./ContentLibrary";
@@ -299,7 +301,9 @@ const PAGES = {
     CallInsights: CallInsights,
     
     AIRoleplayAnalysis: AIRoleplayAnalysis,
-    
+
+    AIRoleplayAnalysisDetailed: AIRoleplayAnalysisDetailed,
+
     DocumentPublicView: DocumentPublicView,
     
     ContentLibrary: ContentLibrary,
@@ -540,7 +544,9 @@ function PagesContent() {
                 <Route path="/CallInsights" element={<CallInsights />} />
                 
                 <Route path="/AIRoleplayAnalysis" element={<AIRoleplayAnalysis />} />
-                
+
+                <Route path="/AIRoleplayAnalysisDetailed" element={<AIRoleplayAnalysisDetailed />} />
+
                 <Route path="/DocumentPublicView" element={<DocumentPublicView />} />
                 
                 <Route path="/ContentLibrary" element={<ContentLibrary />} />
