@@ -222,26 +222,50 @@ export default function AIRoleplayAnalysis() {
 
     const loadSession = useCallback(async () => {
         setIsLoading(true);
-        // First, check if this is a known demo session ID
-        if (sessionId && /^[1-9]$|^1[0-9]$|^20$/.test(sessionId)) {
-            // It's a demo session, so we create mock data directly without an API call.
-            setSession(createMockSession(sessionId));
-            setSessionNotFound(false);
-            setIsLoading(false);
-        } else if (sessionId) {
-            // It's not a known demo ID, so attempt to fetch it from the database.
+        if (sessionId) {
             try {
                 const sessionData = await RoleplaySession.get(sessionId);
-                setSession(sessionData);
+
+                // Transform database session to match the expected format
+                const transformedSession = {
+                    id: sessionData.id,
+                    bot_name: sessionData.transcript?.bot_name || 'AI Bot',
+                    bot_personality: sessionData.transcript?.bot_personality || 'AI Assistant',
+                    scenario: sessionData.session_name || sessionData.scenario_type,
+                    created_date: sessionData.created_at,
+                    session_duration: sessionData.duration,
+                    call_type: sessionData.scenario_type,
+                    transcript: sessionData.transcript?.exchanges || [],
+                    analysis_results: {
+                        overall_score: sessionData.score || 0,
+                        summary: sessionData.feedback || 'Session completed successfully.',
+                        objections: [],
+                        questions_asked: [],
+                        what_went_well: [],
+                        areas_for_improvement: [],
+                        scorecard: []
+                    },
+                    bot_configuration: JSON.stringify({
+                        name: sessionData.transcript?.bot_name || 'AI Bot',
+                        personality: sessionData.transcript?.bot_personality || 'Professional'
+                    })
+                };
+
+                setSession(transformedSession);
                 setSessionNotFound(false);
-                setIsLoading(false); // Set to false on success
+                setIsLoading(false);
             } catch (error) {
                 console.error('Error loading session:', error);
-                setSessionNotFound(true);
-                setIsLoading(false); // Set to false on error
+                // If database fetch fails, check if it's a demo session ID
+                if (/^[1-9]$|^1[0-9]$|^20$/.test(sessionId)) {
+                    setSession(createMockSession(sessionId));
+                    setSessionNotFound(false);
+                } else {
+                    setSessionNotFound(true);
+                }
+                setIsLoading(false);
             }
         } else {
-            // No session ID was provided in the URL.
             setSessionNotFound(true);
             setIsLoading(false);
         }

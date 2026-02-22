@@ -48,9 +48,11 @@ export default function RoleplaySessionHistory() {
 
         if (searchTerm) {
             filtered = filtered.filter(session =>
-                session.lead_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                session.session_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                session.scenario_type?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 session.initiator_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                session.prospect_player_email?.toLowerCase().includes(searchTerm.toLowerCase())
+                session.prospect_player_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                session.transcript?.bot_name?.toLowerCase().includes(searchTerm.toLowerCase())
             );
         }
 
@@ -60,9 +62,9 @@ export default function RoleplaySessionHistory() {
                 session.prospect_player_email === currentUser?.email
             );
         } else if (filterBy === 'completed') {
-            filtered = filtered.filter(session => session.session_status === 'completed');
+            filtered = filtered.filter(session => session.session_status === 'completed' || session.status === 'completed');
         } else if (filterBy === 'active') {
-            filtered = filtered.filter(session => session.session_status === 'active');
+            filtered = filtered.filter(session => session.session_status === 'active' || session.status === 'active');
         } else if (filterBy === 'ai') {
             filtered = filtered.filter(session => session.session_type === 'human_ai');
         } else if (filterBy === 'human') {
@@ -96,75 +98,105 @@ export default function RoleplaySessionHistory() {
         return `${mins}:${secs.toString().padStart(2, '0')}`;
     };
 
-    const SessionCard = ({ session }) => (
-        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-            <CardContent className="p-6">
-                <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                        <h3 className="font-semibold text-lg text-slate-900 mb-1">
-                            Roleplay Session - {session.lead_id}
-                        </h3>
-                        <div className="flex items-center gap-4 text-xs text-slate-500 mb-2">
-                            <span className="flex items-center gap-1">
-                                <Calendar className="w-3 h-3" />
-                                {format(new Date(session.created_at), 'MMM d, yyyy')}
-                            </span>
-                            {session.session_duration && (
+    const SessionCard = ({ session }) => {
+        const botName = session.transcript?.bot_name || 'AI Bot';
+        const botPersonality = session.transcript?.bot_personality || '';
+        const recordingUrl = session.transcript?.recording_url;
+        const sessionDuration = session.duration;
+
+        return (
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                <CardContent className="p-6">
+                    <div className="flex items-start justify-between mb-4">
+                        <div className="flex-1">
+                            <h3 className="font-semibold text-lg text-slate-900 mb-1">
+                                {session.session_name || `Roleplay Session - ${session.scenario_type}`}
+                            </h3>
+                            <div className="flex items-center gap-4 text-xs text-slate-500 mb-2">
                                 <span className="flex items-center gap-1">
-                                    <Clock className="w-3 h-3" />
-                                    {formatDuration(session.session_duration)}
+                                    <Calendar className="w-3 h-3" />
+                                    {format(new Date(session.created_at), 'MMM d, yyyy')}
                                 </span>
+                                {sessionDuration && (
+                                    <span className="flex items-center gap-1">
+                                        <Clock className="w-3 h-3" />
+                                        {formatDuration(sessionDuration)}
+                                    </span>
+                                )}
+                                {session.score && (
+                                    <span className="flex items-center gap-1">
+                                        <Star className="w-3 h-3 text-yellow-500" />
+                                        {session.score}%
+                                    </span>
+                                )}
+                            </div>
+                            <div className="flex items-center gap-2 text-sm text-slate-600">
+                                <Users className="w-4 h-4" />
+                                <span>{session.initiator_email}</span>
+                                <span>vs</span>
+                                <span>
+                                    {session.session_type === 'human_ai'
+                                        ? `${botName}${botPersonality ? ` (${botPersonality})` : ''}`
+                                        : (session.prospect_player_email || 'Participant')}
+                                </span>
+                            </div>
+                        </div>
+                        <div className="flex flex-col items-end gap-2">
+                            <Badge className={getStatusColor(session.session_status || session.status)}>
+                                {(session.session_status || session.status).replace('_', ' ')}
+                            </Badge>
+                            {session.session_status === 'completed' || session.status === 'completed' ? (
+                                <Button size="sm" asChild>
+                                    <Link to={createPageUrl(`AIRoleplayAnalysis?id=${session.id}`)}>
+                                        <BarChart3 className="w-4 h-4 mr-1" />
+                                        View Analysis
+                                    </Link>
+                                </Button>
+                            ) : (
+                                <Button size="sm" variant="outline" asChild>
+                                    <Link to={createPageUrl(`RoleplaySession?sessionId=${session.id}`)}>
+                                        <Eye className="w-4 h-4 mr-1" />
+                                        View
+                                    </Link>
+                                </Button>
                             )}
                         </div>
-                        <div className="flex items-center gap-2 text-sm text-slate-600">
-                            <Users className="w-4 h-4" />
-                            <span>{session.initiator_email}</span>
-                            <span>vs</span>
-                            <span>
-                                {session.session_type === 'human_ai'
-                                    ? (session.bot_name || 'AI Bot')
-                                    : (session.prospect_player_email || 'Participant')}
-                            </span>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-4 border-t">
+                        <div className="flex gap-2 flex-wrap">
+                            <Badge variant="outline" className="text-xs">
+                                {session.session_type === 'human_ai' ? 'AI Roleplay' : 'Human Roleplay'}
+                            </Badge>
+                            <Badge variant="outline" className="text-xs capitalize">
+                                {session.scenario_type?.replace('_', ' ')}
+                            </Badge>
+                            {session.difficulty && (
+                                <Badge variant="outline" className="text-xs capitalize">
+                                    {session.difficulty}
+                                </Badge>
+                            )}
+                            {recordingUrl && (
+                                <Badge variant="outline" className="text-xs">
+                                    <Video className="w-3 h-3 mr-1" />
+                                    Recorded
+                                </Badge>
+                            )}
+                            {session.feedback && (
+                                <Badge variant="outline" className="text-xs">
+                                    <MessageSquare className="w-3 h-3 mr-1" />
+                                    Feedback Available
+                                </Badge>
+                            )}
                         </div>
+                        <span className="text-xs text-slate-400">
+                            {formatDistanceToNow(new Date(session.created_at), { addSuffix: true })}
+                        </span>
                     </div>
-                    <div className="flex flex-col items-end gap-2">
-                        <Badge className={getStatusColor(session.session_status)}>
-                            {session.session_status.replace('_', ' ')}
-                        </Badge>
-                        <Button size="sm" variant="outline" asChild>
-                            <Link to={createPageUrl(`RoleplaySession?sessionId=${session.id}`)}>
-                                <Eye className="w-4 h-4 mr-1" />
-                                View
-                            </Link>
-                        </Button>
-                    </div>
-                </div>
-                
-                <div className="flex items-center justify-between pt-4 border-t">
-                    <div className="flex gap-2">
-                        <Badge variant="outline" className="text-xs">
-                            {session.session_type}
-                        </Badge>
-                        {session.recording_url && (
-                            <Badge variant="outline" className="text-xs">
-                                <Video className="w-3 h-3 mr-1" />
-                                Recorded
-                            </Badge>
-                        )}
-                        {session.feedback && (
-                            <Badge variant="outline" className="text-xs">
-                                <MessageSquare className="w-3 h-3 mr-1" />
-                                Feedback Available
-                            </Badge>
-                        )}
-                    </div>
-                    <span className="text-xs text-slate-400">
-                        {formatDistanceToNow(new Date(session.created_at), { addSuffix: true })}
-                    </span>
-                </div>
-            </CardContent>
-        </Card>
-    );
+                </CardContent>
+            </Card>
+        );
+    };
 
     if (isLoading) {
         return (
@@ -219,7 +251,7 @@ export default function RoleplaySessionHistory() {
                                     <div>
                                         <p className="text-sm text-slate-500">Completed</p>
                                         <p className="text-2xl font-bold text-slate-900">
-                                            {sessions.filter(s => s.session_status === 'completed').length}
+                                            {sessions.filter(s => s.session_status === 'completed' || s.status === 'completed').length}
                                         </p>
                                     </div>
                                 </div>
@@ -228,13 +260,13 @@ export default function RoleplaySessionHistory() {
                         <Card>
                             <CardContent className="p-4">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                                        <Clock className="w-5 h-5 text-purple-600" />
+                                    <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+                                        <Clock className="w-5 h-5 text-amber-600" />
                                     </div>
                                     <div>
                                         <p className="text-sm text-slate-500">Total Time</p>
                                         <p className="text-2xl font-bold text-slate-900">
-                                            {Math.floor(sessions.reduce((sum, s) => sum + (s.session_duration || 0), 0) / 60)}m
+                                            {Math.floor(sessions.reduce((sum, s) => sum + (s.duration || 0), 0) / 60)}m
                                         </p>
                                     </div>
                                 </div>
@@ -249,8 +281,8 @@ export default function RoleplaySessionHistory() {
                                     <div>
                                         <p className="text-sm text-slate-500">Avg Duration</p>
                                         <p className="text-2xl font-bold text-slate-900">
-                                            {sessions.filter(s => s.session_duration).length > 0
-                                                ? Math.floor(sessions.reduce((sum, s) => sum + (s.session_duration || 0), 0) / sessions.filter(s => s.session_duration).length / 60)
+                                            {sessions.filter(s => s.duration).length > 0
+                                                ? Math.floor(sessions.reduce((sum, s) => sum + (s.duration || 0), 0) / sessions.filter(s => s.duration).length / 60)
                                                 : 0}m
                                         </p>
                                     </div>
