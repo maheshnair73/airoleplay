@@ -48,6 +48,7 @@ export default function RoleplaySessionHistory() {
 
     const filterSessions = useCallback(() => {
         let filtered = sessions;
+        console.log('Filtering sessions. Total:', sessions?.length, 'FilterBy:', filterBy);
 
         if (searchTerm) {
             filtered = filtered.filter(session =>
@@ -74,6 +75,7 @@ export default function RoleplaySessionHistory() {
             filtered = filtered.filter(session => session.session_type === 'human_human');
         }
 
+        console.log('After filtering:', filtered?.length, 'sessions');
         setFilteredSessions(filtered);
     }, [sessions, searchTerm, filterBy, currentUser?.email]);
 
@@ -332,10 +334,13 @@ export default function RoleplaySessionHistory() {
                                     <Users className="w-12 h-12 text-slate-300 mx-auto mb-4" />
                                     <h3 className="text-lg font-semibold text-slate-700 mb-2">No sessions found</h3>
                                     <p className="text-slate-500 mb-4">
-                                        {searchTerm || filterBy !== 'all' 
-                                            ? 'Try adjusting your filters' 
+                                        {searchTerm || filterBy !== 'all'
+                                            ? 'Try adjusting your filters'
                                             : 'Start your first roleplay session to see history here'
                                         }
+                                    </p>
+                                    <p className="text-xs text-slate-400 mb-2">
+                                        Debug: Total={sessions.length}, Filtered={filteredSessions.length}, Filter={filterBy}, User={currentUser?.email || 'none'}
                                     </p>
                                     <Button asChild>
                                         <Link to={createPageUrl('HumanRoleplay')}>Start First Session</Link>
