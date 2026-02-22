@@ -7,7 +7,7 @@ import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { User } from '@/api/entities';
 import { supabase } from '@/lib/supabase';
-import { Building2, Loader2, ShieldCheck, Users, UserCircle, Info } from 'lucide-react';
+import { Building2, Loader2, ShieldCheck, Users, UserCircle, Info, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 
 const DEMO_USERS = [
@@ -57,6 +57,7 @@ export default function CorporateAuthMessage() {
     const [isLoading, setIsLoading] = useState(false);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [demoUsersExist, setDemoUsersExist] = useState(false);
     const [checkingDemoUsers, setCheckingDemoUsers] = useState(true);
 
@@ -127,36 +128,67 @@ export default function CorporateAuthMessage() {
 
     const createDemoUsers = async () => {
         setIsLoading(true);
+        const createdUsers = [];
+
         try {
             for (const demoUser of DEMO_USERS) {
                 try {
+                    console.log(`Creating user: ${demoUser.email}`);
+
                     const { data: authData, error: signUpError } = await supabase.auth.signUp({
                         email: demoUser.email,
                         password: demoUser.password,
                         options: {
                             data: {
-                                full_name: demoUser.label
-                            }
+                                full_name: demoUser.label,
+                                role: demoUser.role
+                            },
+                            emailRedirectTo: window.location.origin
                         }
                     });
 
-                    if (signUpError && !signUpError.message.includes('already registered')) {
+                    console.log(`Auth response for ${demoUser.email}:`, { authData, signUpError });
+
+                    if (signUpError) {
+                        if (signUpError.message.includes('already registered')) {
+                            console.log(`User ${demoUser.email} already exists`);
+                            createdUsers.push(demoUser.email);
+                            continue;
+                        }
                         throw signUpError;
                     }
 
-                    if (authData.user) {
-                        await supabase
+                    if (authData?.user) {
+                        const { error: profileError } = await supabase
                             .from('user_profiles')
-                            .update({ role: demoUser.role, full_name: demoUser.label })
-                            .eq('id', authData.user.id);
+                            .upsert({
+                                id: authData.user.id,
+                                email: demoUser.email,
+                                role: demoUser.role,
+                                full_name: demoUser.label
+                            }, {
+                                onConflict: 'id'
+                            });
+
+                        if (profileError) {
+                            console.error(`Profile error for ${demoUser.email}:`, profileError);
+                        } else {
+                            createdUsers.push(demoUser.email);
+                            console.log(`Successfully created ${demoUser.email}`);
+                        }
                     }
                 } catch (error) {
                     console.error(`Error creating ${demoUser.label}:`, error);
+                    toast.error(`Failed to create ${demoUser.label}: ${error.message}`);
                 }
             }
 
-            toast.success('Demo users created successfully!');
-            setDemoUsersExist(true);
+            if (createdUsers.length > 0) {
+                toast.success(`Demo users ready! Created/verified ${createdUsers.length} accounts.`);
+                setDemoUsersExist(true);
+            } else {
+                toast.error('No demo users were created. Please check the console for errors.');
+            }
         } catch (error) {
             toast.error('Failed to create demo users');
             console.error('Error creating demo users:', error);
@@ -195,15 +227,28 @@ export default function CorporateAuthMessage() {
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="password" className="text-slate-700">Password</Label>
-                            <Input
-                                id="password"
-                                type="password"
-                                placeholder="Enter your password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                required
-                                className="h-11"
-                            />
+                            <div className="relative">
+                                <Input
+                                    id="password"
+                                    type={showPassword ? "text" : "password"}
+                                    placeholder="Enter your password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    required
+                                    className="h-11 pr-10"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-700 transition-colors"
+                                >
+                                    {showPassword ? (
+                                        <EyeOff className="h-4 w-4" />
+                                    ) : (
+                                        <Eye className="h-4 w-4" />
+                                    )}
+                                </button>
+                            </div>
                         </div>
                         <Button
                             type="submit"
