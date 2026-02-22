@@ -22,6 +22,9 @@ export default function AIRoleplayAnalysis() {
     const [sessionNotFound, setSessionNotFound] = useState(false);
     const [currentTranscriptIndex, setCurrentTranscriptIndex] = useState(0);
     const [isPlaying, setIsPlaying] = useState(false);
+    const [currentTime, setCurrentTime] = useState(0);
+    const [duration, setDuration] = useState(0);
+    const audioRef = React.useRef(null);
 
     const location = useLocation();
     const navigate = useNavigate(); // Initialize useNavigate
@@ -38,35 +41,148 @@ export default function AIRoleplayAnalysis() {
             created_date: '2024-02-08T14:30:00Z',
             session_duration: 420,
             call_type: 'discovery',
+            audio_url: 'https://example.com/audio-call-' + id + '.mp3',
             transcript: [
                 {
                     speaker: 'ai',
                     text: "Hi there! Thanks for taking the time to speak with me today. I'm Kathy, VP of Sales here at TechCorp. How's your day going?",
-                    timestamp: '2024-02-08T14:30:15Z'
+                    timestamp: '2024-02-08T14:30:15Z',
+                    timeInSeconds: 0
                 },
                 {
                     speaker: 'user',
                     text: "Hi Kathy, nice to meet you. My day's been pretty busy, but I'm glad we could connect.",
-                    timestamp: '2024-02-08T14:30:25Z'
+                    timestamp: '2024-02-08T14:30:25Z',
+                    timeInSeconds: 10
                 },
                 {
                     speaker: 'ai',
                     text: "I completely understand. Before we dive in, I noticed on your LinkedIn you're a big fan of hiking. Have you been on any good trails lately?",
-                    timestamp: '2024-02-08T14:30:35Z'
+                    timestamp: '2024-02-08T14:30:35Z',
+                    timeInSeconds: 20
                 },
                 {
                     speaker: 'user',
                     text: "Wow, great research! I just got back from Yosemite. It was amazing. But yeah, let's talk business. We're struggling with lead qualification.",
-                    timestamp: '2024-02-08T14:30:50Z'
+                    timestamp: '2024-02-08T14:30:50Z',
+                    timeInSeconds: 35
                 },
                 {
                     speaker: 'ai',
                     text: "Yosemite is incredible. Okay, focusing on lead qualification—that's a common challenge. When you say conversion rates aren't where you want them, what's your current rate, and where would you ideally like to see it?",
-                    timestamp: '2024-02-08T14:31:05Z'
+                    timestamp: '2024-02-08T14:31:05Z',
+                    timeInSeconds: 50
+                },
+                {
+                    speaker: 'user',
+                    text: "Right now we're at about 8%, and honestly, we'd like to be closer to 15% or even 20%. We're spending so much time on leads that go nowhere.",
+                    timestamp: '2024-02-08T14:31:22Z',
+                    timeInSeconds: 67
+                },
+                {
+                    speaker: 'ai',
+                    text: "That's a significant gap. What do you think is causing that? Is it a data quality issue, or is it more about your team's ability to identify the right leads?",
+                    timestamp: '2024-02-08T14:31:38Z',
+                    timeInSeconds: 83
+                },
+                {
+                    speaker: 'user',
+                    text: "I think it's a bit of both. Our data isn't always accurate, and sometimes our reps spend time on companies that aren't even in our ICP.",
+                    timestamp: '2024-02-08T14:31:52Z',
+                    timeInSeconds: 97
+                },
+                {
+                    speaker: 'ai',
+                    text: "Got it. And what's the impact of this on your team? Are they frustrated? Is it affecting morale?",
+                    timestamp: '2024-02-08T14:32:05Z',
+                    timeInSeconds: 110
+                },
+                {
+                    speaker: 'user',
+                    text: "Definitely. My top performers are getting burned out chasing bad leads. It's a real problem.",
+                    timestamp: '2024-02-08T14:32:18Z',
+                    timeInSeconds: 123
+                },
+                {
+                    speaker: 'ai',
+                    text: "I can see how that would be a major concern. Have you tried any solutions to address this so far?",
+                    timestamp: '2024-02-08T14:32:30Z',
+                    timeInSeconds: 135
+                },
+                {
+                    speaker: 'user',
+                    text: "We're using ZoomInfo for data, but we're still having issues with accuracy and enrichment.",
+                    timestamp: '2024-02-08T14:32:42Z',
+                    timeInSeconds: 147
+                },
+                {
+                    speaker: 'ai',
+                    text: "ZoomInfo is a solid tool. Many of our customers actually use us alongside ZoomInfo to enrich their data further and improve qualification accuracy. What's been your experience with their data quality specifically?",
+                    timestamp: '2024-02-08T14:33:00Z',
+                    timeInSeconds: 165
+                },
+                {
+                    speaker: 'user',
+                    text: "It's decent, but we still find a lot of outdated contacts and missing information. Plus, it doesn't really help us prioritize which leads to focus on first.",
+                    timestamp: '2024-02-08T14:33:18Z',
+                    timeInSeconds: 183
+                },
+                {
+                    speaker: 'ai',
+                    text: "That makes sense. If you could wave a magic wand and fix one thing about your lead qualification process today, what would it be?",
+                    timestamp: '2024-02-08T14:33:35Z',
+                    timeInSeconds: 200
+                },
+                {
+                    speaker: 'user',
+                    text: "I'd want real-time insights on which leads are most likely to convert, so my team isn't wasting time on dead ends.",
+                    timestamp: '2024-02-08T14:33:50Z',
+                    timeInSeconds: 215
+                },
+                {
+                    speaker: 'ai',
+                    text: "That's exactly what our platform helps with. We use AI to score and prioritize leads based on conversion probability. Would it make sense to schedule a quick 20-minute demo next week so I can show you how it works?",
+                    timestamp: '2024-02-08T14:34:10Z',
+                    timeInSeconds: 235
+                },
+                {
+                    speaker: 'user',
+                    text: "Yeah, that could be interesting. Let me check my calendar. How about Tuesday at 2 PM?",
+                    timestamp: '2024-02-08T14:34:25Z',
+                    timeInSeconds: 250
+                },
+                {
+                    speaker: 'ai',
+                    text: "Tuesday at 2 PM works perfectly. I'll send you a calendar invite with a link to the demo. In the meantime, is there anything specific you'd like me to prepare or focus on?",
+                    timestamp: '2024-02-08T14:34:40Z',
+                    timeInSeconds: 265
+                },
+                {
+                    speaker: 'user',
+                    text: "Just show me how it integrates with our existing tools and what kind of ROI we can expect.",
+                    timestamp: '2024-02-08T14:34:55Z',
+                    timeInSeconds: 280
+                },
+                {
+                    speaker: 'ai',
+                    text: "Perfect. I'll prepare some case studies from similar companies in your industry. Looking forward to it, and thanks for your time today!",
+                    timestamp: '2024-02-08T14:35:10Z',
+                    timeInSeconds: 295
+                },
+                {
+                    speaker: 'user',
+                    text: "Sounds good. Thanks, Kathy!",
+                    timestamp: '2024-02-08T14:35:20Z',
+                    timeInSeconds: 305
                 }
             ],
             analysis_results: {
                 overall_score: 78,
+                talk_listen_ratio: 45,
+                filler_words: 8,
+                questions_count: 7,
+                longest_monologue: 45,
+                talk_speed_wpm: 142,
                 summary: "The agent started with good rapport-building but could have tied it back to the business conversation more smoothly. They successfully identified a key pain point (lead qualification) but missed an opportunity to explore the financial impact before jumping to metrics. The call ended with a clear, but not confirmed, next step.",
                 objections: [
                     { objection: "I'm not interested in buying customer data right now.", response: "I understand, and I'm not here to sell you data today. I'm here to understand if the challenges you face with lead qualification are something we might be able to help with down the line." },
@@ -287,21 +403,53 @@ export default function AIRoleplayAnalysis() {
         return 'text-red-600 bg-red-100';
     };
 
+    const handleSeekToTime = (timeInSeconds) => {
+        if (audioRef.current) {
+            audioRef.current.currentTime = timeInSeconds;
+            if (!isPlaying) {
+                audioRef.current.play();
+                setIsPlaying(true);
+            }
+        }
+    };
+
+    const togglePlayPause = () => {
+        if (audioRef.current) {
+            if (isPlaying) {
+                audioRef.current.pause();
+            } else {
+                audioRef.current.play();
+            }
+            setIsPlaying(!isPlaying);
+        }
+    };
+
+    const formatTime = (seconds) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    };
+
     const TranscriptViewer = ({ transcript }) => (
         <div className="space-y-4 max-h-96 overflow-y-auto bg-slate-50 p-4 rounded-lg">
             {transcript.map((item, index) => (
-                <div key={index} className={`flex gap-3 ${item.speaker === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div
+                    key={index}
+                    className={`flex gap-3 ${item.speaker === 'user' ? 'justify-end' : 'justify-start'} group cursor-pointer hover:bg-slate-100/50 p-2 rounded-lg transition-colors`}
+                    onClick={() => handleSeekToTime(item.timeInSeconds || 0)}
+                >
                     <div className={`max-w-[80%] p-3 rounded-lg ${
                         item.speaker === 'user'
                             ? 'bg-blue-500 text-white'
                             : 'bg-white border border-slate-200'
                     }`}>
                         <div className="flex items-center gap-2 mb-1">
+                            <Clock className="w-3 h-3 opacity-50" />
                             <span className="text-xs font-medium opacity-70">
-                                {item.speaker === 'user' ? 'You' : session?.bot_name}
+                                {formatTime(item.timeInSeconds || 0)}
                             </span>
                             <span className="text-xs opacity-50">
-                                {format(new Date(item.timestamp), 'HH:mm:ss')}
+                                {item.speaker === 'user' ? 'You' : session?.bot_name}
                             </span>
                         </div>
                         <p className="text-sm">{item.text}</p>
@@ -417,6 +565,60 @@ export default function AIRoleplayAnalysis() {
                     </div>
                 </div>
 
+                {/* Audio Player */}
+                {session.audio_url && (
+                    <Card className="mb-6">
+                        <CardContent className="pt-6">
+                            <div className="flex items-center gap-4">
+                                <Button
+                                    size="icon"
+                                    variant="outline"
+                                    onClick={togglePlayPause}
+                                    className="h-12 w-12 rounded-full"
+                                >
+                                    {isPlaying ? (
+                                        <Pause className="h-5 w-5" />
+                                    ) : (
+                                        <Play className="h-5 w-5 ml-0.5" />
+                                    )}
+                                </Button>
+                                <div className="flex-1">
+                                    <div className="flex items-center justify-between mb-1 text-sm text-slate-600">
+                                        <span>{formatTime(currentTime)}</span>
+                                        <span>{formatTime(duration)}</span>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max={duration || 0}
+                                        value={currentTime}
+                                        onChange={(e) => {
+                                            const time = parseFloat(e.target.value);
+                                            setCurrentTime(time);
+                                            if (audioRef.current) {
+                                                audioRef.current.currentTime = time;
+                                            }
+                                        }}
+                                        className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                                    />
+                                </div>
+                                <Volume2 className="h-5 w-5 text-slate-400" />
+                            </div>
+                            <audio
+                                ref={audioRef}
+                                src={session.audio_url}
+                                onTimeUpdate={(e) => setCurrentTime(e.target.currentTime)}
+                                onLoadedMetadata={(e) => setDuration(e.target.duration)}
+                                onEnded={() => setIsPlaying(false)}
+                                className="hidden"
+                            />
+                            <p className="text-xs text-slate-500 mt-2 text-center">
+                                Click on any transcript message to jump to that timestamp
+                            </p>
+                        </CardContent>
+                    </Card>
+                )}
+
                 {/* Session Overview */}
                 <Card className="mb-6">
                     <CardHeader>
@@ -502,7 +704,65 @@ export default function AIRoleplayAnalysis() {
 
                     <TabsContent value="insights">
                         <div className="space-y-6">
-                             <Card>
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                <Card>
+                                    <CardContent className="pt-6">
+                                        <div className="text-center">
+                                            <MessageSquare className="w-8 h-8 text-blue-600 mx-auto mb-2" />
+                                            <p className="text-sm text-slate-600 mb-1">Talk/Listen Ratio</p>
+                                            <p className="text-2xl font-bold text-blue-600">
+                                                {session.analysis_results?.talk_listen_ratio || 45}%
+                                            </p>
+                                            <p className="text-xs text-slate-500 mt-1">
+                                                Recommended: 30-40%
+                                            </p>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                                <Card>
+                                    <CardContent className="pt-6">
+                                        <div className="text-center">
+                                            <AlertCircle className="w-8 h-8 text-yellow-600 mx-auto mb-2" />
+                                            <p className="text-sm text-slate-600 mb-1">Filler Words</p>
+                                            <p className="text-2xl font-bold text-yellow-600">
+                                                {session.analysis_results?.filler_words || 0}
+                                            </p>
+                                            <p className="text-xs text-slate-500 mt-1">
+                                                Recommended: 0-5
+                                            </p>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                                <Card>
+                                    <CardContent className="pt-6">
+                                        <div className="text-center">
+                                            <Target className="w-8 h-8 text-green-600 mx-auto mb-2" />
+                                            <p className="text-sm text-slate-600 mb-1">Questions Asked</p>
+                                            <p className="text-2xl font-bold text-green-600">
+                                                {session.analysis_results?.questions_count || 0}
+                                            </p>
+                                            <p className="text-xs text-slate-500 mt-1">
+                                                Great discovery!
+                                            </p>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                                <Card>
+                                    <CardContent className="pt-6">
+                                        <div className="text-center">
+                                            <Clock className="w-8 h-8 text-slate-600 mx-auto mb-2" />
+                                            <p className="text-sm text-slate-600 mb-1">Talk Speed</p>
+                                            <p className="text-2xl font-bold text-slate-700">
+                                                {session.analysis_results?.talk_speed_wpm || 0} wpm
+                                            </p>
+                                            <p className="text-xs text-slate-500 mt-1">
+                                                Recommended: 120-150
+                                            </p>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </div>
+                            <Card>
                                 <CardHeader>
                                     <CardTitle className="text-blue-600">Key Objections & Rep Responses</CardTitle>
                                 </CardHeader>
