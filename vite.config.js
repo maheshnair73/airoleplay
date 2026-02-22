@@ -16,11 +16,15 @@ export default defineConfig({
   },
   optimizeDeps: {
     include: ['@supabase/supabase-js'],
-    force: true,
     esbuildOptions: {
       loader: {
         '.js': 'jsx',
       },
+    },
+  },
+  build: {
+    commonjsOptions: {
+      include: [/node_modules/],
     },
   },
 }) 
