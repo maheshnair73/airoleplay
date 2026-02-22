@@ -38,7 +38,17 @@ export const navSections = [
     {
         title: 'AI Sales Coach',
         items: [
-            { page: 'AIRoleplay', title: 'AI Roleplay', icon: Mic, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'super_admin'] },
+            {
+                page: 'AIRoleplay',
+                title: 'AI Roleplay',
+                icon: Mic,
+                roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin'],
+                submenu: [
+                    { page: 'AIRoleplay', title: 'Single AI Roleplay', icon: Mic, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin'] },
+                    { page: 'MultiPartyRoleplay', title: 'Multi-Party AI', icon: Users, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin'] },
+                    { page: 'HumanRoleplay', title: 'Human-to-Human', icon: Video, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin'] }
+                ]
+            },
             { page: 'CoachingHub', title: 'Coaching Hub', icon: GraduationCap, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'super_admin'] },
             { page: 'LiveMeetings', title: 'effyMeeting Assistant', icon: Video, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'super_admin'] },
             { page: 'CallInsights', title: 'Call Recordings', icon: HardDrive, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'super_admin'] },

@@ -82,8 +82,8 @@ export default function VideoCallIntegration({ session, currentUser, isInitiator
 
     // Connect to WebRTC signaling server
     const connectWebSocket = () => {
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsUrl = `${protocol}//${window.location.host}/functions/webrtcSignaling`;
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const wsUrl = `${supabaseUrl}/functions/v1/webrtc-signaling`.replace('https://', 'wss://').replace('http://', 'ws://');
         
         websocketRef.current = new WebSocket(wsUrl);
         
