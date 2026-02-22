@@ -16,6 +16,7 @@ export default defineConfig({
   },
   optimizeDeps: {
     include: ['@supabase/supabase-js'],
+    force: true,
     esbuildOptions: {
       loader: {
         '.js': 'jsx',
