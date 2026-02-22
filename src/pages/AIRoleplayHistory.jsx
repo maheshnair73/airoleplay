@@ -30,12 +30,138 @@ export default function AIRoleplayHistory() {
     const loadSessions = async () => {
         try {
             const data = await RoleplaySession.list('-created_at');
-            setSessions(data);
+
+            if (data && data.length > 0) {
+                setSessions(data);
+            } else {
+                setSessions(getDummyData());
+            }
         } catch (error) {
             console.error('Error loading sessions:', error);
+            setSessions(getDummyData());
         } finally {
             setIsLoading(false);
         }
+    };
+
+    const getDummyData = () => {
+        const now = new Date();
+        return [
+            {
+                id: 'dummy-1',
+                session_type: 'ai_roleplay',
+                bot_name: 'Sarah Johnson',
+                scenario: 'Cold outreach to VP of Sales at TechCorp - Discovery call focused on pain points',
+                created_date: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+                session_duration: 420,
+                analysis_results: { overall_score: 87 }
+            },
+            {
+                id: 'dummy-2',
+                session_type: 'multi_party',
+                bot_name: 'Executive Panel',
+                scenario: 'Multi-stakeholder demo with CTO, CFO, and VP of Operations',
+                created_date: new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+                session_duration: 1800,
+                analysis_results: { overall_score: 72 }
+            },
+            {
+                id: 'dummy-3',
+                session_type: 'human_roleplay',
+                bot_name: null,
+                initiator_email: 'john.rep@company.com',
+                prospect_player_email: 'mentor@company.com',
+                scenario: 'Handling pricing objections - Manager coaching session',
+                created_date: new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+                session_duration: 900,
+                analysis_results: { overall_score: 91 }
+            },
+            {
+                id: 'dummy-4',
+                session_type: 'ai_roleplay',
+                bot_name: 'Mark Chen',
+                scenario: 'Follow-up call after demo - Addressing technical concerns',
+                created_date: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+                session_duration: 600,
+                analysis_results: { overall_score: 65 }
+            },
+            {
+                id: 'dummy-5',
+                session_type: 'multi_party',
+                bot_name: 'Procurement Team',
+                scenario: 'Negotiation with procurement team - Multiple decision makers',
+                created_date: new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+                session_duration: 2100,
+                analysis_results: { overall_score: 78 }
+            },
+            {
+                id: 'dummy-6',
+                session_type: 'ai_roleplay',
+                bot_name: 'Emily Rodriguez',
+                scenario: 'Product demo for SMB customer - Feature walkthrough',
+                created_date: new Date(now.getTime() - 12 * 24 * 60 * 60 * 1000).toISOString(),
+                session_duration: 1200,
+                analysis_results: { overall_score: 94 }
+            },
+            {
+                id: 'dummy-7',
+                session_type: 'human_roleplay',
+                bot_name: null,
+                initiator_email: 'sarah.rep@company.com',
+                prospect_player_email: 'team.lead@company.com',
+                scenario: 'Enterprise deal closing - C-level stakeholder engagement',
+                created_date: new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000).toISOString(),
+                session_duration: 1500,
+                analysis_results: { overall_score: 82 }
+            },
+            {
+                id: 'dummy-8',
+                session_type: 'ai_roleplay',
+                bot_name: 'David Park',
+                scenario: 'Objection handling - Budget and timing concerns',
+                created_date: new Date(now.getTime() - 16 * 24 * 60 * 60 * 1000).toISOString(),
+                session_duration: 480,
+                analysis_results: { overall_score: 58 }
+            },
+            {
+                id: 'dummy-9',
+                session_type: 'multi_party',
+                bot_name: 'Security Review Panel',
+                scenario: 'Security and compliance discussion with IT and Legal teams',
+                created_date: new Date(now.getTime() - 18 * 24 * 60 * 60 * 1000).toISOString(),
+                session_duration: 1680,
+                analysis_results: { overall_score: 85 }
+            },
+            {
+                id: 'dummy-10',
+                session_type: 'ai_roleplay',
+                bot_name: 'Lisa Thompson',
+                scenario: 'Discovery call with startup founder - Understanding growth challenges',
+                created_date: new Date(now.getTime() - 20 * 24 * 60 * 60 * 1000).toISOString(),
+                session_duration: 720,
+                analysis_results: { overall_score: 76 }
+            },
+            {
+                id: 'dummy-11',
+                session_type: 'human_roleplay',
+                bot_name: null,
+                initiator_email: 'mike.rep@company.com',
+                prospect_player_email: 'coach@company.com',
+                scenario: 'Value proposition refinement - Peer practice session',
+                created_date: new Date(now.getTime() - 22 * 24 * 60 * 60 * 1000).toISOString(),
+                session_duration: 840,
+                analysis_results: { overall_score: 88 }
+            },
+            {
+                id: 'dummy-12',
+                session_type: 'ai_roleplay',
+                bot_name: 'Rachel Green',
+                scenario: 'Competitive situation - Defending against competitor comparison',
+                created_date: new Date(now.getTime() - 25 * 24 * 60 * 60 * 1000).toISOString(),
+                session_duration: 660,
+                analysis_results: { overall_score: 69 }
+            }
+        ];
     };
 
     const getScoreColor = (score) => {
