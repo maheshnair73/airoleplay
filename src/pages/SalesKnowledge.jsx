@@ -214,7 +214,7 @@ export default function SalesKnowledge() {
         setIsLoading(true);
         try {
             const [itemsData, userData] = await Promise.all([
-                SalesKnowledgeBase.list('-created_date').catch(() => []),
+                SalesKnowledgeBase.list('-created_at').catch(() => []),
                 User.me().catch(() => null)
             ]);
             setKnowledgeItems(itemsData);

@@ -29,7 +29,7 @@ export default function AIRoleplayHistory() {
 
     const loadSessions = async () => {
         try {
-            const data = await RoleplaySession.list('-created_date');
+            const data = await RoleplaySession.list('-created_at');
             setSessions(data);
         } catch (error) {
             console.error('Error loading sessions:', error);

@@ -176,7 +176,7 @@ export default function CompanyManagement() {
     const loadCompanies = async () => {
         setIsLoading(true);
         try {
-            const companiesData = await Company.list('-created_date');
+            const companiesData = await Company.list('-created_at');
             setCompanies(companiesData);
             calculateMetrics(companiesData);
         } catch (error) {

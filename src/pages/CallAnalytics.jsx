@@ -58,7 +58,7 @@ export default function CallAnalytics() {
         setIsLoading(true);
         try {
             const [callData, userData] = await Promise.all([
-                CallRecord.list('-created_date', 100),
+                CallRecord.list('-created_at', 100),
                 User.list()
             ]);
             setCalls(callData);

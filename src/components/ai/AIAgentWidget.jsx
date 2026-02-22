@@ -71,7 +71,7 @@ export default function AIAgentWidget({ className }) {
 
     const fetchRecentActivities = useCallback(async () => {
         try {
-            const activities = await AIAgentActivity.list('-created_date', 5);
+            const activities = await AIAgentActivity.list('-created_at', 5);
             setRecentActivities(activities);
         } catch (error) {
             console.error('Error fetching AI activities:', error);

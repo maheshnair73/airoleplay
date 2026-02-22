@@ -24,7 +24,7 @@ export default function Dialer() {
     const fetchCallHistory = async () => {
         setIsLoading(true);
         try {
-            const records = await CallRecord.list('-created_date', 50);
+            const records = await CallRecord.list('-created_at', 50);
             setCallHistory(records);
         } catch (error) {
             console.error('Error fetching call history:', error);

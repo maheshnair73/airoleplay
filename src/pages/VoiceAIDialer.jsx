@@ -116,7 +116,7 @@ export default function VoiceAIDialer() {
         setIsLoading(true);
         try {
             const [campaignData, leadData, callRecordData] = await Promise.all([
-                Campaign.list('-created_date'),
+                Campaign.list('-created_at'),
                 Lead.list(),
                 CallRecord.filter({ call_type: 'ai_voice' })
             ]);

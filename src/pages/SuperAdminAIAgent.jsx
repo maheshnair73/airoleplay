@@ -54,9 +54,9 @@ export default function SuperAdminAIAgent() {
         setIsLoading(true);
         try {
             const [subscriptionsData, companiesData, activitiesData] = await Promise.all([
-                AIAgentSubscription.list('-created_date'),
-                Company.list('-created_date'),
-                AIAgentActivity.list('-created_date', 50)
+                AIAgentSubscription.list('-created_at'),
+                Company.list('-created_at'),
+                AIAgentActivity.list('-created_at', 50)
             ]);
 
             setSubscriptions(subscriptionsData);

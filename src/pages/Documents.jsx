@@ -193,7 +193,7 @@ export default function Documents() {
         try {
             const [user, allDocuments] = await Promise.all([
                 User.me(),
-                Document.list('-created_date') // Get all documents, newest first
+                Document.list('-created_at') // Get all documents, newest first
             ]);
 
             console.log('Loaded documents:', allDocuments); // Debug logging

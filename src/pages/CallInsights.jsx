@@ -31,7 +31,7 @@ export default function CallInsights() {
 
     const loadCallRecords = async () => {
         try {
-            const data = await CallRecord.list('-created_date');
+            const data = await CallRecord.list('-created_at');
             setCallRecords(data);
         } catch (error) {
             console.error('Error loading call records:', error);

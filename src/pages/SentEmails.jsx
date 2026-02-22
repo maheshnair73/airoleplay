@@ -48,7 +48,7 @@ export default function SentEmails() {
     const loadEmails = async () => {
         setIsLoading(true);
         try {
-            const emailList = await EmailComposition.list('-created_date');
+            const emailList = await EmailComposition.list('-created_at');
             setEmails(emailList);
         } catch (error) {
             console.error('Error loading emails:', error);

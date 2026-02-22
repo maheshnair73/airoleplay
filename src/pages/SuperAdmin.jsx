@@ -174,7 +174,7 @@ export default function SuperAdmin() {
         setIsLoading(true);
         try {
             // Load real companies and calculate metrics
-            const allCompanies = await Company.list('-created_date');
+            const allCompanies = await Company.list('-created_at');
             setCompanies(allCompanies);
 
             const activeSubscriptions = allCompanies.filter(c => c.subscription_status === 'active').length;

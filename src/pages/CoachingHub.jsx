@@ -243,11 +243,11 @@ export default function CoachingHub() {
         setIsLoading(true); // Set loading true for any data fetch
         try {
             const [taskData, submissionData] = await Promise.all([
-                CoachingTask.list('-created_date'),
+                CoachingTask.list('-created_at'),
                 TaskSubmission.filter({
                     reviewer_email: userEmail,
                     status: 'pending_peer_review'
-                }, '-created_date')
+                }, '-created_at')
             ]);
 
             // Fetch user details for submissions

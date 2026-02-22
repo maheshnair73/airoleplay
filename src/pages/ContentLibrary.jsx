@@ -104,7 +104,7 @@ export default function ContentLibrary() {
     const loadDocuments = async () => {
         setIsLoading(true);
         try {
-            const data = await Document.list('-created_date');
+            const data = await Document.list('-created_at');
             setDocs(data);
         } catch (error) {
             console.error('Error loading documents:', error);
