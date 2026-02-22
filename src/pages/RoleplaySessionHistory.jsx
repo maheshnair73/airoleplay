@@ -31,7 +31,7 @@ export default function RoleplaySessionHistory() {
     const loadData = async () => {
         try {
             const [sessionData, userData] = await Promise.all([
-                RoleplaySession.list('-created_date'),
+                RoleplaySession.list('-created_at'),
                 User.me()
             ]);
             setSessions(sessionData);
@@ -55,14 +55,18 @@ export default function RoleplaySessionHistory() {
         }
 
         if (filterBy === 'my_sessions') {
-            filtered = filtered.filter(session => 
-                session.initiator_email === currentUser?.email || 
+            filtered = filtered.filter(session =>
+                session.initiator_email === currentUser?.email ||
                 session.prospect_player_email === currentUser?.email
             );
         } else if (filterBy === 'completed') {
             filtered = filtered.filter(session => session.session_status === 'completed');
         } else if (filterBy === 'active') {
             filtered = filtered.filter(session => session.session_status === 'active');
+        } else if (filterBy === 'ai') {
+            filtered = filtered.filter(session => session.session_type === 'human_ai');
+        } else if (filterBy === 'human') {
+            filtered = filtered.filter(session => session.session_type === 'human_human');
         }
 
         setFilteredSessions(filtered);
@@ -103,7 +107,7 @@ export default function RoleplaySessionHistory() {
                         <div className="flex items-center gap-4 text-xs text-slate-500 mb-2">
                             <span className="flex items-center gap-1">
                                 <Calendar className="w-3 h-3" />
-                                {format(new Date(session.created_date), 'MMM d, yyyy')}
+                                {format(new Date(session.created_at), 'MMM d, yyyy')}
                             </span>
                             {session.session_duration && (
                                 <span className="flex items-center gap-1">
@@ -116,7 +120,11 @@ export default function RoleplaySessionHistory() {
                             <Users className="w-4 h-4" />
                             <span>{session.initiator_email}</span>
                             <span>vs</span>
-                            <span>{session.prospect_player_email}</span>
+                            <span>
+                                {session.session_type === 'human_ai'
+                                    ? (session.bot_name || 'AI Bot')
+                                    : (session.prospect_player_email || 'Participant')}
+                            </span>
                         </div>
                     </div>
                     <div className="flex flex-col items-end gap-2">
@@ -151,7 +159,7 @@ export default function RoleplaySessionHistory() {
                         )}
                     </div>
                     <span className="text-xs text-slate-400">
-                        {formatDistanceToNow(new Date(session.created_date), { addSuffix: true })}
+                        {formatDistanceToNow(new Date(session.created_at), { addSuffix: true })}
                     </span>
                 </div>
             </CardContent>
@@ -259,6 +267,8 @@ export default function RoleplaySessionHistory() {
                             <TabsTrigger value="my" onClick={() => setFilterBy('my_sessions')}>My Sessions</TabsTrigger>
                             <TabsTrigger value="completed" onClick={() => setFilterBy('completed')}>Completed</TabsTrigger>
                             <TabsTrigger value="active" onClick={() => setFilterBy('active')}>Active</TabsTrigger>
+                            <TabsTrigger value="ai" onClick={() => setFilterBy('ai')}>AI Roleplay</TabsTrigger>
+                            <TabsTrigger value="human" onClick={() => setFilterBy('human')}>Human Roleplay</TabsTrigger>
                         </TabsList>
 
                         <div className="flex items-center gap-4">
@@ -317,6 +327,22 @@ export default function RoleplaySessionHistory() {
                     </TabsContent>
 
                     <TabsContent value="active">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {filteredSessions.map((session) => (
+                                <SessionCard key={session.id} session={session} />
+                            ))}
+                        </div>
+                    </TabsContent>
+
+                    <TabsContent value="ai">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {filteredSessions.map((session) => (
+                                <SessionCard key={session.id} session={session} />
+                            ))}
+                        </div>
+                    </TabsContent>
+
+                    <TabsContent value="human">
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {filteredSessions.map((session) => (
                                 <SessionCard key={session.id} session={session} />

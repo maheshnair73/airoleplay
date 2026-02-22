@@ -2,8 +2,16 @@ import { supabase } from '@/lib/supabase';
 
 function createEntity(tableName) {
   return {
-    async list() {
-      const { data, error } = await supabase.from(tableName).select('*');
+    async list(orderBy) {
+      let query = supabase.from(tableName).select('*');
+
+      if (orderBy) {
+        const isDescending = orderBy.startsWith('-');
+        const column = isDescending ? orderBy.slice(1) : orderBy;
+        query = query.order(column, { ascending: !isDescending });
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       return data || [];
     },
