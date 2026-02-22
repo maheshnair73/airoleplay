@@ -12,7 +12,7 @@ import {
     Plus, Calendar as CalendarIcon, User, Clock, CheckCircle2, 
     Circle, AlertCircle, MessageSquare, Edit2, Trash2
 } from 'lucide-react';
-import { format, isOverdue, parseISO } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 
 const statusColors = {
     pending: { bg: 'bg-gray-100', text: 'text-gray-800', icon: Circle },

@@ -5,7 +5,7 @@ import { User } from '@/api/entities';
 import { CoachingTask } from '@/api/entities';
 import { TaskSubmission } from '@/api/entities';
 import { Lead } from '@/api/entities';
-import { Deal } from '@/api/entities/Deal';
+import { Deal } from '@/api/entities';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';

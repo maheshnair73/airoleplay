@@ -125,6 +125,8 @@ export const MultiPartyScenario = base44.entities.MultiPartyScenario;
 
 export const MultiPartySession = base44.entities.MultiPartySession;
 
+export const Deal = base44.entities.Deal;
+
 
 
 // auth sdk:
