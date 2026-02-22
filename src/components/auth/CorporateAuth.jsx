@@ -22,16 +22,6 @@ const DEMO_USERS = [
         description: 'Company management'
     },
     {
-        email: 'ba@effysalespro.com',
-        password: 'demo123',
-        role: 'sales_manager',
-        label: 'BA',
-        bgColor: 'bg-white border-2 border-blue-200',
-        textColor: 'text-blue-700',
-        icon: Users,
-        description: 'Business Analyst'
-    },
-    {
         email: 'manager@effysalespro.com',
         password: 'demo123',
         role: 'sales_manager',
@@ -60,16 +50,6 @@ const DEMO_USERS = [
         textColor: 'text-amber-700',
         icon: UserCircle,
         description: 'Sales Agent'
-    },
-    {
-        email: 'vendor@effysalespro.com',
-        password: 'demo123',
-        role: 'vendor',
-        label: 'Vendor',
-        bgColor: 'bg-white border-2 border-amber-200',
-        textColor: 'text-amber-700',
-        icon: Building2,
-        description: 'Vendor Access'
     }
 ];
 

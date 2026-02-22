@@ -7,10 +7,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Users, Play, Square, Mic, MicOff, Video, VideoOff, Phone, CheckCircle, User as UserIcon, Building, Briefcase, Target, Lightbulb, FileText } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ArrowLeft, Users, Play, Square, Mic, MicOff, Video, VideoOff, Phone, CheckCircle, User as UserIcon, Building, Briefcase, Target, Lightbulb, FileText, MessageSquare } from 'lucide-react';
 import { toast } from 'sonner';
 import { createPageUrl } from '@/utils';
 import VideoCallIntegration from '@/components/roleplay/VideoCallIntegration';
+import CallTranscription from '@/components/roleplay/CallTranscription';
+import { createDemoTranscription } from '@/utils/transcriptionDemo';
 
 export default function RoleplaySessionPage() {
     const [session, setSession] = useState(null);
@@ -208,15 +211,73 @@ export default function RoleplaySessionPage() {
                                         <Button onClick={handleEndSession} variant="destructive" size="lg"><Square className="w-5 h-5 mr-2" />End Session</Button>
                                     </div>
                                 ) : (
-                                    <div className="text-center space-y-4">
-                                        <div className="bg-blue-50 p-6 rounded-lg"><CheckCircle className="w-12 h-12 text-blue-600 mx-auto mb-4" /><h3 className="font-semibold text-blue-800 mb-2">Session Completed</h3><p className="text-blue-700">Duration: {formatTime(session.session_duration || sessionTime)}</p></div>
-                                        <div className="space-y-4">
-                                            <div>
-                                                <label className="block text-sm font-medium text-slate-700 mb-2">{isInitiator ? 'Your Feedback on the Session' : 'Feedback for the Sales Rep'}</label>
-                                                <Textarea placeholder="Share your thoughts..." value={feedback} onChange={(e) => setFeedback(e.target.value)} rows={4} />
-                                            </div>
-                                            <Button onClick={handleSubmitFeedback} className="w-full" disabled={!feedback.trim()}>Submit Feedback</Button>
+                                    <div className="space-y-4">
+                                        <div className="bg-blue-50 p-6 rounded-lg text-center">
+                                            <CheckCircle className="w-12 h-12 text-blue-600 mx-auto mb-4" />
+                                            <h3 className="font-semibold text-blue-800 mb-2">Session Completed</h3>
+                                            <p className="text-blue-700">Duration: {formatTime(session.session_duration || sessionTime)}</p>
                                         </div>
+
+                                        <Tabs defaultValue="feedback" className="w-full">
+                                            <TabsList className="grid w-full grid-cols-2">
+                                                <TabsTrigger value="feedback" className="flex items-center gap-2">
+                                                    <FileText className="w-4 h-4" />
+                                                    Feedback
+                                                </TabsTrigger>
+                                                <TabsTrigger value="transcription" className="flex items-center gap-2">
+                                                    <MessageSquare className="w-4 h-4" />
+                                                    Transcription
+                                                </TabsTrigger>
+                                            </TabsList>
+
+                                            <TabsContent value="feedback" className="mt-4 space-y-4">
+                                                <div>
+                                                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                                                        {isInitiator ? 'Your Feedback on the Session' : 'Feedback for the Sales Rep'}
+                                                    </label>
+                                                    <Textarea
+                                                        placeholder="Share your thoughts..."
+                                                        value={feedback}
+                                                        onChange={(e) => setFeedback(e.target.value)}
+                                                        rows={6}
+                                                    />
+                                                </div>
+                                                <Button
+                                                    onClick={handleSubmitFeedback}
+                                                    className="w-full"
+                                                    disabled={!feedback.trim()}
+                                                >
+                                                    Submit Feedback
+                                                </Button>
+                                            </TabsContent>
+
+                                            <TabsContent value="transcription" className="mt-4">
+                                                <CallTranscription
+                                                    sessionId={session.id}
+                                                    videoUrl={session.recording_url}
+                                                />
+                                                <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                                                    <p className="text-sm text-amber-800 mb-2">
+                                                        <strong>Demo Mode:</strong> Click below to generate sample transcription data for testing
+                                                    </p>
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={async () => {
+                                                            try {
+                                                                await createDemoTranscription(session.id);
+                                                                toast.success('Demo transcription created! Refresh to see it.');
+                                                                window.location.reload();
+                                                            } catch (error) {
+                                                                toast.error('Failed to create demo transcription');
+                                                            }
+                                                        }}
+                                                    >
+                                                        Generate Demo Transcription
+                                                    </Button>
+                                                </div>
+                                            </TabsContent>
+                                        </Tabs>
                                     </div>
                                 )}
                             </CardContent>
