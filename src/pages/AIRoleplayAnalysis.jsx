@@ -1082,6 +1082,48 @@ export default function AIRoleplayAnalysis() {
                 call_type: 'negotiation',
                 analysis_results: { ...baseMockSession.analysis_results, overall_score: 92 },
                 bot_configuration: JSON.stringify({ ...JSON.parse(baseMockSession.bot_configuration), name: 'Olivia White', title: 'Legal Counsel', roleplay_type: 'negotiation', personality: 'Risk-averse, Detailed' })
+            },
+            'dummy-1': {
+                scenario: 'Cold outreach to VP of Sales at TechCorp - Discovery call focused on pain points',
+                session_duration: 420,
+                call_type: 'ai_roleplay',
+                analysis_results: { ...baseMockSession.analysis_results, overall_score: 87 },
+                bot_configuration: JSON.stringify({ ...JSON.parse(baseMockSession.bot_configuration), name: 'Sarah Johnson', title: 'VP of Sales', roleplay_type: 'discovery', personality: 'Strategic, Bottom-line focused' })
+            },
+            'dummy-2': {
+                scenario: 'Multi-stakeholder demo with CTO, CFO, and VP of Operations',
+                session_duration: 1800,
+                call_type: 'multi_party',
+                analysis_results: { ...baseMockSession.analysis_results, overall_score: 72 },
+                bot_configuration: JSON.stringify({ ...JSON.parse(baseMockSession.bot_configuration), name: 'Executive Panel', title: 'C-Suite Team', roleplay_type: 'demo', personality: 'Analytical, Risk-averse' })
+            },
+            'dummy-3': {
+                scenario: 'Handling pricing objections - Manager coaching session',
+                session_duration: 900,
+                call_type: 'human_roleplay',
+                analysis_results: { ...baseMockSession.analysis_results, overall_score: 91 },
+                bot_configuration: JSON.stringify({ ...JSON.parse(baseMockSession.bot_configuration), name: 'Mentor', title: 'Sales Manager', roleplay_type: 'coaching', personality: 'Supportive, Instructive' })
+            },
+            'dummy-4': {
+                scenario: 'Follow-up call after demo - Addressing technical concerns',
+                session_duration: 600,
+                call_type: 'ai_roleplay',
+                analysis_results: { ...baseMockSession.analysis_results, overall_score: 65 },
+                bot_configuration: JSON.stringify({ ...JSON.parse(baseMockSession.bot_configuration), name: 'Mark Chen', title: 'CTO', roleplay_type: 'technical', personality: 'Detail-oriented, Skeptical' })
+            },
+            'dummy-5': {
+                scenario: 'Negotiation with procurement team - Multiple decision makers',
+                session_duration: 2100,
+                call_type: 'multi_party',
+                analysis_results: { ...baseMockSession.analysis_results, overall_score: 78 },
+                bot_configuration: JSON.stringify({ ...JSON.parse(baseMockSession.bot_configuration), name: 'Procurement Team', title: 'Procurement Panel', roleplay_type: 'negotiation', personality: 'Cost-conscious, Detail-oriented' })
+            },
+            'dummy-6': {
+                scenario: 'Contract signing - Final questions and objections',
+                session_duration: 540,
+                call_type: 'ai_roleplay',
+                analysis_results: { ...baseMockSession.analysis_results, overall_score: 94 },
+                bot_configuration: JSON.stringify({ ...JSON.parse(baseMockSession.bot_configuration), name: 'Emily Rodriguez', title: 'Legal Counsel', roleplay_type: 'closing', personality: 'Cautious, Detail-focused' })
             }
         };
 
@@ -1124,8 +1166,8 @@ export default function AIRoleplayAnalysis() {
                 setIsLoading(false);
             } catch (error) {
                 console.error('Error loading session:', error);
-                // If database fetch fails, check if it's a demo session ID
-                if (/^[1-9]$|^1[0-9]$|^20$/.test(sessionId)) {
+                // If database fetch fails, check if it's a demo session ID or dummy ID
+                if (/^[1-9]$|^1[0-9]$|^20$/.test(sessionId) || sessionId?.startsWith('dummy-')) {
                     setSession(createMockSession(sessionId));
                     setSessionNotFound(false);
                 } else {
