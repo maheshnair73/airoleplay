@@ -609,7 +609,7 @@ function PagesContent() {
                 
                 <Route path="/RoleplaySessionHistory" element={<RoleplaySessionHistory />} />
                 
-                <Route path="/PublicRoleplaySession" element={<PublicRoleplaySession />} />
+                <Route path="/publicroleplaysession" element={<PublicRoleplaySession />} />
                 
                 <Route path="/WebsiteHome" element={<WebsiteHome />} />
                 
