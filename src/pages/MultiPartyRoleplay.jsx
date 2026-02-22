@@ -27,13 +27,141 @@ export default function MultiPartyRoleplay() {
         setIsLoading(true);
         try {
             const allScenarios = await MultiPartyScenario.list();
-            setScenarios(allScenarios);
+            if (allScenarios && allScenarios.length > 0) {
+                setScenarios(allScenarios);
+            } else {
+                setScenarios(getDummyScenarios());
+            }
         } catch (error) {
             console.error('Error loading scenarios:', error);
-            toast.error('Failed to load scenarios');
+            setScenarios(getDummyScenarios());
         } finally {
             setIsLoading(false);
         }
+    };
+
+    const getDummyScenarios = () => {
+        return [
+            {
+                id: 'scenario-1',
+                scenario_name: 'Executive Panel Demo',
+                scenario_description: 'Present to a panel of C-suite executives including CEO, CFO, and CTO',
+                scenario_type: 'panel_interview',
+                difficulty_level: 'advanced',
+                estimated_duration_minutes: 45,
+                average_rating: 4.5,
+                buyer_personas: [
+                    {
+                        name: 'Jennifer Morgan',
+                        title: 'Chief Executive Officer',
+                        company_name: 'TechVenture Inc',
+                        role_in_scenario: 'primary_decision_maker',
+                        personality: 'Strategic, Bottom-line focused',
+                        is_ai: true
+                    },
+                    {
+                        name: 'Robert Chen',
+                        title: 'Chief Financial Officer',
+                        company_name: 'TechVenture Inc',
+                        role_in_scenario: 'financial_approver',
+                        personality: 'Analytical, Risk-averse',
+                        is_ai: true
+                    },
+                    {
+                        name: 'Sarah Williams',
+                        title: 'Chief Technology Officer',
+                        company_name: 'TechVenture Inc',
+                        role_in_scenario: 'technical_evaluator',
+                        personality: 'Detail-oriented, Security-focused',
+                        is_ai: true
+                    }
+                ],
+                seller_personas: [
+                    {
+                        name: 'You',
+                        sales_role: 'account_executive',
+                        title: 'Senior Account Executive',
+                        is_ai: false
+                    }
+                ]
+            },
+            {
+                id: 'scenario-2',
+                scenario_name: 'Procurement Team Negotiation',
+                scenario_description: 'Navigate complex pricing discussions with procurement team',
+                scenario_type: 'team_negotiation',
+                difficulty_level: 'expert',
+                estimated_duration_minutes: 60,
+                average_rating: 4.2,
+                buyer_personas: [
+                    {
+                        name: 'David Martinez',
+                        title: 'Head of Procurement',
+                        company_name: 'Global Corp',
+                        role_in_scenario: 'primary_decision_maker',
+                        personality: 'Tough negotiator, Cost-conscious',
+                        is_ai: true
+                    },
+                    {
+                        name: 'Linda Park',
+                        title: 'Procurement Specialist',
+                        company_name: 'Global Corp',
+                        role_in_scenario: 'influencer',
+                        personality: 'Detail-oriented, Process-driven',
+                        is_ai: true
+                    }
+                ],
+                seller_personas: [
+                    {
+                        name: 'You',
+                        sales_role: 'account_executive',
+                        title: 'Account Executive',
+                        is_ai: false
+                    },
+                    {
+                        name: 'Marcus Johnson',
+                        sales_role: 'sales_engineer',
+                        title: 'Solutions Architect',
+                        is_ai: true
+                    }
+                ]
+            },
+            {
+                id: 'scenario-3',
+                scenario_name: 'Multi-Stakeholder Discovery',
+                scenario_description: 'Discovery call with multiple departments to uncover needs',
+                scenario_type: 'discovery_call',
+                difficulty_level: 'intermediate',
+                estimated_duration_minutes: 30,
+                average_rating: 4.7,
+                buyer_personas: [
+                    {
+                        name: 'Amanda Brooks',
+                        title: 'VP of Sales',
+                        company_name: 'SalesPro Inc',
+                        role_in_scenario: 'end_user',
+                        personality: 'Results-driven, Impatient',
+                        is_ai: true
+                    },
+                    {
+                        name: 'Tom Richardson',
+                        title: 'Head of Sales Operations',
+                        company_name: 'SalesPro Inc',
+                        role_in_scenario: 'technical_evaluator',
+                        personality: 'Analytical, Process-focused',
+                        is_ai: true
+                    }
+                ],
+                seller_personas: [
+                    {
+                        name: 'You',
+                        sales_role: 'account_executive',
+                        title: 'Account Executive',
+                        is_ai: false
+                    }
+                ]
+            }
+        ];
     };
 
     const filteredScenarios = scenarios.filter(scenario => {
@@ -253,54 +381,64 @@ export default function MultiPartyRoleplay() {
                             <CardContent>
                                 {/* Participants Preview */}
                                 <div className="space-y-4 mb-4">
-                                    {/* Buyer Personas */}
-                                    {scenario.buyer_personas?.length > 0 && (
-                                        <div>
-                                            <h4 className="text-sm font-semibold text-slate-700 mb-2">Buyer Stakeholders:</h4>
-                                            <div className="space-y-2">
-                                                {scenario.buyer_personas.slice(0, 2).map((persona, idx) => (
-                                                    <div key={idx} className="flex items-center gap-2 text-sm">
-                                                        <div className="p-1 bg-blue-100 rounded">
-                                                            {getRoleIcon(persona.role_in_scenario)}
-                                                        </div>
-                                                        <span className="font-medium">{persona.name}</span>
-                                                        <span className="text-slate-500">-</span>
-                                                        <span className="text-slate-600 text-xs">{persona.title}</span>
-                                                    </div>
-                                                ))}
-                                                {scenario.buyer_personas.length > 2 && (
-                                                    <p className="text-xs text-slate-500 pl-7">
-                                                        + {scenario.buyer_personas.length - 2} more buyers
-                                                    </p>
-                                                )}
-                                            </div>
+                                    {(!scenario.buyer_personas || scenario.buyer_personas.length === 0) &&
+                                     (!scenario.seller_personas || scenario.seller_personas.length === 0) ? (
+                                        <div className="p-4 bg-slate-50 rounded-lg text-center">
+                                            <Users className="w-8 h-8 text-slate-400 mx-auto mb-2" />
+                                            <p className="text-sm text-slate-500">No participants configured yet</p>
                                         </div>
-                                    )}
+                                    ) : (
+                                        <>
+                                            {/* Buyer Personas */}
+                                            {scenario.buyer_personas?.length > 0 && (
+                                                <div>
+                                                    <h4 className="text-sm font-semibold text-slate-700 mb-2">Buyer Stakeholders:</h4>
+                                                    <div className="space-y-2">
+                                                        {scenario.buyer_personas.slice(0, 2).map((persona, idx) => (
+                                                            <div key={idx} className="flex items-center gap-2 text-sm">
+                                                                <div className="p-1 bg-blue-100 rounded">
+                                                                    {getRoleIcon(persona.role_in_scenario)}
+                                                                </div>
+                                                                <span className="font-medium">{persona.name}</span>
+                                                                <span className="text-slate-500">-</span>
+                                                                <span className="text-slate-600 text-xs">{persona.title}</span>
+                                                            </div>
+                                                        ))}
+                                                        {scenario.buyer_personas.length > 2 && (
+                                                            <p className="text-xs text-slate-500 pl-7">
+                                                                + {scenario.buyer_personas.length - 2} more buyers
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
 
-                                    {/* Seller Personas */}
-                                    {scenario.seller_personas?.length > 0 && (
-                                        <div>
-                                            <h4 className="text-sm font-semibold text-slate-700 mb-2">Sales Team:</h4>
-                                            <div className="space-y-2">
-                                                {scenario.seller_personas.slice(0, 2).map((persona, idx) => (
-                                                    <div key={idx} className="flex items-center gap-2 text-sm">
-                                                        <div className="p-1 bg-green-100 rounded">
-                                                            <Briefcase className="w-3 h-3" />
-                                                        </div>
-                                                        <span className="font-medium">{persona.name}</span>
-                                                        <span className="text-slate-500">-</span>
-                                                        <span className="text-slate-600 text-xs">
-                                                            {persona.sales_role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                                                        </span>
+                                            {/* Seller Personas */}
+                                            {scenario.seller_personas?.length > 0 && (
+                                                <div>
+                                                    <h4 className="text-sm font-semibold text-slate-700 mb-2">Sales Team:</h4>
+                                                    <div className="space-y-2">
+                                                        {scenario.seller_personas.slice(0, 2).map((persona, idx) => (
+                                                            <div key={idx} className="flex items-center gap-2 text-sm">
+                                                                <div className="p-1 bg-green-100 rounded">
+                                                                    <Briefcase className="w-3 h-3" />
+                                                                </div>
+                                                                <span className="font-medium">{persona.name}</span>
+                                                                <span className="text-slate-500">-</span>
+                                                                <span className="text-slate-600 text-xs">
+                                                                    {persona.sales_role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                                                                </span>
+                                                            </div>
+                                                        ))}
+                                                        {scenario.seller_personas.length > 2 && (
+                                                            <p className="text-xs text-slate-500 pl-7">
+                                                                + {scenario.seller_personas.length - 2} more team members
+                                                            </p>
+                                                        )}
                                                     </div>
-                                                ))}
-                                                {scenario.seller_personas.length > 2 && (
-                                                    <p className="text-xs text-slate-500 pl-7">
-                                                        + {scenario.seller_personas.length - 2} more team members
-                                                    </p>
-                                                )}
-                                            </div>
-                                        </div>
+                                                </div>
+                                            )}
+                                        </>
                                     )}
                                 </div>
 
