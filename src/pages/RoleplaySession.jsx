@@ -126,10 +126,16 @@ export default function RoleplaySessionPage() {
                 session_status: 'completed',
                 session_duration: sessionTime
             });
+            setSession(prev => ({
+                ...prev,
+                session_status: 'completed',
+                session_duration: sessionTime
+            }));
             setSessionActive(false);
             setSessionComplete(true);
-            toast.success('Session completed!');
+            toast.success('Session completed! You can now view the transcription tab and provide feedback.');
         } catch (error) {
+            console.error('Error ending session:', error);
             toast.error('Failed to end session');
         }
     };
@@ -218,7 +224,7 @@ export default function RoleplaySessionPage() {
                                             <p className="text-blue-700">Duration: {formatTime(session.session_duration || sessionTime)}</p>
                                         </div>
 
-                                        <Tabs defaultValue="feedback" className="w-full">
+                                        <Tabs defaultValue="transcription" className="w-full">
                                             <TabsList className="grid w-full grid-cols-2">
                                                 <TabsTrigger value="feedback" className="flex items-center gap-2">
                                                     <FileText className="w-4 h-4" />
