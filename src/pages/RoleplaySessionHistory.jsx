@@ -1,0 +1,264 @@
+
+import React, { useState, useEffect, useCallback } from 'react';
+import { RoleplaySession } from '@/api/entities';
+import { User } from '@/api/entities';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { 
+    Search, Calendar, Clock, Users, Play, 
+    BarChart3, Filter, ChevronRight, Eye,
+    Video, MessageSquare, Star, TrendingUp
+} from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { createPageUrl } from '@/utils';
+import { format, formatDistanceToNow } from 'date-fns';
+
+export default function RoleplaySessionHistory() {
+    const [sessions, setSessions] = useState([]);
+    const [filteredSessions, setFilteredSessions] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filterBy, setFilterBy] = useState('all');
+    const [currentUser, setCurrentUser] = useState(null);
+
+    useEffect(() => {
+        loadData();
+    }, []);
+
+    const loadData = async () => {
+        try {
+            const [sessionData, userData] = await Promise.all([
+                RoleplaySession.list('-created_date'),
+                User.me()
+            ]);
+            setSessions(sessionData);
+            setCurrentUser(userData);
+        } catch (error) {
+            console.error('Error loading sessions:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const filterSessions = useCallback(() => {
+        let filtered = sessions;
+
+        if (searchTerm) {
+            filtered = filtered.filter(session =>
+                session.lead_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                session.initiator_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                session.prospect_player_email?.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+        }
+
+        if (filterBy === 'my_sessions') {
+            filtered = filtered.filter(session => 
+                session.initiator_email === currentUser?.email || 
+                session.prospect_player_email === currentUser?.email
+            );
+        } else if (filterBy === 'completed') {
+            filtered = filtered.filter(session => session.session_status === 'completed');
+        } else if (filterBy === 'active') {
+            filtered = filtered.filter(session => session.session_status === 'active');
+        }
+
+        setFilteredSessions(filtered);
+    }, [sessions, searchTerm, filterBy, currentUser?.email]);
+
+    useEffect(() => {
+        filterSessions();
+    }, [filterSessions]);
+
+    const getStatusColor = (status) => {
+        switch (status) {
+            case 'completed':
+                return 'bg-green-100 text-green-800';
+            case 'active':
+                return 'bg-blue-100 text-blue-800';
+            case 'pending_invite':
+                return 'bg-yellow-100 text-yellow-800';
+            default:
+                return 'bg-gray-100 text-gray-800';
+        }
+    };
+
+    const formatDuration = (seconds) => {
+        if (!seconds) return 'N/A';
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    };
+
+    const SessionCard = ({ session }) => (
+        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+            <CardContent className="p-6">
+                <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                        <h3 className="font-semibold text-lg text-slate-900 mb-1">
+                            Roleplay Session - {session.lead_id}
+                        </h3>
+                        <div className="flex items-center gap-4 text-xs text-slate-500 mb-2">
+                            <span className="flex items-center gap-1">
+                                <Calendar className="w-3 h-3" />
+                                {format(new Date(session.created_date), 'MMM d, yyyy')}
+                            </span>
+                            {session.session_duration && (
+                                <span className="flex items-center gap-1">
+                                    <Clock className="w-3 h-3" />
+                                    {formatDuration(session.session_duration)}
+                                </span>
+                            )}
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-slate-600">
+                            <Users className="w-4 h-4" />
+                            <span>{session.initiator_email}</span>
+                            <span>vs</span>
+                            <span>{session.prospect_player_email}</span>
+                        </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-2">
+                        <Badge className={getStatusColor(session.session_status)}>
+                            {session.session_status.replace('_', ' ')}
+                        </Badge>
+                        <Button size="sm" variant="outline" asChild>
+                            <Link to={createPageUrl(`RoleplaySession?sessionId=${session.id}`)}>
+                                <Eye className="w-4 h-4 mr-1" />
+                                View
+                            </Link>
+                        </Button>
+                    </div>
+                </div>
+                
+                <div className="flex items-center justify-between pt-4 border-t">
+                    <div className="flex gap-2">
+                        <Badge variant="outline" className="text-xs">
+                            {session.session_type}
+                        </Badge>
+                        {session.recording_url && (
+                            <Badge variant="outline" className="text-xs">
+                                <Video className="w-3 h-3 mr-1" />
+                                Recorded
+                            </Badge>
+                        )}
+                        {session.feedback && (
+                            <Badge variant="outline" className="text-xs">
+                                <MessageSquare className="w-3 h-3 mr-1" />
+                                Feedback Available
+                            </Badge>
+                        )}
+                    </div>
+                    <span className="text-xs text-slate-400">
+                        {formatDistanceToNow(new Date(session.created_date), { addSuffix: true })}
+                    </span>
+                </div>
+            </CardContent>
+        </Card>
+    );
+
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                    <p className="text-slate-500">Loading session history...</p>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="p-6 bg-slate-50 min-h-screen">
+            <div className="max-w-6xl mx-auto">
+                {/* Header */}
+                <div className="flex justify-between items-center mb-6">
+                    <div>
+                        <h1 className="text-3xl font-bold text-slate-900">Roleplay Session History</h1>
+                        <p className="text-slate-600 mt-1">Review past sessions, feedback, and improve your skills</p>
+                    </div>
+                    <Button asChild>
+                        <Link to={createPageUrl('HumanRoleplay')}>
+                            <Play className="w-4 h-4 mr-2" />
+                            Start New Session
+                        </Link>
+                    </Button>
+                </div>
+
+                <Tabs defaultValue="all" className="space-y-6">
+                    <div className="flex justify-between items-center">
+                        <TabsList>
+                            <TabsTrigger value="all" onClick={() => setFilterBy('all')}>All Sessions</TabsTrigger>
+                            <TabsTrigger value="my" onClick={() => setFilterBy('my_sessions')}>My Sessions</TabsTrigger>
+                            <TabsTrigger value="completed" onClick={() => setFilterBy('completed')}>Completed</TabsTrigger>
+                            <TabsTrigger value="active" onClick={() => setFilterBy('active')}>Active</TabsTrigger>
+                        </TabsList>
+
+                        <div className="flex items-center gap-4">
+                            <div className="relative">
+                                <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+                                <Input
+                                    placeholder="Search sessions..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="pl-10 w-64"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    <TabsContent value="all" className="space-y-4">
+                        {filteredSessions.length > 0 ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {filteredSessions.map((session) => (
+                                    <SessionCard key={session.id} session={session} />
+                                ))}
+                            </div>
+                        ) : (
+                            <Card>
+                                <CardContent className="text-center py-12">
+                                    <Users className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+                                    <h3 className="text-lg font-semibold text-slate-700 mb-2">No sessions found</h3>
+                                    <p className="text-slate-500 mb-4">
+                                        {searchTerm || filterBy !== 'all' 
+                                            ? 'Try adjusting your filters' 
+                                            : 'Start your first roleplay session to see history here'
+                                        }
+                                    </p>
+                                    <Button asChild>
+                                        <Link to={createPageUrl('HumanRoleplay')}>Start First Session</Link>
+                                    </Button>
+                                </CardContent>
+                            </Card>
+                        )}
+                    </TabsContent>
+
+                    <TabsContent value="my">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {filteredSessions.map((session) => (
+                                <SessionCard key={session.id} session={session} />
+                            ))}
+                        </div>
+                    </TabsContent>
+
+                    <TabsContent value="completed">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {filteredSessions.map((session) => (
+                                <SessionCard key={session.id} session={session} />
+                            ))}
+                        </div>
+                    </TabsContent>
+
+                    <TabsContent value="active">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {filteredSessions.map((session) => (
+                                <SessionCard key={session.id} session={session} />
+                            ))}
+                        </div>
+                    </TabsContent>
+                </Tabs>
+            </div>
+        </div>
+    );
+}

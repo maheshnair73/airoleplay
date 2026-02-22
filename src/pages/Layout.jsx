@@ -1,0 +1,327 @@
+
+import React, { useState, useEffect, Suspense } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { User } from '@/api/entities';
+import { createPageUrl } from '@/utils';
+import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Toaster } from '@/components/ui/sonner';
+import { Menu, LogOut, Search, BrainCircuit, Bell, Settings, MoreHorizontal, User as UserIcon, Shield, Bot, Building, BarChart3, Globe, ChevronDown, ChevronRight } from 'lucide-react';
+import { navSections, adminNavConfig, effyAíCallsNavConfig, superAdminNavConfig } from '@/components/navigation/navConfig';
+import AuthWrapper from '@/components/auth/AuthWrapper';
+import AICommandBar from '@/components/ai/AICommandBar';
+import RealTimeNotifications from '@/components/notifications/RealTimeNotifications';
+import eventBus from '@/components/utils/eventBus';
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import WebsiteLayout from '@/components/website/WebsiteLayout';
+
+const publicPages = ['PublicRoleplaySession', 'ProductContribution', 'InsightContribution', 'SalesRoomPublic', 'DocumentPublicView', 'Welcome', 'CommunityOnboarding'];
+const websitePages = [
+    'WebsiteHome', 
+    'WebsiteProducts', 
+    'WebsiteSolutions', 
+    'WebsitePricing', 
+    'WebsiteAbout',
+    'AISalesRoleplay',
+    'CustomAIScorecards', 
+    'DigitalSalesRoomsProduct',
+    'EffyLeadsProspecting',
+    'EffyDocProposalsProduct',
+    'UnifiedSalesAnalytics',
+    'CommunityLanding'
+];
+
+const PublicLayout = ({ children }) => {
+    return (
+        <div className="bg-slate-50 min-h-screen">
+            <main>
+                {children}
+            </main>
+            <Toaster richColors position="top-right" />
+        </div>
+    );
+};
+
+const PrivateLayout = ({ children, currentPageName }) => {
+    const [user, setUser] = useState(null);
+    const [demoRole, setDemoRole] = useState(null);
+    const [isCommandBarOpen, setCommandBarOpen] = useState(false);
+    const [expandedMenus, setExpandedMenus] = useState(new Set(['AIRoleplay']));
+    const location = useLocation();
+
+    useEffect(() => {
+        const fetchUser = async () => {
+            try {
+                const currentUser = await User.me();
+                setUser(currentUser);
+                setDemoRole(currentUser.role);
+            } catch (e) {
+                setUser(null);
+                setDemoRole('user');
+            }
+        };
+        fetchUser();
+    }, []);
+
+    useEffect(() => {
+        const handleKeyDown = (event) => {
+            if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
+                event.preventDefault();
+                setCommandBarOpen(true);
+            }
+        };
+
+        const openCommandBar = () => setCommandBarOpen(true);
+        eventBus.on('open-command-bar', openCommandBar);
+        window.addEventListener('keydown', handleKeyDown);
+
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+            eventBus.off('open-command-bar', openCommandBar);
+        };
+    }, []);
+
+    const handleLogout = async () => {
+        await User.logout();
+        window.location.href = createPageUrl('Welcome');
+    };
+
+    const handleRoleSwitch = (newRole) => {
+        setDemoRole(newRole);
+    };
+
+    const resetToDefaultRole = () => {
+        setDemoRole(user?.role || 'user');
+    };
+
+    const effectiveRole = demoRole || user?.role || 'user';
+
+    const toggleSubmenu = (menuPage) => {
+        setExpandedMenus(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(menuPage)) {
+                newSet.delete(menuPage);
+            } else {
+                newSet.add(menuPage);
+            }
+            return newSet;
+        });
+    };
+
+    const NavItem = ({ item, isSubmenuItem = false }) => {
+        if (item.roles && !item.roles.includes(effectiveRole)) {
+            return null;
+        }
+        
+        const isActive = location.pathname === createPageUrl(item.page);
+        const hasSubmenu = item.submenu && item.submenu.length > 0;
+        const isExpanded = expandedMenus.has(item.page);
+        
+        return (
+            <div>
+                <div className={`flex items-center ${hasSubmenu ? 'justify-between' : ''} px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                    isActive
+                        ? 'bg-blue-600 text-white'
+                        : 'text-slate-300 hover:bg-slate-700 hover:text-white'
+                } ${isSubmenuItem ? 'ml-6 pl-6' : ''}`}>
+                    <Link
+                        to={createPageUrl(item.page)}
+                        className="flex items-center flex-1"
+                    >
+                        <item.icon className="w-5 h-5 mr-3" />
+                        <span>{item.title}</span>
+                    </Link>
+                    {hasSubmenu && (
+                        <button
+                            onClick={() => toggleSubmenu(item.page)}
+                            className="p-1 hover:bg-slate-600 rounded"
+                        >
+                            {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                        </button>
+                    )}
+                </div>
+                {hasSubmenu && isExpanded && (
+                    <div className="mt-1 space-y-1">
+                        {item.submenu.map(subItem => (
+                            <NavItem key={subItem.page} item={subItem} isSubmenuItem={true} />
+                        ))}
+                    </div>
+                )}
+            </div>
+        );
+    };
+    
+    const UserNav = () => (
+        <div className="flex flex-col h-full">
+             <div className="h-16 flex items-center px-4 border-b border-slate-700">
+                 <Link to={createPageUrl('Dashboard')} className="flex items-center gap-2">
+                    <BrainCircuit className="w-8 h-8 text-blue-500" />
+                    <span className="text-xl font-bold text-white">effySales Pro</span>
+                </Link>
+            </div>
+
+            <div className="px-4 py-3 border-b border-slate-700">
+                <div className="flex items-center justify-between">
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="text-left text-slate-300 hover:text-white hover:bg-slate-700 p-2 text-sm">
+                                <Shield className="w-4 h-4 mr-2" />
+                                Demo: {effectiveRole}
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)]">
+                            <DropdownMenuItem onClick={() => handleRoleSwitch('user')}>
+                                Switch to User
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleRoleSwitch('admin')}>
+                                Switch to Admin
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleRoleSwitch('saas_admin')}>
+                                Switch to SaaS Admin
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleRoleSwitch('super_admin')}>
+                                Switch to Super Admin
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                    <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={resetToDefaultRole}
+                        className="text-xs text-slate-400 hover:text-slate-200 px-2 py-1"
+                    >
+                        Reset
+                    </Button>
+                </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 space-y-6">
+                {navSections.filter(s => !s.items.some(i => i.page === 'AIAssistant')).map((section, index) => (
+                    <div key={index}>
+                        {section.title && <h3 className="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">{section.title}</h3>}
+                        <nav className="space-y-1">
+                            {section.items.map(item => <NavItem key={item.page} item={item} />)}
+                        </nav>
+                    </div>
+                ))}
+                
+                {(effectiveRole === 'admin' || effectiveRole === 'saas_admin') && (
+                    <div>
+                        <h3 className="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">EFFYAI CALLS</h3>
+                        <nav className="space-y-1">
+                            {effyAíCallsNavConfig.map(item => <NavItem key={item.page} item={item} />)}
+                        </nav>
+                    </div>
+                )}
+                
+                {(effectiveRole === 'admin' || effectiveRole === 'saas_admin') && (
+                     <div>
+                        <h3 className="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Administration</h3>
+                        <nav className="space-y-1">
+                            {adminNavConfig.map(item => <NavItem key={item.page} item={item} />)}
+                        </nav>
+                    </div>
+                )}
+
+                {effectiveRole === 'super_admin' && (
+                     <div>
+                        <h3 className="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Platform Admin</h3>
+                        <nav className="space-y-1">
+                            {superAdminNavConfig.map(item => <NavItem key={item.page} item={item} />)}
+                        </nav>
+                    </div>
+                )}
+            </div>
+            
+            <div className="p-4 border-t border-slate-700">
+                 <NavItem item={{ page: 'AIAssistant', title: 'Chat with Effy', icon: Bot }} />
+            </div>
+
+            <div className="p-4 border-t border-slate-700">
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <div className="flex items-center gap-3 cursor-pointer p-2 rounded-md hover:bg-slate-700">
+                            <Avatar className="h-9 w-9">
+                                <AvatarImage src={user?.avatar_url} />
+                                <AvatarFallback>{user?.full_name?.charAt(0) || 'U'}</AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-sm font-semibold text-white truncate">{user?.full_name}</p>
+                                <p className="text-xs text-slate-400 capitalize truncate">{effectiveRole}</p>
+                            </div>
+                            <MoreHorizontal className="w-5 h-5 text-slate-400" />
+                        </div>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-56 mb-2" side="top">
+                        <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem asChild>
+                           <Link to={createPageUrl('ProfileSettings')} className="cursor-pointer">
+                                <UserIcon className="mr-2 h-4 w-4" />
+                                <span>My Profile</span>
+                           </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                           <Link to={createPageUrl('ProfileSettings')} className="cursor-pointer">
+                                <Settings className="mr-2 h-4 w-4" />
+                                <span>AI Agent Settings</span>
+                           </Link>
+                        </DropdownMenuItem>
+                         <DropdownMenuItem onClick={() => setCommandBarOpen(true)} className="cursor-pointer">
+                            <Search className="mr-2 h-4 w-4" />
+                            <span>Search...</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-500 focus:text-red-500 focus:bg-red-50">
+                            <LogOut className="mr-2 h-4 w-4" />
+                            <span>Log Out</span>
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            </div>
+        </div>
+    );
+
+    return (
+        <AuthWrapper>
+            <div className="flex h-screen bg-slate-50">
+                <div className="hidden md:flex md:flex-shrink-0">
+                    <div className="flex flex-col w-64 border-r border-slate-700 bg-slate-800">
+                        <UserNav />
+                    </div>
+                </div>
+
+                <div className="flex flex-col flex-1 overflow-hidden">
+                    <main className="flex-1 overflow-y-auto relative">
+                        <Sheet>
+                            <SheetTrigger asChild className="md:hidden absolute top-4 left-4 z-10">
+                                <Button variant="ghost" size="icon"><Menu className="h-6 w-6" /></Button>
+                            </SheetTrigger>
+                            <SheetContent side="left" className="w-72 p-0 bg-slate-800 border-r-0">
+                                <UserNav />
+                            </SheetContent>
+                        </Sheet>
+                        <Suspense fallback={<div>Loading page...</div>}>
+                           {children}
+                        </Suspense>
+                    </main>
+                </div>
+                 <AICommandBar open={isCommandBarOpen} onOpenChange={setCommandBarOpen} />
+            </div>
+            <Toaster richColors position="top-right" />
+        </AuthWrapper>
+    );
+};
+
+export default function Layout({ children, currentPageName }) {
+    if (publicPages.includes(currentPageName)) {
+        return <PublicLayout>{children}</PublicLayout>;
+    }
+
+    if (websitePages.includes(currentPageName)) {
+        return <WebsiteLayout>{children}</WebsiteLayout>;
+    }
+    
+    return <PrivateLayout currentPageName={currentPageName}>{children}</PrivateLayout>;
+}
