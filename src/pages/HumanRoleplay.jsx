@@ -246,6 +246,8 @@ export default function HumanRoleplay() {
 
             const sessionPayload = {
                 session_type: 'human_human',
+                user_id: currentUser.id,
+                user_email: currentUser.email,
                 lead_id: isValidUUID ? lead.id : null,
                 initiator_email: currentUser.email,
                 prospect_player_email: sessionData.prospect_player_email,
