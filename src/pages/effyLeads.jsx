@@ -185,7 +185,7 @@ export default function EffyLeads() {
     const fetchLeads = async () => {
         setIsLoading(true);
         try {
-            const data = await Lead.list('-created_date');
+            const data = await Lead.list('-created_at');
             const validLeads = data.filter(lead => 
                 lead && typeof lead === 'object' && (lead.contact_name || lead.company_name)
             );

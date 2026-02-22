@@ -39,7 +39,7 @@ export default function Dashboard() {
             try {
                 const [currentUser, recentLeads] = await Promise.all([
                     User.me(),
-                    Lead.list('-created_date', 5)
+                    Lead.list('-created_at', 5)
                 ]);
                 
                 setUser(currentUser);

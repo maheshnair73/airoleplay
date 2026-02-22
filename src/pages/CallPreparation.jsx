@@ -148,7 +148,7 @@ export default function CallPreparation() {
                     setPageState('prepForm');
                 } else {
                     // Load leads for selection
-                    const leadsData = await Lead.list('-created_date');
+                    const leadsData = await Lead.list('-created_at');
                     setAllLeads(leadsData);
                     setFilteredLeads(leadsData);
                     setPageState('selectLead');
