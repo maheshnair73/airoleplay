@@ -756,98 +756,142 @@ Return a JSON object containing the following fields:
                     </TabsList>
 
                     <TabsContent value="overview" className="space-y-4">
-                        <LeadStageIndicator currentStatus={lead.status} lead={lead} onLeadUpdate={handleLeadUpdate} />
-
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                            <Card>
-                                <CardHeader className="pb-3">
-                                    <div className="flex items-center justify-between">
-                                        <CardTitle className="text-base font-semibold flex items-center gap-2">
-                                            <UserIcon className="w-4 h-4" />
-                                            Contact
-                                        </CardTitle>
-                                        <Button onClick={() => setShowEditModal(true)} variant="ghost" size="sm">
-                                            <Edit className="w-3 h-3" />
-                                        </Button>
-                                    </div>
-                                </CardHeader>
-                                <CardContent className="space-y-3 text-sm">
-                                    <div>
-                                        <span className="text-slate-500 text-xs">Name</span>
-                                        <p className="font-medium text-slate-800">{lead.contact_name || 'N/A'}</p>
-                                    </div>
-                                    <div>
-                                        <span className="text-slate-500 text-xs">Title</span>
-                                        <p className="font-medium text-slate-800">{lead.contact_title || 'N/A'}</p>
-                                    </div>
-                                    <div>
-                                        <span className="text-slate-500 text-xs">Email</span>
-                                        {lead.contact_email ? (
-                                            <a href={`mailto:${lead.contact_email}`} className="text-blue-600 hover:underline block">
-                                                {lead.contact_email}
-                                            </a>
-                                        ) : <p className="text-slate-400">N/A</p>}
-                                    </div>
-                                    <div>
-                                        <span className="text-slate-500 text-xs">Phone</span>
-                                        {lead.contact_phone ? (
-                                            <a href={`tel:${lead.contact_phone}`} className="text-blue-600 hover:underline block">
-                                                {lead.contact_phone}
-                                            </a>
-                                        ) : <p className="text-slate-400">N/A</p>}
-                                    </div>
-                                </CardContent>
-                            </Card>
-
-                            <Card>
-                                <CardHeader className="pb-3">
-                                    <div className="flex items-center justify-between">
-                                        <CardTitle className="text-base font-semibold flex items-center gap-2">
-                                            <Building className="w-4 h-4" />
-                                            Company
-                                        </CardTitle>
-                                        <Button onClick={() => setShowEditModal(true)} variant="ghost" size="sm">
-                                            <Edit className="w-3 h-3" />
-                                        </Button>
-                                    </div>
-                                </CardHeader>
-                                <CardContent className="space-y-3 text-sm">
-                                    <div>
-                                        <span className="text-slate-500 text-xs">Name</span>
-                                        <p className="font-medium text-slate-800">{lead.company_name || 'N/A'}</p>
-                                    </div>
-                                    <div>
-                                        <span className="text-slate-500 text-xs">Industry</span>
-                                        <p className="font-medium text-slate-800">{lead.industry || 'N/A'}</p>
-                                    </div>
-                                    <div>
-                                        <span className="text-slate-500 text-xs">Website</span>
-                                        {lead.company_website ? (
-                                            <a
-                                                href={lead.company_website.startsWith('http') ? lead.company_website : `https://${lead.company_website}`}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="text-blue-600 hover:underline block truncate"
-                                            >
-                                                {lead.company_website}
-                                            </a>
-                                        ) : <p className="text-slate-400">N/A</p>}
-                                    </div>
-                                    <div className="flex gap-4">
-                                        <div className="flex-1">
-                                            <span className="text-slate-500 text-xs">Size</span>
-                                            <p className="font-medium text-slate-800">{lead.company_size || 'N/A'}</p>
-                                        </div>
-                                        <div className="flex-1">
-                                            <span className="text-slate-500 text-xs">Revenue</span>
-                                            <p className="font-medium text-slate-800">
-                                                {lead.annual_revenue ? `$${parseInt(lead.annual_revenue).toLocaleString()}` : 'N/A'}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
+                        <div className="bg-gradient-to-r from-slate-800 to-slate-700 rounded-lg p-4 shadow-md">
+                            <LeadStageIndicator currentStatus={lead.status} lead={lead} onLeadUpdate={handleLeadUpdate} />
                         </div>
+
+                        <Tabs defaultValue="contact" className="w-full">
+                            <TabsList className="grid w-full grid-cols-2 mb-4">
+                                <TabsTrigger value="contact" className="text-sm">
+                                    <UserIcon className="w-4 h-4 mr-2" />
+                                    Contact
+                                </TabsTrigger>
+                                <TabsTrigger value="company" className="text-sm">
+                                    <Building className="w-4 h-4 mr-2" />
+                                    Company
+                                </TabsTrigger>
+                            </TabsList>
+
+                            <TabsContent value="contact" className="space-y-4 mt-0">
+                                <Card>
+                                    <CardHeader className="pb-3">
+                                        <div className="flex items-center justify-between">
+                                            <CardTitle className="text-base font-semibold">Contact Information</CardTitle>
+                                            <Button onClick={() => setShowEditModal(true)} variant="ghost" size="sm">
+                                                <Edit className="w-3 h-3" />
+                                            </Button>
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4 text-sm">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <div>
+                                                <span className="text-slate-500 text-xs block mb-1">Full Name</span>
+                                                <p className="font-medium text-slate-900">{lead.contact_name || 'N/A'}</p>
+                                            </div>
+                                            <div>
+                                                <span className="text-slate-500 text-xs block mb-1">Job Title</span>
+                                                <p className="font-medium text-slate-900">{lead.contact_title || 'N/A'}</p>
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <div>
+                                                <span className="text-slate-500 text-xs block mb-1">Email Address</span>
+                                                {lead.contact_email ? (
+                                                    <a href={`mailto:${lead.contact_email}`} className="text-blue-600 hover:underline font-medium flex items-center gap-1">
+                                                        <Mail className="w-3 h-3" />
+                                                        {lead.contact_email}
+                                                    </a>
+                                                ) : <p className="text-slate-400">N/A</p>}
+                                            </div>
+                                            <div>
+                                                <span className="text-slate-500 text-xs block mb-1">Phone Number</span>
+                                                {lead.contact_phone ? (
+                                                    <a href={`tel:${lead.contact_phone}`} className="text-blue-600 hover:underline font-medium flex items-center gap-1">
+                                                        <Phone className="w-3 h-3" />
+                                                        {lead.contact_phone}
+                                                    </a>
+                                                ) : <p className="text-slate-400">N/A</p>}
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t">
+                                            <div>
+                                                <span className="text-slate-500 text-xs block mb-1">Assigned To</span>
+                                                <p className="font-medium text-slate-900">{lead.assigned_to_email || 'Unassigned'}</p>
+                                            </div>
+                                            <div>
+                                                <span className="text-slate-500 text-xs block mb-1">Last Contact</span>
+                                                <p className="font-medium text-slate-900">
+                                                    {lead.last_contact_date ? format(new Date(lead.last_contact_date), 'MMM d, yyyy') : 'Never'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </TabsContent>
+
+                            <TabsContent value="company" className="space-y-4 mt-0">
+                                <Card>
+                                    <CardHeader className="pb-3">
+                                        <div className="flex items-center justify-between">
+                                            <CardTitle className="text-base font-semibold">Company Details</CardTitle>
+                                            <Button onClick={() => setShowEditModal(true)} variant="ghost" size="sm">
+                                                <Edit className="w-3 h-3" />
+                                            </Button>
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4 text-sm">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <div>
+                                                <span className="text-slate-500 text-xs block mb-1">Company Name</span>
+                                                <p className="font-medium text-slate-900">{lead.company_name || 'N/A'}</p>
+                                            </div>
+                                            <div>
+                                                <span className="text-slate-500 text-xs block mb-1">Industry</span>
+                                                <p className="font-medium text-slate-900">{lead.industry || 'N/A'}</p>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <span className="text-slate-500 text-xs block mb-1">Website</span>
+                                            {lead.company_website ? (
+                                                <a
+                                                    href={lead.company_website.startsWith('http') ? lead.company_website : `https://${lead.company_website}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-blue-600 hover:underline font-medium break-all"
+                                                >
+                                                    {lead.company_website}
+                                                </a>
+                                            ) : <p className="text-slate-400">N/A</p>}
+                                        </div>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <div>
+                                                <span className="text-slate-500 text-xs block mb-1">Company Size</span>
+                                                <p className="font-medium text-slate-900">{lead.company_size || 'N/A'}</p>
+                                            </div>
+                                            <div>
+                                                <span className="text-slate-500 text-xs block mb-1">Annual Revenue</span>
+                                                <p className="font-medium text-slate-900">
+                                                    {lead.annual_revenue ? `$${parseInt(lead.annual_revenue).toLocaleString()}` : 'N/A'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="pt-2 border-t">
+                                            <span className="text-slate-500 text-xs block mb-1">Lead Source</span>
+                                            <p className="font-medium text-slate-900">{lead.lead_source || 'N/A'}</p>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+
+                                <Card>
+                                    <CardHeader className="pb-3">
+                                        <CardTitle className="text-base font-semibold">Company Description</CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <CompanyDescriptionEditor lead={lead} onLeadUpdate={handleLeadUpdate} />
+                                    </CardContent>
+                                </Card>
+                            </TabsContent>
+                        </Tabs>
 
                         {/* AI Research Status Card */}
                         <Card className="border-2 border-dashed border-slate-200 bg-gradient-to-r from-blue-50 to-purple-50">
@@ -1042,15 +1086,6 @@ Return a JSON object containing the following fields:
                                 </CardContent>
                             </Card>
                         </div>
-
-                        <Card>
-                            <CardHeader className="pb-3">
-                                <CardTitle className="text-base font-semibold">Company Description</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <CompanyDescriptionEditor lead={lead} onLeadUpdate={handleLeadUpdate} />
-                            </CardContent>
-                        </Card>
 
                         <Card>
                             <CardHeader className="pb-3">

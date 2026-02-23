@@ -109,20 +109,20 @@ export default function LeadStageIndicator({ currentStatus, lead, onLeadUpdate }
 
     return (
         <>
-            <div className="bg-white rounded-lg border p-4">
-                <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-sm font-medium text-slate-700">Lead Stage</h3>
-                    <Button 
-                        variant="outline" 
-                        size="sm" 
+            <div className="rounded-lg">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
+                    <h3 className="text-sm font-medium text-white">Lead Stage</h3>
+                    <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => setIsEditModalOpen(true)}
-                        className="flex items-center gap-1"
+                        className="flex items-center gap-1 bg-white/10 border-white/20 text-white hover:bg-white/20 w-fit"
                     >
                         <Edit className="w-3 h-3" />
                         Update
                     </Button>
                 </div>
-                <div className="flex items-center justify-between">
+                <div className="grid grid-cols-2 sm:flex sm:items-center sm:justify-between gap-4 sm:gap-2">
                     {stages.map((stage, index) => {
                         const status = getStageStatus(stage, index);
                         const isActive = status === 'current' || status === 'current-won' || status === 'current-lost';
@@ -133,26 +133,26 @@ export default function LeadStageIndicator({ currentStatus, lead, onLeadUpdate }
                         return (
                             <div key={stage.key} className="flex flex-col items-center flex-1">
                                 <div className={`
-                                    w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 cursor-pointer hover:scale-105
-                                    ${isActive || isCompleted ? stage.color : 'bg-slate-200'}
-                                    ${isActive ? 'ring-4 ring-opacity-20' : ''}
-                                    ${isActive && !isLost && !isWon ? 'ring-yellow-300' : ''}
-                                    ${isWon ? 'ring-green-300' : ''}
-                                    ${isLost ? 'ring-red-300' : ''}
+                                    w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all duration-300 cursor-pointer hover:scale-105
+                                    ${isActive || isCompleted ? stage.color : 'bg-white/10'}
+                                    ${isActive ? 'ring-4 ring-opacity-30' : ''}
+                                    ${isActive && !isLost && !isWon ? 'ring-yellow-300/50' : ''}
+                                    ${isWon ? 'ring-green-300/50' : ''}
+                                    ${isLost ? 'ring-red-300/50' : ''}
                                 `}
                                 onClick={() => setIsEditModalOpen(true)}
                                 >
                                     {getStageIcon(stage, index)}
                                 </div>
                                 <span className={`
-                                    mt-2 text-xs font-medium
-                                    ${isActive ? 'text-slate-900' : 'text-slate-500'}
+                                    mt-2 text-xs font-medium text-center
+                                    ${isActive ? 'text-white' : 'text-white/60'}
                                 `}>
                                     {stage.label}
                                 </span>
                                 {isActive && (
                                     <Badge className={`
-                                        mt-1 text-xs px-2 py-0.5
+                                        mt-1 text-xs px-2 py-0.5 hidden sm:block
                                         ${isWon ? 'bg-green-100 text-green-800' : ''}
                                         ${isLost ? 'bg-red-100 text-red-800' : ''}
                                         ${!isWon && !isLost ? 'bg-yellow-100 text-yellow-800' : ''}
@@ -164,29 +164,29 @@ export default function LeadStageIndicator({ currentStatus, lead, onLeadUpdate }
                         );
                     })}
                 </div>
-                
+
                 {/* Current Status Detail */}
-                <div className="mt-4 p-3 bg-slate-50 rounded-lg">
-                    <div className="flex items-center justify-between">
+                <div className="mt-4 p-3 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                         <div>
-                            <p className="text-xs text-slate-500">Current Status</p>
-                            <p className="text-sm font-medium text-slate-900">
+                            <p className="text-xs text-white/70">Current Status</p>
+                            <p className="text-sm font-medium text-white">
                                 {statusOptions.find(opt => opt.value === currentStatus)?.label || currentStatus}
                             </p>
                         </div>
-                        <div className="text-right">
-                            <p className="text-xs text-slate-500">Progress</p>
-                            <p className="text-sm font-medium text-slate-900">
+                        <div className="sm:text-right">
+                            <p className="text-xs text-white/70">Progress</p>
+                            <p className="text-sm font-medium text-white">
                                 {Math.round(((currentStageIndex + 1) / stages.length) * 100)}%
                             </p>
                         </div>
                     </div>
-                    
-                    <div className="mt-2 w-full bg-slate-200 rounded-full h-2">
-                        <div 
+
+                    <div className="mt-3 w-full bg-white/20 rounded-full h-2">
+                        <div
                             className={`h-2 rounded-full transition-all duration-300 ${
-                                currentStage === 'won' ? 'bg-green-500' : 
-                                currentStage === 'lost' ? 'bg-red-500' : 'bg-yellow-500'
+                                currentStage === 'won' ? 'bg-green-400' :
+                                currentStage === 'lost' ? 'bg-red-400' : 'bg-yellow-400'
                             }`}
                             style={{ width: `${Math.round(((currentStageIndex + 1) / stages.length) * 100)}%` }}
                         ></div>
