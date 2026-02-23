@@ -755,41 +755,99 @@ Return a JSON object containing the following fields:
                         </TabsTrigger>
                     </TabsList>
 
-                    <TabsContent value="overview" className="space-y-4 sm:space-y-6">
+                    <TabsContent value="overview" className="space-y-4">
                         <LeadStageIndicator currentStatus={lead.status} lead={lead} onLeadUpdate={handleLeadUpdate} />
 
-                        {/* Contact Information Section */}
-                        <Card>
-                            <CardHeader className="flex flex-row justify-between items-center">
-                                <CardTitle className="text-xl flex items-center gap-2">
-                                    <UserIcon className="w-5 h-5" />
-                                    Contact Information
-                                </CardTitle>
-                                <div className="flex items-center gap-2">
-                                    <Button onClick={() => setShowEditModal(true)} variant="outline" size="sm">
-                                        <Edit className="w-4 h-4 mr-2" />Edit
-                                    </Button>
-                                </div>
-                            </CardHeader>
-                            <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                <DetailItem label="Full Name" value={lead.contact_name} />
-                                <DetailItem label="Job Title" value={lead.contact_title} />
-                                <DetailItem label="Email">
-                                    {lead.contact_email ? (
-                                        <a href={`mailto:${lead.contact_email}`} className="text-blue-600 hover:underline">{lead.contact_email}</a>
-                                    ) : 'N/A'}
-                                </DetailItem>
-                                <DetailItem label="Phone">
-                                    {lead.contact_phone ? (
-                                        <a href={`tel:${lead.contact_phone}`} className="text-blue-600 hover:underline">{lead.contact_phone}</a>
-                                    ) : 'N/A'}
-                                </DetailItem>
-                                <DetailItem label="Assigned To" value={lead.assigned_to_email} />
-                                <DetailItem label="Last Contact Date">
-                                    {lead.last_contact_date ? format(new Date(lead.last_contact_date), 'dd-MMM-yyyy, hh:mm a') : 'N/A'}
-                                </DetailItem>
-                            </CardContent>
-                        </Card>
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            <Card>
+                                <CardHeader className="pb-3">
+                                    <div className="flex items-center justify-between">
+                                        <CardTitle className="text-base font-semibold flex items-center gap-2">
+                                            <UserIcon className="w-4 h-4" />
+                                            Contact
+                                        </CardTitle>
+                                        <Button onClick={() => setShowEditModal(true)} variant="ghost" size="sm">
+                                            <Edit className="w-3 h-3" />
+                                        </Button>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="space-y-3 text-sm">
+                                    <div>
+                                        <span className="text-slate-500 text-xs">Name</span>
+                                        <p className="font-medium text-slate-800">{lead.contact_name || 'N/A'}</p>
+                                    </div>
+                                    <div>
+                                        <span className="text-slate-500 text-xs">Title</span>
+                                        <p className="font-medium text-slate-800">{lead.contact_title || 'N/A'}</p>
+                                    </div>
+                                    <div>
+                                        <span className="text-slate-500 text-xs">Email</span>
+                                        {lead.contact_email ? (
+                                            <a href={`mailto:${lead.contact_email}`} className="text-blue-600 hover:underline block">
+                                                {lead.contact_email}
+                                            </a>
+                                        ) : <p className="text-slate-400">N/A</p>}
+                                    </div>
+                                    <div>
+                                        <span className="text-slate-500 text-xs">Phone</span>
+                                        {lead.contact_phone ? (
+                                            <a href={`tel:${lead.contact_phone}`} className="text-blue-600 hover:underline block">
+                                                {lead.contact_phone}
+                                            </a>
+                                        ) : <p className="text-slate-400">N/A</p>}
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            <Card>
+                                <CardHeader className="pb-3">
+                                    <div className="flex items-center justify-between">
+                                        <CardTitle className="text-base font-semibold flex items-center gap-2">
+                                            <Building className="w-4 h-4" />
+                                            Company
+                                        </CardTitle>
+                                        <Button onClick={() => setShowEditModal(true)} variant="ghost" size="sm">
+                                            <Edit className="w-3 h-3" />
+                                        </Button>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="space-y-3 text-sm">
+                                    <div>
+                                        <span className="text-slate-500 text-xs">Name</span>
+                                        <p className="font-medium text-slate-800">{lead.company_name || 'N/A'}</p>
+                                    </div>
+                                    <div>
+                                        <span className="text-slate-500 text-xs">Industry</span>
+                                        <p className="font-medium text-slate-800">{lead.industry || 'N/A'}</p>
+                                    </div>
+                                    <div>
+                                        <span className="text-slate-500 text-xs">Website</span>
+                                        {lead.company_website ? (
+                                            <a
+                                                href={lead.company_website.startsWith('http') ? lead.company_website : `https://${lead.company_website}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-blue-600 hover:underline block truncate"
+                                            >
+                                                {lead.company_website}
+                                            </a>
+                                        ) : <p className="text-slate-400">N/A</p>}
+                                    </div>
+                                    <div className="flex gap-4">
+                                        <div className="flex-1">
+                                            <span className="text-slate-500 text-xs">Size</span>
+                                            <p className="font-medium text-slate-800">{lead.company_size || 'N/A'}</p>
+                                        </div>
+                                        <div className="flex-1">
+                                            <span className="text-slate-500 text-xs">Revenue</span>
+                                            <p className="font-medium text-slate-800">
+                                                {lead.annual_revenue ? `$${parseInt(lead.annual_revenue).toLocaleString()}` : 'N/A'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
 
                         {/* AI Research Status Card */}
                         <Card className="border-2 border-dashed border-slate-200 bg-gradient-to-r from-blue-50 to-purple-50">
@@ -915,137 +973,118 @@ Return a JSON object containing the following fields:
                             </CardContent>
                         </Card>
 
-                        {/* Company Information Section */}
-                        <Card>
-                            <CardHeader className="flex flex-row justify-between items-center">
-                                <CardTitle className="text-xl flex items-center gap-2">
-                                    <Building className="w-5 h-5" />
-                                    Company Information
-                                </CardTitle>
-                                <div className="flex gap-2">
-                                    <Button onClick={() => setShowEditModal(true)} variant="outline" size="sm">
-                                        <Edit className="w-4 h-4 mr-2" />Edit
-                                    </Button>
-                                </div>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
-                                    <DetailItem label="Company Name" value={lead.company_name} />
-                                    <DetailItem label="Website">
-                                        {lead.company_website ? (
-                                            <a
-                                                href={lead.company_website.startsWith('http') ? lead.company_website : `https://${lead.company_website}`}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="text-blue-600 hover:underline"
-                                            >
-                                                {lead.company_website}
-                                            </a>
-                                        ) : 'N/A'}
-                                    </DetailItem>
-                                    <DetailItem label="Industry" value={lead.industry} />
-                                    <DetailItem label="Company Size" value={lead.company_size} />
-                                    <DetailItem label="Annual Revenue" value={lead.annual_revenue ? `$${parseInt(lead.annual_revenue).toLocaleString()}` : 'N/A'} />
-                                    <DetailItem label="Lead Source" value={lead.lead_source} />
-                                </div>
-
-                                <div className="border-t pt-6">
-                                    <CompanyDescriptionEditor lead={lead} onLeadUpdate={handleLeadUpdate} />
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Deal Information Section */}
-                        <Card>
-                            <CardHeader className="flex flex-row justify-between items-center">
-                                <CardTitle className="text-xl flex items-center gap-2">
-                                    <DollarSign className="w-5 h-5" />
-                                    Deal Information
-                                </CardTitle>
-                                <Button onClick={() => setShowEditModal(true)} variant="outline" size="sm"><Edit className="w-4 h-4 mr-2" />Edit</Button>
-                            </CardHeader>
-                            <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                <DetailItem label="Estimated Deal Value ($)">
-                                    {lead.estimated_deal_value ? `$${parseInt(lead.estimated_deal_value).toLocaleString()}` : 'N/A'}
-                                </DetailItem>
-                                <DetailItem label="Probability (%)" value={lead.probability ? `${lead.probability}%` : 'N/A'} />
-                                <DetailItem label="Priority" value={lead.priority} />
-                                <DetailItem label="Budget Range" value={lead.budget_range} />
-                                <DetailItem label="Decision Timeline" value={lead.timeline} />
-                                <DetailItem label="Product Interest" value={lead.product_interest} />
-                            </CardContent>
-                        </Card>
-
-                        {/* Sales Insights Section */}
-                        <Card>
-                            <CardHeader className="flex flex-row justify-between items-center">
-                                <CardTitle className="text-xl flex items-center gap-2">
-                                    <Zap className="w-5 h-5" />
-                                    Sales Insights
-                                </CardTitle>
-                                <Button onClick={() => setShowEditModal(true)} variant="outline" size="sm"><Edit className="w-4 h-4 mr-2" />Edit</Button>
-                            </CardHeader>
-                            <CardContent className="space-y-6">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div>
-                                        <h5 className="font-medium text-slate-800 mb-3">Personality Traits</h5>
-                                        <TagList items={lead.personality_traits} color="blue" />
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            <Card>
+                                <CardHeader className="pb-3">
+                                    <div className="flex items-center justify-between">
+                                        <CardTitle className="text-base font-semibold flex items-center gap-2">
+                                            <DollarSign className="w-4 h-4" />
+                                            Deal Info
+                                        </CardTitle>
+                                        <Button onClick={() => setShowEditModal(true)} variant="ghost" size="sm">
+                                            <Edit className="w-3 h-3" />
+                                        </Button>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="space-y-3 text-sm">
+                                    <div className="flex gap-4">
+                                        <div className="flex-1">
+                                            <span className="text-slate-500 text-xs">Deal Value</span>
+                                            <p className="font-semibold text-green-700">
+                                                {lead.estimated_deal_value ? `$${parseInt(lead.estimated_deal_value).toLocaleString()}` : 'N/A'}
+                                            </p>
+                                        </div>
+                                        <div className="flex-1">
+                                            <span className="text-slate-500 text-xs">Probability</span>
+                                            <p className="font-medium text-slate-800">{lead.probability ? `${lead.probability}%` : 'N/A'}</p>
+                                        </div>
                                     </div>
                                     <div>
-                                        <h5 className="font-medium text-slate-800 mb-3">Pain Points</h5>
+                                        <span className="text-slate-500 text-xs">Priority</span>
+                                        <p className="font-medium text-slate-800">{lead.priority || 'N/A'}</p>
+                                    </div>
+                                    <div>
+                                        <span className="text-slate-500 text-xs">Timeline</span>
+                                        <p className="font-medium text-slate-800">{lead.timeline || 'N/A'}</p>
+                                    </div>
+                                    <div>
+                                        <span className="text-slate-500 text-xs">Product Interest</span>
+                                        <p className="font-medium text-slate-800">{lead.product_interest || 'N/A'}</p>
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            <Card>
+                                <CardHeader className="pb-3">
+                                    <div className="flex items-center justify-between">
+                                        <CardTitle className="text-base font-semibold flex items-center gap-2">
+                                            <Zap className="w-4 h-4" />
+                                            Sales Insights
+                                        </CardTitle>
+                                        <Button onClick={() => setShowEditModal(true)} variant="ghost" size="sm">
+                                            <Edit className="w-3 h-3" />
+                                        </Button>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="space-y-3 text-sm">
+                                    <div>
+                                        <span className="text-slate-500 text-xs mb-1 block">Pain Points</span>
                                         <TagList items={lead.pain_points} color="red" />
                                     </div>
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div>
-                                        <h5 className="font-medium text-slate-800 mb-3">Decision Makers</h5>
+                                        <span className="text-slate-500 text-xs mb-1 block">Decision Makers</span>
                                         <TagList items={lead.decision_makers} color="green" />
                                     </div>
                                     <div>
-                                        <h5 className="font-medium text-slate-800 mb-3">Competitor Mentions</h5>
+                                        <span className="text-slate-500 text-xs mb-1 block">Competitors</span>
                                         <TagList items={lead.competitor_mentions} color="purple" />
                                     </div>
-                                </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+
+                        <Card>
+                            <CardHeader className="pb-3">
+                                <CardTitle className="text-base font-semibold">Company Description</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <CompanyDescriptionEditor lead={lead} onLeadUpdate={handleLeadUpdate} />
                             </CardContent>
                         </Card>
 
-                        {/* Follow-up & Notes Section */}
                         <Card>
-                            <CardHeader className="flex flex-row justify-between items-center">
-                                <CardTitle className="text-xl flex items-center gap-2">
-                                    <FileText className="w-5 h-5" />
-                                    Follow-up & Notes
-                                </CardTitle>
-                                <Button onClick={() => setShowEditModal(true)} variant="outline" size="sm"><Edit className="w-4 h-4 mr-2" />Edit</Button>
+                            <CardHeader className="pb-3">
+                                <div className="flex items-center justify-between">
+                                    <CardTitle className="text-base font-semibold flex items-center gap-2">
+                                        <FileText className="w-4 h-4" />
+                                        Notes & Follow-up
+                                    </CardTitle>
+                                    <Button onClick={() => setShowEditModal(true)} variant="ghost" size="sm">
+                                        <Edit className="w-3 h-3" />
+                                    </Button>
+                                </div>
                             </CardHeader>
-                            <CardContent className="space-y-6">
-                                <div className="grid grid-cols-1 md::grid-cols-2 gap-6">
-                                    <DetailItem label="Next Follow-up Date">
-                                        {lead.next_followup_date ? format(new Date(lead.next_followup_date), 'dd-MMM-yyyy') : 'N/A'}
-                                    </DetailItem>
-                                    <DetailItem label="Next Action" value={lead.next_action} />
+                            <CardContent className="space-y-3 text-sm">
+                                <div className="flex gap-4">
+                                    <div className="flex-1">
+                                        <span className="text-slate-500 text-xs">Next Follow-up</span>
+                                        <p className="font-medium text-slate-800">
+                                            {lead.next_followup_date ? format(new Date(lead.next_followup_date), 'MMM d, yyyy') : 'Not scheduled'}
+                                        </p>
+                                    </div>
+                                    <div className="flex-1">
+                                        <span className="text-slate-500 text-xs">Next Action</span>
+                                        <p className="font-medium text-slate-800">{lead.next_action || 'N/A'}</p>
+                                    </div>
                                 </div>
                                 <div>
-                                    <h5 className="font-medium text-slate-800 mb-3">Notes</h5>
+                                    <span className="text-slate-500 text-xs mb-2 block">Notes</span>
                                     {lead.notes ? (
-                                        <div className="bg-slate-50 p-4 rounded-lg">
-                                            <p className="text-slate-700 leading-relaxed whitespace-pre-wrap">{lead.notes}</p>
+                                        <div className="bg-slate-50 p-3 rounded-lg max-h-40 overflow-y-auto">
+                                            <p className="text-slate-700 text-sm leading-relaxed whitespace-pre-wrap">{lead.notes}</p>
                                         </div>
                                     ) : (
-                                        <div className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-lg p-6 text-center">
-                                            <FileText className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                                            <p className="text-slate-500 mb-2">No notes available</p>
-                                            <p className="text-sm text-slate-400">Add notes to keep track of important information</p>
-                                            <Button
-                                                onClick={() => setShowEditModal(true)}
-                                                variant="outline"
-                                                size="sm"
-                                                className="mt-3"
-                                            >
-                                                <Edit className="w-4 h-4 mr-2" />
-                                                Add Notes
-                                            </Button>
-                                        </div>
+                                        <p className="text-slate-400 text-sm italic">No notes added yet</p>
                                     )}
                                 </div>
                             </CardContent>
