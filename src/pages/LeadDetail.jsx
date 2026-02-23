@@ -676,51 +676,86 @@ Return a JSON object containing the following fields:
             <RealTimeNotifications />
             {isCallActive && <Button onClick={() => setIsLiveAssistantOpen(true)} className="fixed bottom-6 right-6 z-50 rounded-full h-14 w-14 shadow-lg bg-gradient-to-r from-purple-600 to-indigo-600 text-white"><BrainCircuit className="w-6 h-6" /></Button>}
 
-            <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 p-6 text-white relative">
+            <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 p-4 sm:p-6 text-white relative">
                 <div className="relative max-w-7xl mx-auto">
-                    <div className="mb-4"><Link to={getBackUrl()} className="flex items-center gap-2 text-blue-100 hover:text-white"><ArrowLeft className="w-4 h-4" />{getBackLabel()}</Link></div>
-                    <div className="flex flex-col gap-6">
-                        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-                            <div className="flex items-center gap-6">
-                                <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center text-3xl font-bold">{lead.contact_name?.charAt(0) || 'L'}</div>
-                                <div>
-                                    <h1 className="text-4xl font-bold mb-2 flex items-center gap-3">{lead.contact_name || 'Unknown'}<Badge variant="outline" className="bg-white/10 border-white/20 text-blue-100">Offline</Badge></h1>
-                                    <p className="text-blue-100 text-xl">{lead.contact_title} at {lead.company_name}</p>
-                                    <div className="flex flex-wrap gap-3 mt-3">
-                                        <Badge className={`px-3 py-1 text-sm ${statusColors[lead.status] || 'bg-slate-100'}`}>{lead.status || 'new'}</Badge>
-                                        {lead.ai_score && <Badge className={`px-3 py-1 text-sm ${getScoreColor(lead.ai_score)}`}><Star className="w-4 h-4 mr-1" />Lead Score: {lead.ai_score}</Badge>}
-                                        {lead.engagement_score && <Badge className={`px-3 py-1 text-sm ${getScoreColor(lead.engagement_score)}`}><TrendingUp className="w-4 h-4 mr-1" />Engagement: {lead.engagement_score}%</Badge>}
-                                        <Badge className="bg-white/20 text-white px-3 py-1">Source: {lead.lead_source || 'unknown'}</Badge>
+                    <div className="mb-3 sm:mb-4">
+                        <Link to={getBackUrl()} className="inline-flex items-center gap-2 text-blue-100 hover:text-white text-sm sm:text-base">
+                            <ArrowLeft className="w-4 h-4" />{getBackLabel()}
+                        </Link>
+                    </div>
+                    <div className="flex flex-col gap-4 sm:gap-6">
+                        <div className="flex flex-col gap-4">
+                            <div className="flex items-start gap-3 sm:gap-4">
+                                <div className="w-14 h-14 sm:w-16 sm:h-16 bg-white/20 rounded-full flex items-center justify-center text-2xl sm:text-3xl font-bold shrink-0">
+                                    {lead.contact_name?.charAt(0) || 'L'}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex flex-wrap items-center gap-2 mb-1">
+                                        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold truncate">{lead.contact_name || 'Unknown'}</h1>
+                                        <Badge variant="outline" className="bg-white/10 border-white/20 text-blue-100 text-xs shrink-0">Offline</Badge>
+                                    </div>
+                                    <p className="text-blue-100 text-sm sm:text-base lg:text-lg truncate">{lead.contact_title} at {lead.company_name}</p>
+                                    <div className="flex flex-wrap gap-2 mt-2">
+                                        <Badge className={`px-2 py-0.5 text-xs ${statusColors[lead.status] || 'bg-slate-100'}`}>{lead.status || 'new'}</Badge>
+                                        {lead.ai_score && (
+                                            <Badge className={`px-2 py-0.5 text-xs ${getScoreColor(lead.ai_score)}`}>
+                                                <Star className="w-3 h-3 mr-1" />Score: {lead.ai_score}
+                                            </Badge>
+                                        )}
+                                        {lead.engagement_score && (
+                                            <Badge className={`px-2 py-0.5 text-xs ${getScoreColor(lead.engagement_score)}`}>
+                                                <TrendingUp className="w-3 h-3 mr-1" />{lead.engagement_score}%
+                                            </Badge>
+                                        )}
+                                        <Badge className="bg-white/20 text-white px-2 py-0.5 text-xs">{lead.lead_source || 'unknown'}</Badge>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        <div className="flex flex-wrap gap-3 items-center justify-center pt-6 border-t border-white/20">
+                        <div className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3 pt-4 border-t border-white/20">
                             <DropdownMenu>
-                                <DropdownMenuTrigger asChild><Button disabled={!lead.contact_phone} className="bg-green-600 hover:bg-green-700 text-white"><Phone className="w-4 h-4 mr-2" />Call <ChevronDown className="w-4 h-4 ml-2" /></Button></DropdownMenuTrigger>
+                                <DropdownMenuTrigger asChild>
+                                    <Button disabled={!lead.contact_phone} className="bg-green-600 hover:bg-green-700 text-white w-full sm:w-auto">
+                                        <Phone className="w-4 h-4 mr-2" />Call <ChevronDown className="w-4 h-4 ml-2" />
+                                    </Button>
+                                </DropdownMenuTrigger>
                                 <DropdownMenuContent>
                                     <DropdownMenuItem onClick={handleCallLead}><Phone className="w-4 h-4 mr-2" />Call Now</DropdownMenuItem>
-                                    {/* Changed to switch to Call Prep tab */}
                                     <DropdownMenuItem onClick={() => setActiveTab('call-prep')}><Mic className="w-4 h-4 mr-2" />Practice Pitch</DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
-                            <Button onClick={() => setShowEmailComposer(true)} className="bg-blue-600 hover:bg-blue-700"><Mail className="w-4 h-4 mr-2" />Email</Button>
-                            <Button onClick={() => setShowCalendarScheduler(true)} className="bg-orange-600 hover:bg-orange-700"><Calendar className="w-4 h-4 mr-2" />Schedule</Button>
-                            <ComprehensiveAIAgent lead={lead} onLeadUpdate={setLead} />
+                            <Button onClick={() => setShowEmailComposer(true)} className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto">
+                                <Mail className="w-4 h-4 mr-2" />Email
+                            </Button>
+                            <Button onClick={() => setShowCalendarScheduler(true)} className="bg-orange-600 hover:bg-orange-700 w-full sm:w-auto">
+                                <Calendar className="w-4 h-4 mr-2" />Schedule
+                            </Button>
+                            <div className="w-full sm:w-auto">
+                                <ComprehensiveAIAgent lead={lead} onLeadUpdate={setLead} />
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div className="max-w-7xl mx-auto p-6">
+            <div className="max-w-7xl mx-auto p-3 sm:p-4 lg:p-6">
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                    <TabsList className="inline-flex w-auto gap-2 mb-6 bg-white shadow-sm p-1 rounded-lg">
-                        <TabsTrigger value="overview" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white"><Info className="w-4 h-4 mr-2" />Overview</TabsTrigger>
-                        <TabsTrigger value="call-prep" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white"><Brain className="w-4 h-4 mr-2" />Call Prep</TabsTrigger>
-                        <TabsTrigger value="activity" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white"><History className="w-4 h-4 mr-2" />Activity</TabsTrigger>
+                    <TabsList className="flex w-full sm:inline-flex sm:w-auto gap-1 sm:gap-2 mb-4 sm:mb-6 bg-white shadow-sm p-1 rounded-lg overflow-x-auto">
+                        <TabsTrigger value="overview" className="flex-1 sm:flex-none data-[state=active]:bg-blue-600 data-[state=active]:text-white text-xs sm:text-sm whitespace-nowrap">
+                            <Info className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
+                            <span className="hidden sm:inline">Overview</span>
+                        </TabsTrigger>
+                        <TabsTrigger value="call-prep" className="flex-1 sm:flex-none data-[state=active]:bg-blue-600 data-[state=active]:text-white text-xs sm:text-sm whitespace-nowrap">
+                            <Brain className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
+                            <span className="hidden sm:inline">Call Prep</span>
+                        </TabsTrigger>
+                        <TabsTrigger value="activity" className="flex-1 sm:flex-none data-[state=active]:bg-blue-600 data-[state=active]:text-white text-xs sm:text-sm whitespace-nowrap">
+                            <History className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
+                            <span className="hidden sm:inline">Activity</span>
+                        </TabsTrigger>
                     </TabsList>
 
-                    <TabsContent value="overview" className="space-y-6">
+                    <TabsContent value="overview" className="space-y-4 sm:space-y-6">
                         <LeadStageIndicator currentStatus={lead.status} lead={lead} onLeadUpdate={handleLeadUpdate} />
 
                         {/* Contact Information Section */}
@@ -1154,50 +1189,47 @@ Return a JSON object containing the following fields:
                         )}
                     </TabsContent>
 
-                    <TabsContent value="call-prep" className="space-y-6">
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                            <div className="lg:col-span-2">
-                                <ElevatorPitchGenerator
-                                    leadId={lead.id}
-                                    lead={lead}
-                                    onPracticeRoleplay={() => navigate(createPageUrl(`AIRoleplayPractice?leadId=${lead.id}&scenario=sales_pitch`))}
-                                />
-                            </div>
-                            <div className="space-y-6">
-                                {showCallControls && (
-                                    <CallControlPanel
-                                        lead={lead}
-                                        onCallStart={handleCallStart}
-                                        onCallEnd={handleEndCall}
-                                    />
-                                )}
-                                {!showCallControls && (
-                                    <Card className="shadow-lg">
-                                        <CardContent className="p-6">
-                                            <div className="text-center space-y-4">
-                                                <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto">
-                                                    <Phone className="w-8 h-8 text-green-600" />
-                                                </div>
-                                                <div>
-                                                    <h3 className="font-semibold text-slate-800 mb-1">Ready to Call?</h3>
-                                                    <p className="text-sm text-slate-600">Start tracking your call with built-in assistance</p>
-                                                </div>
-                                                <Button
-                                                    onClick={handleCallLead}
-                                                    size="lg"
-                                                    className="w-full bg-green-600 hover:bg-green-700"
-                                                    disabled={!lead?.contact_phone}
-                                                >
-                                                    <Phone className="w-5 h-5 mr-2" />
-                                                    Start Call
-                                                </Button>
-                                            </div>
-                                        </CardContent>
-                                    </Card>
-                                )}
-                                <CallPrepTabContent lead={lead} />
-                            </div>
-                        </div>
+                    <TabsContent value="call-prep" className="space-y-4">
+                        {showCallControls && (
+                            <CallControlPanel
+                                lead={lead}
+                                onCallStart={handleCallStart}
+                                onCallEnd={handleEndCall}
+                            />
+                        )}
+
+                        {!showCallControls && (
+                            <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
+                                <CardContent className="p-4 sm:p-6">
+                                    <div className="flex flex-col sm:flex-row items-center gap-4">
+                                        <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-green-100 flex items-center justify-center shrink-0">
+                                            <Phone className="w-7 h-7 sm:w-8 sm:h-8 text-green-600" />
+                                        </div>
+                                        <div className="flex-1 text-center sm:text-left">
+                                            <h3 className="font-semibold text-slate-800 mb-1">Ready to Call?</h3>
+                                            <p className="text-sm text-slate-600">Start tracking your call with built-in assistance</p>
+                                        </div>
+                                        <Button
+                                            onClick={handleCallLead}
+                                            size="lg"
+                                            className="bg-green-600 hover:bg-green-700 w-full sm:w-auto shrink-0"
+                                            disabled={!lead?.contact_phone}
+                                        >
+                                            <Phone className="w-5 h-5 mr-2" />
+                                            Start Call
+                                        </Button>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
+
+                        <ElevatorPitchGenerator
+                            leadId={lead.id}
+                            lead={lead}
+                            onPracticeRoleplay={() => navigate(createPageUrl(`AIRoleplayPractice?leadId=${lead.id}&scenario=sales_pitch`))}
+                        />
+
+                        <CallPrepTabContent lead={lead} />
                     </TabsContent>
 
                     <TabsContent value="activity" className="space-y-6">
