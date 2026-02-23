@@ -140,7 +140,7 @@ import CallPreparation from "./CallPreparation";
 
 import ProductContribution from "./ProductContribution";
 
-import effyLeads from "./effyLeads";
+import EffyLeads from "./effyLeads";
 
 import CreatePitch from "./CreatePitch";
 
@@ -360,7 +360,7 @@ const PAGES = {
     
     ProductContribution: ProductContribution,
     
-    effyLeads: effyLeads,
+    effyLeads: EffyLeads,
     
     CreatePitch: CreatePitch,
     
@@ -604,7 +604,7 @@ function PagesContent() {
                 
                 <Route path="/ProductContribution" element={<ProductContribution />} />
                 
-                <Route path="/effyLeads" element={<effyLeads />} />
+                <Route path="/effyLeads" element={<EffyLeads />} />
                 
                 <Route path="/CreatePitch" element={<CreatePitch />} />
                 
