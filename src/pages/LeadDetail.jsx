@@ -247,7 +247,7 @@ export default function LeadDetail() {
     const [showMeetingEdit, setShowMeetingEdit] = useState(false);
     const [isCancelAlertOpen, setIsCancelAlertOpen] = useState(false);
     const [isEnriching, setIsEnriching] = useState(false);
-    const [activeTab, setActiveTab] = useState('details'); // Added for tab control
+    const [activeTab, setActiveTab] = useState('overview'); // Added for tab control
 
     // New state declarations for activity feed
     const [callRecords, setCallRecords] = useState([]);
@@ -714,15 +714,13 @@ Return a JSON object containing the following fields:
 
             <div className="max-w-7xl mx-auto p-6">
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                    <TabsList className={`grid w-full ${hasSalesRoomsAccess() ? 'grid-cols-5' : 'grid-cols-4'} mb-6 bg-white shadow-sm`}>
-                        <TabsTrigger value="details"><Info className="w-4 h-4 mr-2" />Lead Details</TabsTrigger>
-                        <TabsTrigger value="call-prep"><Brain className="w-4 h-4 mr-2" />Call Prep</TabsTrigger>
-                        {hasSalesRoomsAccess() && <TabsTrigger value="sales-rooms"><Briefcase className="w-4 h-4 mr-2" />Sales Rooms</TabsTrigger>}
-                        <TabsTrigger value="engagement"><Eye className="w-4 h-4 mr-2" />Engagement</TabsTrigger>
-                        <TabsTrigger value="activity"><History className="w-4 h-4 mr-2" />Activity & Analytics</TabsTrigger>
+                    <TabsList className="inline-flex w-auto gap-2 mb-6 bg-white shadow-sm p-1 rounded-lg">
+                        <TabsTrigger value="overview" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white"><Info className="w-4 h-4 mr-2" />Overview</TabsTrigger>
+                        <TabsTrigger value="call-prep" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white"><Brain className="w-4 h-4 mr-2" />Call Prep</TabsTrigger>
+                        <TabsTrigger value="activity" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white"><History className="w-4 h-4 mr-2" />Activity</TabsTrigger>
                     </TabsList>
 
-                    <TabsContent value="details" className="space-y-6">
+                    <TabsContent value="overview" className="space-y-6">
                         <LeadStageIndicator currentStatus={lead.status} lead={lead} onLeadUpdate={handleLeadUpdate} />
 
                         {/* Contact Information Section */}
@@ -1055,6 +1053,105 @@ Return a JSON object containing the following fields:
                                 )}
                             </CardContent>
                         </Card>
+
+                        {/* Document Engagement Section - Integrated */}
+                        {processedEngagement.length > 0 && (
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="text-xl flex items-center gap-2">
+                                        <Eye className="w-5 h-5" />
+                                        Document Engagement
+                                    </CardTitle>
+                                    <CardDescription>Track how prospects interact with your sales materials</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="space-y-3">
+                                        {processedEngagement.map(item => (
+                                            <div key={item.document_id} className="border rounded-lg p-4 hover:bg-slate-50 transition">
+                                                <div className="flex justify-between items-start mb-2">
+                                                    <h5 className="font-semibold text-slate-800">{item.document_name}</h5>
+                                                    <Badge variant="outline">{item.views} {item.views === 1 ? 'view' : 'views'}</Badge>
+                                                </div>
+                                                <div className="flex items-center gap-4 text-sm text-slate-600">
+                                                    <span className="flex items-center gap-1">
+                                                        <Clock className="w-4 h-4" />
+                                                        {formatDuration(item.total_duration_seconds)}
+                                                    </span>
+                                                    <Button
+                                                        variant="link"
+                                                        size="sm"
+                                                        onClick={() => toggleSet(expandedDocIds, item.document_id, setExpandedDocIds)}
+                                                        className="h-auto p-0"
+                                                    >
+                                                        {expandedDocIds.has(item.document_id) ? 'Hide' : 'Show'} Details
+                                                    </Button>
+                                                </div>
+                                                {expandedDocIds.has(item.document_id) && (
+                                                    <div className="mt-4 pt-4 border-t space-y-2">
+                                                        {item.sessions.map(s => (
+                                                            <div key={s.id} className="text-sm text-slate-600 flex justify-between">
+                                                                <span>{formatDate(s.created_date)}</span>
+                                                                <span className="text-slate-500">{formatDuration(s.duration_seconds || 0)}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
+
+                        {/* Digital Sales Rooms - Integrated */}
+                        {hasSalesRoomsAccess() && (
+                            <Card>
+                                <CardHeader className="flex flex-row justify-between items-center">
+                                    <div>
+                                        <CardTitle className="text-xl flex items-center gap-2">
+                                            <Briefcase className="w-5 h-5" />
+                                            Digital Sales Rooms
+                                        </CardTitle>
+                                        <CardDescription>Collaborative spaces for deal progression</CardDescription>
+                                    </div>
+                                    <Button onClick={() => navigate(createPageUrl(`CreateDigitalSalesRoom?leadId=${lead.id}`))}>
+                                        <Plus className="w-4 h-4 mr-2" />Create Room
+                                    </Button>
+                                </CardHeader>
+                                <CardContent>
+                                    {salesRooms.length ? (
+                                        <div className="space-y-3">
+                                            {salesRooms.map(room => (
+                                                <Link
+                                                    key={room.id}
+                                                    to={createPageUrl(`SalesRoomAnalytics?roomId=${room.id}`)}
+                                                    className="block border rounded-lg p-4 hover:bg-slate-50 transition hover:border-blue-300"
+                                                >
+                                                    <div className="flex justify-between items-center">
+                                                        <div>
+                                                            <h5 className="font-semibold text-slate-800">{room.room_name}</h5>
+                                                            <p className="text-sm text-slate-500 mt-1">
+                                                                Created {format(new Date(room.created_date), 'MMM d, yyyy')}
+                                                            </p>
+                                                        </div>
+                                                        <Badge>{room.status || 'Active'}</Badge>
+                                                    </div>
+                                                </Link>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="text-center py-8 border-2 border-dashed rounded-lg">
+                                            <Briefcase className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                                            <p className="text-slate-500 mb-2">No sales rooms yet</p>
+                                            <p className="text-sm text-slate-400 mb-4">Create a dedicated space for this deal</p>
+                                            <Button onClick={() => navigate(createPageUrl(`CreateDigitalSalesRoom?leadId=${lead.id}`))}>
+                                                <Plus className="w-4 h-4 mr-2" />Create First Room
+                                            </Button>
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        )}
                     </TabsContent>
 
                     <TabsContent value="call-prep" className="space-y-6">
@@ -1103,48 +1200,6 @@ Return a JSON object containing the following fields:
                         </div>
                     </TabsContent>
 
-                    {hasSalesRoomsAccess() && (
-                        <TabsContent value="sales-rooms" className="space-y-4">
-                            <Card>
-                                <CardHeader className="flex flex-row justify-between items-center"><CardTitle>Digital Sales Rooms</CardTitle><Button onClick={() => navigate(createPageUrl(`CreateDigitalSalesRoom?leadId=${lead.id}`))}><Plus className="w-4 h-4 mr-2" />Create</Button></CardHeader>
-                                <CardContent>
-                                    {salesRooms.length ? salesRooms.map(room => <div key={room.id}><Link to={createPageUrl(`SalesRoomAnalytics?roomId=${room.id}`)}>{room.room_name}</Link></div>) : <p>No sales rooms yet.</p>}
-                                </CardContent>
-                            </Card>
-                        </TabsContent>
-                    )}
-
-                    <TabsContent value="engagement" className="space-y-4">
-                        <Card>
-                            <CardHeader><CardTitle>Document Engagement</CardTitle></CardHeader>
-                            <CardContent>
-                                {processedEngagement.length ? (
-                                    <div className="overflow-x-auto">
-                                        <table className="min-w-full">
-                                            <thead><tr><th>Document</th><th>Views</th><th>Duration</th><th>Report</th></tr></thead>
-                                            <tbody>{processedEngagement.map(item => (
-                                                <React.Fragment key={item.document_id}>
-                                                    <tr>
-                                                        <td>{item.document_name}</td>
-                                                        <td>{item.views}</td>
-                                                        <td>{formatDuration(item.total_duration_seconds)}</td>
-                                                        <td><Button variant="link" onClick={() => toggleSet(expandedDocIds, item.document_id, setExpandedDocIds)}>Details</Button></td>
-                                                    </tr>
-                                                    {expandedDocIds.has(item.document_id) && (
-                                                        <tr><td colSpan="4"><Tabs defaultValue="visits"><TabsList><TabsTrigger value="visits">Visits</TabsTrigger><TabsTrigger value="aggregate">Aggregate</TabsTrigger></TabsList>
-                                                            <TabsContent value="visits">{item.sessions.map(s => <div key={s.id}>{formatDate(s.created_date)}</div>)}</TabsContent>
-                                                            <TabsContent value="aggregate">{item.page_wise_report.map(p => <div key={p.page}>{p.page}: {p.avg_time}s</div>)}</TabsContent>
-                                                        </Tabs></td></tr>
-                                                    )}
-                                                </React.Fragment>
-                                            ))}</tbody>
-                                        </table>
-                                    </div>
-                                ) : <p>No engagement history.</p>}
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
-
                     <TabsContent value="activity" className="space-y-6">
                         <Card><CardHeader><CardTitle>Performance</CardTitle></CardHeader><CardContent><p>Days in pipeline: {leadAnalytics.daysSinceCreated}</p></CardContent></Card>
                         <Card>
@@ -1165,7 +1220,11 @@ Return a JSON object containing the following fields:
             {isLiveAssistantOpen && <LiveCallAssistant open={isLiveAssistantOpen} onOpenChange={setIsLiveAssistantOpen} lead={lead} />}
             {showMeetingEdit && <EditLeadModal open={showMeetingEdit} onOpenChange={setShowMeetingEdit} lead={lead} onLeadUpdate={handleLeadUpdate} focusOnMeeting={true} />}
             {showPostCallAssistant && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={(e) => {
+                    if (e.target === e.currentTarget) {
+                        setShowPostCallAssistant(false);
+                    }
+                }}>
                     <ConversationalPostCallAssistant
                         leadId={lead.id}
                         onComplete={handlePostCallComplete}
