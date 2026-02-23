@@ -5,12 +5,13 @@ import { DocumentView } from '@/api/entities';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Users, Loader2, Search, Table, Kanban, Phone, ChevronDown, BrainCircuit, Eye, Edit, User, Mail, Sparkles, Calendar, Clock, CheckCircle2, XCircle, PhoneCall } from 'lucide-react';
+import { Plus, Users, Loader2, Search, Table, Kanban, Phone, ChevronDown, BrainCircuit, Eye, Edit, User, Mail, Sparkles, Calendar, Clock, CheckCircle2, XCircle, PhoneCall, AlertCircle } from 'lucide-react';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import LeadForm from '@/components/leads/LeadForm';
 import LeadListItem from '@/components/leads/LeadListItem';
 import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
@@ -329,6 +330,19 @@ export default function EffyLeads() {
         return grouped;
     }, [filteredLeads]);
 
+    const urgentFollowUps = useMemo(() => {
+        const now = new Date();
+        const next24Hours = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+
+        return leads
+            .filter(lead => {
+                if (!lead.next_call_date) return false;
+                const callDate = new Date(lead.next_call_date);
+                return callDate <= next24Hours && callDate >= now;
+            })
+            .sort((a, b) => new Date(a.next_call_date) - new Date(b.next_call_date));
+    }, [leads]);
+
     const handleRowClick = (lead) => {
         if (lead && lead.id) {
             navigate(createPageUrl(`LeadDetail?leadId=${lead.id}`));
@@ -368,6 +382,105 @@ export default function EffyLeads() {
                     onSave={handleSubmit}
                     isSubmitting={isSubmitting}
                 />
+            )}
+
+            {urgentFollowUps.length > 0 && (
+                <Card className="mb-6 border-2 border-orange-200 bg-gradient-to-r from-orange-50 to-red-50">
+                    <CardContent className="p-6">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="flex items-center justify-center w-10 h-10 bg-orange-500 rounded-full">
+                                <AlertCircle className="w-6 h-6 text-white" />
+                            </div>
+                            <div>
+                                <h2 className="text-xl font-bold text-slate-900">Urgent Follow-ups</h2>
+                                <p className="text-sm text-slate-600">Scheduled calls in the next 24 hours</p>
+                            </div>
+                            <Badge className="ml-auto bg-orange-500 text-white text-lg px-3 py-1">
+                                {urgentFollowUps.length}
+                            </Badge>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {urgentFollowUps.map(lead => (
+                                <Card
+                                    key={lead.id}
+                                    className="cursor-pointer hover:shadow-lg transition-shadow border-l-4 border-l-orange-500 bg-white"
+                                    onClick={() => handleRowClick(lead)}
+                                >
+                                    <CardContent className="p-4">
+                                        <div className="flex justify-between items-start mb-3">
+                                            <div>
+                                                <h3 className="font-semibold text-slate-900">{lead.contact_name || lead.company_name}</h3>
+                                                <p className="text-sm text-slate-500">{lead.company_name}</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            {lead.contact_phone && (
+                                                <div className="flex items-center gap-2 text-sm text-slate-600">
+                                                    <Phone className="w-4 h-4 text-slate-400" />
+                                                    <span>{lead.contact_phone}</span>
+                                                </div>
+                                            )}
+
+                                            {lead.disposition && (
+                                                <div className="flex items-center gap-2">
+                                                    <PhoneCall className="w-4 h-4 text-slate-400" />
+                                                    <span className={`text-xs font-medium px-2 py-0.5 rounded ${
+                                                        lead.disposition === 'interested' ? 'bg-green-100 text-green-700' :
+                                                        lead.disposition === 'callback_requested' ? 'bg-yellow-100 text-yellow-700' :
+                                                        'bg-slate-100 text-slate-700'
+                                                    }`}>
+                                                        {lead.disposition.replace(/_/g, ' ')}
+                                                    </span>
+                                                </div>
+                                            )}
+
+                                            <div className="flex items-center gap-2 text-sm font-bold text-orange-700 bg-orange-100 px-3 py-2 rounded mt-3">
+                                                <Clock className="w-4 h-4" />
+                                                <span>
+                                                    {new Date(lead.next_call_date).toLocaleString('en-US', {
+                                                        month: 'short',
+                                                        day: 'numeric',
+                                                        hour: 'numeric',
+                                                        minute: '2-digit'
+                                                    })}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex gap-2 mt-4">
+                                            <Button
+                                                size="sm"
+                                                className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    if (lead.contact_phone) {
+                                                        window.open(`tel:${lead.contact_phone}`);
+                                                    }
+                                                }}
+                                            >
+                                                <Phone className="w-3 h-3 mr-1" />
+                                                Call Now
+                                            </Button>
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleRowClick(lead);
+                                                }}
+                                            >
+                                                <Eye className="w-3 h-3 mr-1" />
+                                                View
+                                            </Button>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
+                    </CardContent>
+                </Card>
             )}
 
             <Tabs value={currentView} onValueChange={setCurrentView} className="w-full">
