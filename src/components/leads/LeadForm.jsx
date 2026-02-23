@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import GameActionTracker from '@/components/gamification/GameActionTracker';
+import { toast } from 'sonner';
 
 export default function LeadForm({ open, onOpenChange, onLeadAdded }) {
   const [lead, setLead] = useState({
@@ -36,12 +38,15 @@ export default function LeadForm({ open, onOpenChange, onLeadAdded }) {
     e.preventDefault();
     setIsLoading(true);
     try {
-      await Lead.create(lead);
+      const newLead = await Lead.create(lead);
+      await GameActionTracker.trackAction('lead_created', 'lead', newLead.id);
+      toast.success('Lead created successfully!');
       onLeadAdded();
       onOpenChange(false);
       setLead({ company_name: '', contact_name: '', contact_email: '', contact_phone: '', product_interest: '', lead_source: 'website', status: 'new', assigned_to_email: '' });
     } catch (error) {
       console.error("Error creating lead:", error);
+      toast.error('Failed to create lead. Please try again.');
     } finally {
       setIsLoading(false);
     }

@@ -372,17 +372,14 @@ export default function EffyLeads() {
                 </div>
             </header>
 
-            {showLeadForm && (
-                <LeadForm
-                    lead={selectedLead} // Pass selectedLead for editing, null for adding
-                    onClose={() => {
-                        setShowLeadForm(false);
-                        setSelectedLead(null); // Reset selected lead when form closes
-                    }}
-                    onSave={handleSubmit}
-                    isSubmitting={isSubmitting}
-                />
-            )}
+            <LeadForm
+                open={showLeadForm}
+                onOpenChange={setShowLeadForm}
+                onLeadAdded={() => {
+                    loadLeads();
+                    setShowLeadForm(false);
+                }}
+            />
 
             {urgentFollowUps.length > 0 && (
                 <Card className="mb-6 border-2 border-orange-200 bg-gradient-to-r from-orange-50 to-red-50">
