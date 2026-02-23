@@ -33,6 +33,9 @@ import eventBus from '@/components/utils/eventBus';
 import { Textarea } from '@/components/ui/textarea';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import RoleplayOverlay from '@/components/coaching/RoleplayOverlay';
+import ConversationalPostCallAssistant from '@/components/leads/ConversationalPostCallAssistant';
+import CallControlPanel from '@/components/leads/CallControlPanel';
+import ElevatorPitchGenerator from '@/components/leads/ElevatorPitchGenerator';
 
 // New CompanyDescriptionEditor Component
 const CompanyDescriptionEditor = ({ lead, onLeadUpdate }) => {
@@ -230,6 +233,9 @@ export default function LeadDetail() {
     const [isCallActive, setIsCallActive] = useState(false);
     const [callStartTime, setCallStartTime] = useState(null);
     const [currentTime, setCurrentTime] = useState(Date.now());
+    const [showPostCallAssistant, setShowPostCallAssistant] = useState(false);
+    const [showCallControls, setShowCallControls] = useState(false);
+    const [callData, setCallData] = useState(null);
     const [engagementHistory, setEngagementHistory] = useState([]);
     const [salesRooms, setSalesRooms] = useState([]);
     const [moduleAccessRules, setModuleAccessRules] = useState([]);
@@ -367,17 +373,28 @@ export default function LeadDetail() {
 
     const handleCallLead = async () => {
         if (!lead?.contact_phone) return toast.error("No phone number for this lead");
-        setIsCallActive(true);
-        setCallStartTime(Date.now());
-        toast.success(`Calling ${lead.contact_name}...`);
+        setShowCallControls(true);
     };
 
-    const handleEndCall = () => {
+    const handleCallStart = (data) => {
+        setIsCallActive(true);
+        setCallStartTime(Date.now());
+        setCallData(data);
+    };
+
+    const handleEndCall = (data) => {
         setIsCallActive(false);
         setCallStartTime(null);
-        toast.success("Call ended");
-        // CRM Assistant handles saving the call record, transcription, AI notes etc.
-        setTimeout(() => eventBus.dispatch('open-crm-assistant', { leadId: lead.id }), 500);
+        setCallData(data);
+        setShowCallControls(false);
+        setShowPostCallAssistant(true);
+    };
+
+    const handlePostCallComplete = async () => {
+        setShowPostCallAssistant(false);
+        fetchLeadData();
+        fetchActivities();
+        toast.success('Call logged successfully!');
     };
 
     const handleCancelMeeting = async () => {
@@ -1040,7 +1057,51 @@ Return a JSON object containing the following fields:
                         </Card>
                     </TabsContent>
 
-                    <TabsContent value="call-prep"><CallPrepTabContent lead={lead} /></TabsContent>
+                    <TabsContent value="call-prep" className="space-y-6">
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            <div className="lg:col-span-2">
+                                <ElevatorPitchGenerator
+                                    leadId={lead.id}
+                                    lead={lead}
+                                    onPracticeRoleplay={() => navigate(createPageUrl(`AIRoleplayPractice?leadId=${lead.id}&scenario=sales_pitch`))}
+                                />
+                            </div>
+                            <div className="space-y-6">
+                                {showCallControls && (
+                                    <CallControlPanel
+                                        lead={lead}
+                                        onCallStart={handleCallStart}
+                                        onCallEnd={handleEndCall}
+                                    />
+                                )}
+                                {!showCallControls && (
+                                    <Card className="shadow-lg">
+                                        <CardContent className="p-6">
+                                            <div className="text-center space-y-4">
+                                                <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto">
+                                                    <Phone className="w-8 h-8 text-green-600" />
+                                                </div>
+                                                <div>
+                                                    <h3 className="font-semibold text-slate-800 mb-1">Ready to Call?</h3>
+                                                    <p className="text-sm text-slate-600">Start tracking your call with built-in assistance</p>
+                                                </div>
+                                                <Button
+                                                    onClick={handleCallLead}
+                                                    size="lg"
+                                                    className="w-full bg-green-600 hover:bg-green-700"
+                                                    disabled={!lead?.contact_phone}
+                                                >
+                                                    <Phone className="w-5 h-5 mr-2" />
+                                                    Start Call
+                                                </Button>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                )}
+                                <CallPrepTabContent lead={lead} />
+                            </div>
+                        </div>
+                    </TabsContent>
 
                     {hasSalesRoomsAccess() && (
                         <TabsContent value="sales-rooms" className="space-y-4">
@@ -1103,6 +1164,15 @@ Return a JSON object containing the following fields:
             {showCalendarScheduler && <CalendarScheduler open={showCalendarScheduler} onOpenChange={setShowCalendarScheduler} lead={lead} />}
             {isLiveAssistantOpen && <LiveCallAssistant open={isLiveAssistantOpen} onOpenChange={setIsLiveAssistantOpen} lead={lead} />}
             {showMeetingEdit && <EditLeadModal open={showMeetingEdit} onOpenChange={setShowMeetingEdit} lead={lead} onLeadUpdate={handleLeadUpdate} focusOnMeeting={true} />}
+            {showPostCallAssistant && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <ConversationalPostCallAssistant
+                        leadId={lead.id}
+                        onComplete={handlePostCallComplete}
+                        onCancel={() => setShowPostCallAssistant(false)}
+                    />
+                </div>
+            )}
             <AlertDialog open={isCancelAlertOpen} onOpenChange={setIsCancelAlertOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
