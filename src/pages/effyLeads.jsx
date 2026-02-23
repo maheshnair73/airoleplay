@@ -5,7 +5,7 @@ import { DocumentView } from '@/api/entities';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Users, Loader2, Search, Table, Kanban, Phone, ChevronDown, BrainCircuit, Eye, Edit, User, Mail, Sparkles } from 'lucide-react'; // Added Sparkles
+import { Plus, Users, Loader2, Search, Table, Kanban, Phone, ChevronDown, BrainCircuit, Eye, Edit, User, Mail, Sparkles, Calendar, Clock, CheckCircle2, XCircle, PhoneCall } from 'lucide-react';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import LeadForm from '@/components/leads/LeadForm';
@@ -55,7 +55,7 @@ const LeadCardInternal = ({ lead, onLeadClick, onLeadEdit }) => {
                 <p className="text-sm text-slate-500 mb-3">{lead.company_name}</p>
 
                 {/* Contact info and details */}
-                <div className="flex-grow space-y-3">
+                <div className="flex-grow space-y-2">
                     <div className="flex items-center text-sm text-slate-600">
                         <User className="w-4 h-4 mr-2 text-slate-400" />
                         <span>{lead.contact_name || 'N/A'}</span>
@@ -63,13 +63,50 @@ const LeadCardInternal = ({ lead, onLeadClick, onLeadEdit }) => {
                     {lead.contact_email && (
                         <div className="flex items-center text-sm text-slate-600">
                             <Mail className="w-4 h-4 mr-2 text-slate-400" />
-                            <span>{lead.contact_email}</span>
+                            <span className="truncate">{lead.contact_email}</span>
                         </div>
                     )}
                     {lead.contact_phone && (
                         <div className="flex items-center text-sm text-slate-600">
                             <Phone className="w-4 h-4 mr-2 text-slate-400" />
                             <span>{lead.contact_phone}</span>
+                        </div>
+                    )}
+
+                    {/* Disposition badges */}
+                    {lead.disposition && (
+                        <div className="flex items-center gap-2 mt-2 pt-2 border-t border-slate-200">
+                            <PhoneCall className="w-4 h-4 text-slate-400" />
+                            <span className={`text-xs font-medium px-2 py-1 rounded capitalize ${
+                                lead.disposition === 'interested' ? 'bg-green-100 text-green-700' :
+                                lead.disposition === 'callback_requested' ? 'bg-yellow-100 text-yellow-700' :
+                                lead.disposition === 'not_interested' ? 'bg-red-100 text-red-700' :
+                                lead.disposition === 'voicemail' ? 'bg-blue-100 text-blue-700' :
+                                'bg-slate-100 text-slate-700'
+                            }`}>
+                                {lead.disposition.replace(/_/g, ' ')}
+                            </span>
+                        </div>
+                    )}
+
+                    {lead.sub_disposition && (
+                        <div className="text-xs text-slate-500 pl-6">
+                            {lead.sub_disposition.replace(/_/g, ' ')}
+                        </div>
+                    )}
+
+                    {/* Next call date */}
+                    {lead.next_call_date && (
+                        <div className="flex items-center gap-2 text-xs font-medium text-orange-600 bg-orange-50 px-2 py-1.5 rounded mt-2">
+                            <Calendar className="w-3.5 h-3.5" />
+                            <span>
+                                {new Date(lead.next_call_date).toLocaleDateString('en-US', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    hour: 'numeric',
+                                    minute: '2-digit'
+                                })}
+                            </span>
                         </div>
                     )}
                 </div>

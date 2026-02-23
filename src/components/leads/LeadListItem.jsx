@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Eye, Phone, Loader2, PhoneOff, MoreVertical, Presentation, User, Mail, TrendingUp, TrendingDown } from 'lucide-react';
+import { Eye, Phone, Loader2, PhoneOff, MoreVertical, Presentation, User, Mail, TrendingUp, TrendingDown, Calendar, PhoneCall } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 import { initiateHumanCall } from '@/api/functions';
@@ -120,9 +120,42 @@ export default function LeadListItem({ lead, onClick, documentActivity }) {
                 <Badge className="bg-slate-100 text-slate-700">{lead.lead_source || 'unknown'}</Badge>
             </td>
             <td className="px-4 py-3">
-                <Badge className={statusColors[lead.status] || 'bg-slate-100 text-slate-800'}>
-                    {lead.status || 'new'}
-                </Badge>
+                <div className="space-y-1">
+                    <Badge className={statusColors[lead.status] || 'bg-slate-100 text-slate-800'}>
+                        {lead.status || 'new'}
+                    </Badge>
+                    {lead.disposition && (
+                        <div className="flex items-center gap-1 text-xs">
+                            <PhoneCall className="w-3 h-3 text-slate-400" />
+                            <span className={`font-medium ${
+                                lead.disposition === 'interested' ? 'text-green-600' :
+                                lead.disposition === 'callback_requested' ? 'text-yellow-600' :
+                                lead.disposition === 'not_interested' ? 'text-red-600' :
+                                'text-slate-600'
+                            }`}>
+                                {lead.disposition.replace(/_/g, ' ')}
+                            </span>
+                        </div>
+                    )}
+                    {lead.sub_disposition && (
+                        <div className="text-xs text-slate-500">
+                            {lead.sub_disposition.replace(/_/g, ' ')}
+                        </div>
+                    )}
+                    {lead.next_call_date && (
+                        <div className="flex items-center gap-1 text-xs font-medium text-orange-600">
+                            <Calendar className="w-3 h-3" />
+                            <span>
+                                {new Date(lead.next_call_date).toLocaleDateString('en-US', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    hour: 'numeric',
+                                    minute: '2-digit'
+                                })}
+                            </span>
+                        </div>
+                    )}
+                </div>
             </td>
             <td className="px-4 py-3 text-center">
                 {lead.ai_score ? (
