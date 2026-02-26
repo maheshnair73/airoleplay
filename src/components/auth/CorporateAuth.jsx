@@ -67,14 +67,20 @@ export default function CorporateAuthMessage() {
 
     const checkDemoUsers = async () => {
         try {
-            const { count } = await supabase
+            const { count, error } = await supabase
                 .from('user_profiles')
                 .select('*', { count: 'exact', head: true })
                 .in('email', DEMO_USERS.map(u => u.email));
 
-            setDemoUsersExist(count === DEMO_USERS.length);
+            if (error) {
+                console.error('Error checking demo users:', error);
+                setDemoUsersExist(false);
+            } else {
+                setDemoUsersExist(count === DEMO_USERS.length);
+            }
         } catch (error) {
             console.error('Error checking demo users:', error);
+            setDemoUsersExist(false);
         } finally {
             setCheckingDemoUsers(false);
         }
