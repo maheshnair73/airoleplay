@@ -128,70 +128,38 @@ export default function CorporateAuthMessage() {
 
     const createDemoUsers = async () => {
         setIsLoading(true);
-        const createdUsers = [];
 
         try {
-            for (const demoUser of DEMO_USERS) {
-                try {
-                    console.log(`Creating user: ${demoUser.email}`);
+            const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-demo-users`;
 
-                    const { data: authData, error: signUpError } = await supabase.auth.signUp({
-                        email: demoUser.email,
-                        password: demoUser.password,
-                        options: {
-                            data: {
-                                full_name: demoUser.label,
-                                role: demoUser.role
-                            },
-                            emailRedirectTo: window.location.origin
-                        }
-                    });
-
-                    console.log(`Auth response for ${demoUser.email}:`, { authData, signUpError });
-
-                    if (signUpError) {
-                        if (signUpError.message.includes('already registered')) {
-                            console.log(`User ${demoUser.email} already exists`);
-                            createdUsers.push(demoUser.email);
-                            continue;
-                        }
-                        throw signUpError;
-                    }
-
-                    if (authData?.user) {
-                        const { error: profileError } = await supabase
-                            .from('user_profiles')
-                            .upsert({
-                                id: authData.user.id,
-                                email: demoUser.email,
-                                role: demoUser.role,
-                                full_name: demoUser.label
-                            }, {
-                                onConflict: 'id'
-                            });
-
-                        if (profileError) {
-                            console.error(`Profile error for ${demoUser.email}:`, profileError);
-                        } else {
-                            createdUsers.push(demoUser.email);
-                            console.log(`Successfully created ${demoUser.email}`);
-                        }
-                    }
-                } catch (error) {
-                    console.error(`Error creating ${demoUser.label}:`, error);
-                    toast.error(`Failed to create ${demoUser.label}: ${error.message}`);
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+                    'Content-Type': 'application/json',
                 }
-            }
+            });
 
-            if (createdUsers.length > 0) {
-                toast.success(`Demo users ready! Created/verified ${createdUsers.length} accounts.`);
-                setDemoUsersExist(true);
+            const result = await response.json();
+
+            if (result.success) {
+                const successCount = result.results.filter(r =>
+                    r.status === 'success' || r.status === 'already_exists'
+                ).length;
+
+                if (successCount > 0) {
+                    toast.success(`Demo users ready! ${successCount} accounts available.`);
+                    setDemoUsersExist(true);
+                    await checkDemoUsers();
+                } else {
+                    toast.error('No demo users were created. Please try again.');
+                }
             } else {
-                toast.error('No demo users were created. Please check the console for errors.');
+                toast.error(`Failed to create demo users: ${result.error}`);
             }
         } catch (error) {
-            toast.error('Failed to create demo users');
             console.error('Error creating demo users:', error);
+            toast.error('Failed to create demo users. Please try again.');
         } finally {
             setIsLoading(false);
         }
