@@ -16,7 +16,7 @@ const DEMO_USERS = [
         password: 'demo123',
         role: 'company_admin',
         label: 'Admin',
-        bgColor: 'bg-white border-2 border-blue-200',
+        bgColor: 'bg-white border-2 border-blue-600',
         textColor: 'text-blue-700',
         icon: ShieldCheck,
         description: 'Company management'
@@ -26,8 +26,8 @@ const DEMO_USERS = [
         password: 'demo123',
         role: 'sales_manager',
         label: 'Manager',
-        bgColor: 'bg-white border-2 border-teal-200',
-        textColor: 'text-teal-700',
+        bgColor: 'bg-sky-100 border-2 border-sky-300',
+        textColor: 'text-sky-800',
         icon: Users,
         description: 'Team Manager'
     },
@@ -36,8 +36,8 @@ const DEMO_USERS = [
         password: 'demo123',
         role: 'sales_agent',
         label: 'Agent 1',
-        bgColor: 'bg-white border-2 border-teal-200',
-        textColor: 'text-teal-700',
+        bgColor: 'bg-emerald-100 border-2 border-emerald-300',
+        textColor: 'text-emerald-800',
         icon: UserCircle,
         description: 'Sales Agent'
     },
@@ -46,8 +46,8 @@ const DEMO_USERS = [
         password: 'demo123',
         role: 'sales_agent',
         label: 'Agent 2',
-        bgColor: 'bg-white border-2 border-amber-200',
-        textColor: 'text-amber-700',
+        bgColor: 'bg-orange-100 border-2 border-orange-300',
+        textColor: 'text-orange-800',
         icon: UserCircle,
         description: 'Sales Agent'
     }
@@ -279,7 +279,7 @@ export default function CorporateAuthMessage() {
 
                             {demoUsersExist ? (
                                 <TooltipProvider>
-                                    <div className="grid grid-cols-2 gap-3">
+                                    <div className="grid grid-cols-2 gap-4">
                                         {DEMO_USERS.map((demoUser) => {
                                             return (
                                                 <Tooltip key={demoUser.email}>
@@ -288,7 +288,7 @@ export default function CorporateAuthMessage() {
                                                             onClick={() => handleQuickLogin(demoUser)}
                                                             disabled={isLoading}
                                                             variant="outline"
-                                                            className={`h-auto py-4 ${demoUser.bgColor} ${demoUser.textColor} hover:shadow-lg transition-all duration-200 font-semibold text-base relative group`}
+                                                            className={`h-auto py-6 ${demoUser.bgColor} ${demoUser.textColor} hover:shadow-xl hover:scale-105 transition-all duration-200 font-bold text-lg relative group rounded-xl`}
                                                         >
                                                             {demoUser.label}
                                                             <Info className="h-3 w-3 absolute top-2 right-2 opacity-40 group-hover:opacity-70" />
