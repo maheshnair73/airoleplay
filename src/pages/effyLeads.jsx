@@ -376,7 +376,7 @@ export default function EffyLeads() {
                 open={showLeadForm}
                 onOpenChange={setShowLeadForm}
                 onLeadAdded={() => {
-                    loadLeads();
+                    fetchLeads();
                     setShowLeadForm(false);
                 }}
             />
