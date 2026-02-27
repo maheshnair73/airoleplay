@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -54,6 +55,7 @@ const DEMO_USERS = [
 ];
 
 export default function CorporateAuthMessage() {
+    const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -81,9 +83,7 @@ export default function CorporateAuthMessage() {
             if (error) throw error;
 
             toast.success('Welcome back!');
-            setTimeout(() => {
-                window.location.href = '/';
-            }, 500);
+            window.location.reload();
         } catch (error) {
             console.error('Login error:', error);
             toast.error(error.message || 'Failed to sign in');
@@ -105,9 +105,7 @@ export default function CorporateAuthMessage() {
             if (error) throw error;
 
             toast.success(`Signed in as ${demoUser.label}`);
-            setTimeout(() => {
-                window.location.href = '/';
-            }, 500);
+            window.location.reload();
         } catch (error) {
             console.error('Login error:', error);
             toast.error(error.message || 'Failed to sign in with demo account');
