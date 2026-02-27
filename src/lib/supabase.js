@@ -13,10 +13,10 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables');
 }
 
-const customFetch = async (url, options = {}, retries = 3) => {
+const customFetch = async (url, options = {}, retries = 5) => {
   for (let i = 0; i < retries; i++) {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000);
+    const timeoutId = setTimeout(() => controller.abort(), 60000);
 
     try {
       console.log(`Fetching (attempt ${i + 1}/${retries}):`, url);
@@ -37,10 +37,10 @@ const customFetch = async (url, options = {}, retries = 3) => {
       });
 
       if (i === retries - 1) {
-        throw new Error(`Failed to connect to Supabase after ${retries} attempts. Please check: 1) Your internet connection, 2) If the Supabase project is active, 3) If you're behind a firewall blocking the connection. Original error: ${error.message}`);
+        throw new Error(`Connection to Supabase failed after ${retries} attempts. This is likely due to: 1) Network firewall/proxy blocking ${new URL(url).hostname}, 2) ISP blocking Supabase, or 3) Slow/unstable internet. Try: mobile hotspot, different network, or VPN. Error: ${error.message}`);
       }
 
-      await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+      await new Promise(resolve => setTimeout(resolve, 2000 * (i + 1)));
     }
   }
 };
