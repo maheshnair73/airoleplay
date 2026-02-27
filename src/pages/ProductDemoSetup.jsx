@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Select,
   SelectContent,
@@ -14,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
-import { MonitorUp, Sparkles, ArrowLeft, UserPlus, X, Briefcase } from 'lucide-react';
+import { MonitorUp, Sparkles, ArrowLeft, UserPlus, X, Briefcase, Settings, Package } from 'lucide-react';
 
 const ProductDemoSetup = () => {
   const navigate = useNavigate();
@@ -261,23 +262,36 @@ const ProductDemoSetup = () => {
               </div>
             </div>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="border-b pb-6">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-lg font-semibold flex items-center gap-2">
-                    <UserPlus className="w-5 h-5" />
-                    Demo Attendees
-                  </h3>
-                  <p className="text-sm text-gray-600">Add the people who will be in this demo</p>
-                </div>
-                <Button onClick={addAttendee} variant="outline" size="sm">
-                  <UserPlus className="w-4 h-4 mr-2" />
-                  Add Attendee
-                </Button>
-              </div>
+          <CardContent>
+            <Tabs defaultValue="attendees" className="w-full">
+              <TabsList className="grid w-full grid-cols-3 mb-6">
+                <TabsTrigger value="attendees" className="flex items-center gap-2">
+                  <UserPlus className="w-4 h-4" />
+                  Attendees
+                </TabsTrigger>
+                <TabsTrigger value="product" className="flex items-center gap-2">
+                  <Package className="w-4 h-4" />
+                  Product Details
+                </TabsTrigger>
+                <TabsTrigger value="settings" className="flex items-center gap-2">
+                  <Settings className="w-4 h-4" />
+                  Demo Settings
+                </TabsTrigger>
+              </TabsList>
 
-              <div className="space-y-4">
+              <TabsContent value="attendees" className="space-y-4">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="text-lg font-semibold">Demo Attendees</h3>
+                    <p className="text-sm text-gray-600">Add the people who will be in this demo</p>
+                  </div>
+                  <Button onClick={addAttendee} variant="outline" size="sm">
+                    <UserPlus className="w-4 h-4 mr-2" />
+                    Add Attendee
+                  </Button>
+                </div>
+
+                <div className="space-y-4">
                 {attendees.map((attendee, index) => (
                   <Card key={attendee.id} className="p-4">
                     <div className="space-y-3">
@@ -357,16 +371,16 @@ const ProductDemoSetup = () => {
                     </div>
                   </Card>
                 ))}
-              </div>
-            </div>
+                </div>
+              </TabsContent>
 
-            <div className="border-b pb-6">
-              <h3 className="text-lg font-semibold flex items-center gap-2 mb-4">
-                <Briefcase className="w-5 h-5" />
-                Product & Inquiry Details
-              </h3>
+              <TabsContent value="product" className="space-y-4">
+                <div className="mb-4">
+                  <h3 className="text-lg font-semibold">Product & Inquiry Details</h3>
+                  <p className="text-sm text-gray-600">Configure the product and buyer context</p>
+                </div>
 
-              <div className="space-y-4">
+                <div className="space-y-4">
                 <div>
                   <Label htmlFor="product">Product Inquiring About</Label>
               <Select value={selectedProduct} onValueChange={setSelectedProduct}>
@@ -456,11 +470,18 @@ const ProductDemoSetup = () => {
                     rows={3}
                   />
                 </div>
-              </div>
-            </div>
+                </div>
+              </TabsContent>
 
-            <div>
-              <Label htmlFor="demoType">Demo Type</Label>
+              <TabsContent value="settings" className="space-y-4">
+                <div className="mb-4">
+                  <h3 className="text-lg font-semibold">Demo Settings</h3>
+                  <p className="text-sm text-gray-600">Configure demo type, duration, and features</p>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="demoType">Demo Type</Label>
               <Select value={demoType} onValueChange={setDemoType}>
                 <SelectTrigger id="demoType">
                   <SelectValue />
@@ -472,10 +493,10 @@ const ProductDemoSetup = () => {
                   <SelectItem value="technical_deep_dive">Technical Deep Dive</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
+                  </div>
 
-            <div>
-              <Label htmlFor="duration">Target Duration (minutes)</Label>
+                  <div>
+                    <Label htmlFor="duration">Target Duration (minutes)</Label>
               <Input
                 id="duration"
                 type="number"
@@ -483,11 +504,11 @@ const ProductDemoSetup = () => {
                 onChange={(e) => setTargetDuration(parseInt(e.target.value))}
                 min={5}
                 max={60}
-              />
-            </div>
+                    />
+                  </div>
 
-            <div>
-              <Label htmlFor="features">Key Features to Cover (comma-separated)</Label>
+                  <div>
+                    <Label htmlFor="features">Key Features to Cover (comma-separated)</Label>
               <Textarea
                 id="features"
                 value={keyFeatures}
@@ -495,41 +516,46 @@ const ProductDemoSetup = () => {
                 placeholder="e.g., Dashboard, Reporting, Integration with Salesforce"
                 rows={3}
               />
-              <p className="text-xs text-gray-500 mt-1">
-                Optional: List specific features you want to practice demonstrating
-              </p>
-            </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Optional: List specific features you want to practice demonstrating
+                    </p>
+                  </div>
 
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <h3 className="font-semibold text-blue-900 mb-2">What to expect:</h3>
-              <ul className="space-y-1 text-sm text-blue-800">
-                <li>• Multiple AI attendees based on your configuration</li>
-                <li>• Live AI validation of your product knowledge</li>
-                <li>• Real-time coaching assistance during the demo</li>
-                <li>• Screen sharing capability to show your product</li>
-                <li>• Post-session analysis with detailed feedback</li>
-                <li>• Coverage tracking for all key product features</li>
-              </ul>
-            </div>
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h3 className="font-semibold text-blue-900 mb-2">What to expect:</h3>
+                    <ul className="space-y-1 text-sm text-blue-800">
+                      <li>• Multiple AI attendees based on your configuration</li>
+                      <li>• Live AI validation of your product knowledge</li>
+                      <li>• Real-time coaching assistance during the demo</li>
+                      <li>• Screen sharing capability to show your product</li>
+                      <li>• Post-session analysis with detailed feedback</li>
+                      <li>• Coverage tracking for all key product features</li>
+                    </ul>
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
 
-            <Button
-              onClick={handleStartDemo}
-              disabled={loading || attendees.filter(a => a.name && a.botId).length === 0 || !selectedProduct}
-              className="w-full"
-              size="lg"
-            >
-              {loading ? (
-                <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2" />
-                  Creating Session...
-                </>
-              ) : (
-                <>
-                  <MonitorUp className="w-5 h-5 mr-2" />
-                  Start Product Demo
-                </>
-              )}
-            </Button>
+            <div className="mt-6 pt-6 border-t">
+              <Button
+                onClick={handleStartDemo}
+                disabled={loading || attendees.filter(a => a.name && a.botId).length === 0 || !selectedProduct}
+                className="w-full"
+                size="lg"
+              >
+                {loading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2" />
+                    Creating Session...
+                  </>
+                ) : (
+                  <>
+                    <MonitorUp className="w-5 h-5 mr-2" />
+                    Start Product Demo
+                  </>
+                )}
+              </Button>
+            </div>
           </CardContent>
         </Card>
         )}
