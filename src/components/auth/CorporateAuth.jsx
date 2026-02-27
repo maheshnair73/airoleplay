@@ -60,6 +60,7 @@ export default function CorporateAuthMessage() {
     const [showPassword, setShowPassword] = useState(false);
     const [demoUsersExist, setDemoUsersExist] = useState(false);
     const [checkingDemoUsers, setCheckingDemoUsers] = useState(true);
+    const [connectionError, setConnectionError] = useState(false);
 
     useEffect(() => {
         checkDemoUsers();
@@ -67,19 +68,19 @@ export default function CorporateAuthMessage() {
 
     const checkDemoUsers = async () => {
         try {
-            const { count, error } = await supabase
-                .from('user_profiles')
-                .select('*', { count: 'exact', head: true })
-                .in('email', DEMO_USERS.map(u => u.email));
+            setConnectionError(false);
+            const { data, error } = await supabase.rpc('check_demo_users_exist');
 
             if (error) {
                 console.error('Error checking demo users:', error);
+                setConnectionError(true);
                 setDemoUsersExist(false);
             } else {
-                setDemoUsersExist(count === DEMO_USERS.length);
+                setDemoUsersExist(data === true);
             }
         } catch (error) {
             console.error('Error checking demo users:', error);
+            setConnectionError(true);
             setDemoUsersExist(false);
         } finally {
             setCheckingDemoUsers(false);
@@ -240,7 +241,33 @@ export default function CorporateAuthMessage() {
                         </Button>
                     </form>
 
-                    {!checkingDemoUsers && (
+                    {checkingDemoUsers && (
+                        <div className="flex items-center justify-center py-4">
+                            <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+                            <span className="ml-2 text-sm text-slate-600">Checking demo accounts...</span>
+                        </div>
+                    )}
+
+                    {!checkingDemoUsers && connectionError && (
+                        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 space-y-2">
+                            <p className="text-sm text-amber-800 font-medium">
+                                Unable to verify demo accounts
+                            </p>
+                            <p className="text-xs text-amber-700">
+                                You can still sign in if you have credentials. If you're setting up for the first time, please try refreshing the page.
+                            </p>
+                            <Button
+                                onClick={checkDemoUsers}
+                                variant="outline"
+                                size="sm"
+                                className="w-full border-amber-300 hover:bg-amber-100"
+                            >
+                                Retry Connection
+                            </Button>
+                        </div>
+                    )}
+
+                    {!checkingDemoUsers && !connectionError && (
                         <>
                             <div className="relative">
                                 <Separator className="my-4" />
