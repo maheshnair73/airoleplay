@@ -101,49 +101,78 @@ export const mockSupabase = {
   from(tableName) {
     return {
       select(columns = '*') {
-        return {
-          async eq(column, value) {
-            await delay(200);
-            const data = mockData[tableName] || [];
-            const filtered = data.filter(item => item[column] === value);
-            return {
-              data: filtered,
-              error: null,
-              maybeSingle() {
-                return {
-                  data: filtered[0] || null,
-                  error: null
-                };
-              },
-              single() {
-                return {
-                  data: filtered[0] || null,
-                  error: filtered.length === 0 ? new Error('No rows found') : null
-                };
-              }
-            };
-          },
-          order(column, options = {}) {
-            return {
-              async then(resolve) {
+        const filters = [];
+
+        const createChainableQuery = (currentData) => {
+          return {
+            eq(column, value) {
+              filters.push({ column, value });
+              return createChainableQuery(currentData);
+            },
+            order(column, options = {}) {
+              return {
+                async then(resolve) {
+                  await delay(200);
+                  let data = [...(mockData[tableName] || [])];
+
+                  filters.forEach(filter => {
+                    data = data.filter(item => item[filter.column] === filter.value);
+                  });
+
+                  data.sort((a, b) => {
+                    if (options.ascending === false) {
+                      return b[column] > a[column] ? 1 : -1;
+                    }
+                    return a[column] > b[column] ? 1 : -1;
+                  });
+                  resolve({ data, error: null });
+                }
+              };
+            },
+            maybeSingle() {
+              return (async () => {
                 await delay(200);
                 let data = [...(mockData[tableName] || [])];
-                data.sort((a, b) => {
-                  if (options.ascending === false) {
-                    return b[column] > a[column] ? 1 : -1;
-                  }
-                  return a[column] > b[column] ? 1 : -1;
+
+                filters.forEach(filter => {
+                  data = data.filter(item => item[filter.column] === filter.value);
                 });
-                resolve({ data, error: null });
-              }
-            };
-          },
-          async then(resolve) {
-            await delay(200);
-            const data = mockData[tableName] || [];
-            resolve({ data, error: null });
-          }
+
+                return {
+                  data: data[0] || null,
+                  error: null
+                };
+              })();
+            },
+            single() {
+              return (async () => {
+                await delay(200);
+                let data = [...(mockData[tableName] || [])];
+
+                filters.forEach(filter => {
+                  data = data.filter(item => item[filter.column] === filter.value);
+                });
+
+                return {
+                  data: data[0] || null,
+                  error: data.length === 0 ? new Error('No rows found') : null
+                };
+              })();
+            },
+            async then(resolve) {
+              await delay(200);
+              let data = [...(mockData[tableName] || [])];
+
+              filters.forEach(filter => {
+                data = data.filter(item => item[filter.column] === filter.value);
+              });
+
+              resolve({ data, error: null });
+            }
+          };
         };
+
+        return createChainableQuery(mockData[tableName] || []);
       },
 
       async insert(data) {

@@ -19,6 +19,7 @@ export const mockData = {
       email: 'agent1@effysalespro.com',
       role: 'sales_agent',
       full_name: 'Agent One',
+      company_id: 'company-001',
       created_at: '2024-01-01T00:00:00Z'
     },
     {
@@ -26,6 +27,7 @@ export const mockData = {
       email: 'agent2@effysalespro.com',
       role: 'sales_agent',
       full_name: 'Agent Two',
+      company_id: 'company-001',
       created_at: '2024-01-01T00:00:00Z'
     }
   ],
@@ -36,6 +38,7 @@ export const mockData = {
       email: 'admin@effysalespro.com',
       role: 'company_admin',
       full_name: 'Admin User',
+      company_id: 'company-001',
       created_at: '2024-01-01T00:00:00Z'
     },
     {
@@ -43,6 +46,7 @@ export const mockData = {
       email: 'manager@effysalespro.com',
       role: 'sales_manager',
       full_name: 'Sales Manager',
+      company_id: 'company-001',
       created_at: '2024-01-01T00:00:00Z'
     },
     {
@@ -50,6 +54,7 @@ export const mockData = {
       email: 'agent1@effysalespro.com',
       role: 'sales_agent',
       full_name: 'Agent One',
+      company_id: 'company-001',
       created_at: '2024-01-01T00:00:00Z'
     },
     {
@@ -57,6 +62,7 @@ export const mockData = {
       email: 'agent2@effysalespro.com',
       role: 'sales_agent',
       full_name: 'Agent Two',
+      company_id: 'company-001',
       created_at: '2024-01-01T00:00:00Z'
     }
   ],
@@ -416,6 +422,7 @@ export const mockData = {
   products: [
     {
       id: 'product-001',
+      company_id: 'company-001',
       name: 'EffySales Pro Basic',
       description: 'Essential sales tools for small teams',
       price: 49,
@@ -423,6 +430,7 @@ export const mockData = {
     },
     {
       id: 'product-002',
+      company_id: 'company-001',
       name: 'EffySales Pro Enterprise',
       description: 'Complete sales intelligence platform for large organizations',
       price: 199,
@@ -523,8 +531,10 @@ export const mockData = {
   roleplay_bots: [
     {
       id: 'bot-001',
+      company_id: 'company-001',
       bot_name: 'Sarah - Gatekeeper',
       persona_name: 'Sarah Johnson',
+      name: 'Sarah - Gatekeeper',
       role: 'Executive Assistant',
       difficulty_level: 'medium',
       scenario_type: 'cold_call',
@@ -535,8 +545,10 @@ export const mockData = {
     },
     {
       id: 'bot-002',
+      company_id: 'company-001',
       bot_name: 'David - Budget-Conscious CFO',
       persona_name: 'David Miller',
+      name: 'David - Budget-Conscious CFO',
       role: 'Chief Financial Officer',
       difficulty_level: 'hard',
       scenario_type: 'objection_handling',
@@ -547,8 +559,10 @@ export const mockData = {
     },
     {
       id: 'bot-003',
+      company_id: 'company-001',
       bot_name: 'Lisa - VP of Sales',
       persona_name: 'Lisa Chen',
+      name: 'Lisa - VP of Sales',
       role: 'VP of Sales',
       difficulty_level: 'easy',
       scenario_type: 'discovery',
