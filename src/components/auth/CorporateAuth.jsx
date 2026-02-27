@@ -96,16 +96,26 @@ export default function CorporateAuthMessage() {
 
         setIsLoading(true);
         try {
+            console.log('Attempting sign in with:', demoUser.email);
+            console.log('Supabase client exists:', !!supabase);
+
             const { data, error } = await supabase.auth.signInWithPassword({
                 email: demoUser.email,
                 password: demoUser.password,
             });
 
+            console.log('Sign in response:', { data, error });
+
             if (error) throw error;
 
             toast.success(`Signed in as ${demoUser.label}`);
         } catch (error) {
-            console.error('Login error:', error);
+            console.error('Login error details:', {
+                message: error.message,
+                name: error.name,
+                stack: error.stack,
+                error
+            });
             toast.error(error.message || 'Failed to sign in with demo account');
             setIsLoading(false);
         }
