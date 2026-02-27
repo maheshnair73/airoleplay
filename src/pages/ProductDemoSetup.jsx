@@ -19,6 +19,7 @@ import { MonitorUp, Sparkles, ArrowLeft } from 'lucide-react';
 const ProductDemoSetup = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [dataLoading, setDataLoading] = useState(true);
   const [bots, setBots] = useState([]);
   const [products, setProducts] = useState([]);
 
@@ -35,32 +36,61 @@ const ProductDemoSetup = () => {
 
   const loadData = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      const { data: profile } = await supabase
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+      if (userError) {
+        console.error('User error:', userError);
+        toast.error('Authentication error');
+        return;
+      }
+
+      if (!user) {
+        console.error('No user found');
+        navigate('/');
+        return;
+      }
+
+      const { data: profile, error: profileError } = await supabase
         .from('user_profiles')
         .select('company_id')
         .eq('id', user.id)
         .single();
 
-      const { data: botsData } = await supabase
+      if (profileError) {
+        console.error('Profile error:', profileError);
+        toast.error('Failed to load profile');
+        return;
+      }
+
+      const { data: botsData, error: botsError } = await supabase
         .from('roleplay_bots')
         .select('*')
         .eq('company_id', profile.company_id)
         .eq('is_active', true)
         .order('name', { ascending: true });
 
+      if (botsError) {
+        console.error('Bots error:', botsError);
+      }
+
       setBots(botsData || []);
 
-      const { data: productsData } = await supabase
+      const { data: productsData, error: productsError } = await supabase
         .from('products')
         .select('*')
         .eq('company_id', profile.company_id)
         .order('name', { ascending: true });
 
+      if (productsError) {
+        console.error('Products error:', productsError);
+      }
+
       setProducts(productsData || []);
     } catch (error) {
       console.error('Error loading data:', error);
       toast.error('Failed to load data');
+    } finally {
+      setDataLoading(false);
     }
   };
 
@@ -119,6 +149,17 @@ const ProductDemoSetup = () => {
     }
   };
 
+  if (dataLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading demo setup...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-3xl mx-auto">
@@ -131,7 +172,36 @@ const ProductDemoSetup = () => {
           Back to AI Roleplay
         </Button>
 
-        <Card>
+        {bots.length === 0 ? (
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center">
+                  <MonitorUp className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <CardTitle className="text-2xl">Product Demo Practice</CardTitle>
+                  <CardDescription>
+                    Practice your product demos with AI clients and get real-time feedback
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-12">
+                <Sparkles className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">No AI Bots Available</h3>
+                <p className="text-gray-600 mb-4">
+                  You need to create roleplay bots before starting product demo practice.
+                </p>
+                <Button onClick={() => navigate('/CreateRoleplayBot')}>
+                  Create Your First Bot
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card>
           <CardHeader>
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center">
@@ -270,6 +340,7 @@ const ProductDemoSetup = () => {
             </Button>
           </CardContent>
         </Card>
+        )}
       </div>
     </div>
   );
