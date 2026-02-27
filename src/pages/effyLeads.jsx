@@ -355,16 +355,16 @@ export default function EffyLeads() {
         <div className="p-8 bg-slate-50 min-h-screen">
             <header className="flex justify-between items-center mb-8">
                 <div>
-                    <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">effyLeads</h1>
+                    <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">effyLeads</h1>
                     <p className="text-slate-600 mt-2">Manage your prospects and opportunities</p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <Button 
+                    <Button
                         onClick={() => {
                             setSelectedLead(null); // Clear selected lead for "Add"
                             setShowLeadForm(true);
-                        }} 
-                        className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
+                        }}
+                        className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white"
                     >
                         <Plus className="w-4 h-4 mr-2" />
                         Add Lead
