@@ -116,7 +116,16 @@ export default function CorporateAuthMessage() {
                 stack: error.stack,
                 error
             });
-            toast.error(error.message || 'Failed to sign in with demo account');
+
+            let errorMessage = error.message || 'Failed to sign in with demo account';
+
+            if (error.message?.includes('Failed to connect to Supabase')) {
+                errorMessage = 'Cannot connect to authentication server. Please check your internet connection and try again.';
+            } else if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
+                errorMessage = 'Network error: Unable to reach authentication server. Please check your connection.';
+            }
+
+            toast.error(errorMessage, { duration: 5000 });
             setIsLoading(false);
         }
     };
