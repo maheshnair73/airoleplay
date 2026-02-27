@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
-import { MonitorUp, Sparkles, ArrowLeft } from 'lucide-react';
+import { MonitorUp, Sparkles, ArrowLeft, UserPlus, X, Briefcase } from 'lucide-react';
 
 const ProductDemoSetup = () => {
   const navigate = useNavigate();
@@ -29,6 +29,17 @@ const ProductDemoSetup = () => {
   const [demoType, setDemoType] = useState('full_demo');
   const [targetDuration, setTargetDuration] = useState(15);
   const [keyFeatures, setKeyFeatures] = useState('');
+
+  const [attendees, setAttendees] = useState([
+    { id: 1, name: '', role: '', persona: 'business', botId: '' }
+  ]);
+  const [productInquiry, setProductInquiry] = useState({
+    companySize: '',
+    industry: '',
+    specificNeeds: '',
+    budget: '',
+    timeline: ''
+  });
 
   useEffect(() => {
     loadData();
@@ -94,9 +105,38 @@ const ProductDemoSetup = () => {
     }
   };
 
+  const addAttendee = () => {
+    setAttendees([...attendees, {
+      id: Date.now(),
+      name: '',
+      role: '',
+      persona: 'business',
+      botId: ''
+    }]);
+  };
+
+  const removeAttendee = (id) => {
+    if (attendees.length > 1) {
+      setAttendees(attendees.filter(a => a.id !== id));
+    }
+  };
+
+  const updateAttendee = (id, field, value) => {
+    setAttendees(attendees.map(a =>
+      a.id === id ? { ...a, [field]: value } : a
+    ));
+  };
+
   const handleStartDemo = async () => {
-    if (!selectedBot) {
-      toast.error('Please select an AI bot');
+    const validAttendees = attendees.filter(a => a.name && a.botId);
+
+    if (validAttendees.length === 0) {
+      toast.error('Please add at least one attendee with a name and AI bot');
+      return;
+    }
+
+    if (!selectedProduct) {
+      toast.error('Please select a product');
       return;
     }
 
@@ -109,7 +149,7 @@ const ProductDemoSetup = () => {
         .from('roleplay_sessions')
         .insert({
           user_id: user.id,
-          bot_id: selectedBot,
+          bot_id: validAttendees[0].botId,
           scenario_description: `Product demo session - ${demoType}`,
           roleplay_type: 'product_demo',
           status: 'pending'
@@ -133,7 +173,14 @@ const ProductDemoSetup = () => {
           demo_type: demoType,
           target_duration_minutes: targetDuration,
           key_features_to_cover: featuresArray,
-          buyer_persona: buyerPersona
+          buyer_persona: buyerPersona,
+          attendees: validAttendees.map(a => ({
+            name: a.name,
+            role: a.role,
+            persona: a.persona,
+            bot_id: a.botId
+          })),
+          product_inquiry: productInquiry
         });
 
       if (demoError) throw demoError;
@@ -216,33 +263,118 @@ const ProductDemoSetup = () => {
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div>
-              <Label htmlFor="bot">AI Client Bot</Label>
-              <Select value={selectedBot} onValueChange={setSelectedBot}>
-                <SelectTrigger id="bot">
-                  <SelectValue placeholder="Select an AI bot" />
-                </SelectTrigger>
-                <SelectContent>
-                  {bots.map((bot) => (
-                    <SelectItem key={bot.id} value={bot.id}>
-                      <div className="flex items-center gap-2">
-                        <Sparkles className="w-4 h-4" />
-                        {bot.name} - {bot.role}
+            <div className="border-b pb-6">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <UserPlus className="w-5 h-5" />
+                    Demo Attendees
+                  </h3>
+                  <p className="text-sm text-gray-600">Add the people who will be in this demo</p>
+                </div>
+                <Button onClick={addAttendee} variant="outline" size="sm">
+                  <UserPlus className="w-4 h-4 mr-2" />
+                  Add Attendee
+                </Button>
+              </div>
+
+              <div className="space-y-4">
+                {attendees.map((attendee, index) => (
+                  <Card key={attendee.id} className="p-4">
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <Label className="text-sm font-semibold">Attendee {index + 1}</Label>
+                        {attendees.length > 1 && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeAttendee(attendee.id)}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        )}
                       </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label>Name</Label>
+                          <Input
+                            placeholder="e.g., John Smith"
+                            value={attendee.name}
+                            onChange={(e) => updateAttendee(attendee.id, 'name', e.target.value)}
+                          />
+                        </div>
+                        <div>
+                          <Label>Role/Title</Label>
+                          <Input
+                            placeholder="e.g., VP of Sales"
+                            value={attendee.role}
+                            onChange={(e) => updateAttendee(attendee.id, 'role', e.target.value)}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label>Persona Type</Label>
+                          <Select
+                            value={attendee.persona}
+                            onValueChange={(value) => updateAttendee(attendee.id, 'persona', value)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="technical">Technical Buyer</SelectItem>
+                              <SelectItem value="business">Business Buyer</SelectItem>
+                              <SelectItem value="executive">Executive</SelectItem>
+                              <SelectItem value="procurement">Procurement</SelectItem>
+                              <SelectItem value="end_user">End User</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label>AI Bot</Label>
+                          <Select
+                            value={attendee.botId}
+                            onValueChange={(value) => updateAttendee(attendee.id, 'botId', value)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select bot" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {bots.map((bot) => (
+                                <SelectItem key={bot.id} value={bot.id}>
+                                  <div className="flex items-center gap-2">
+                                    <Sparkles className="w-4 h-4" />
+                                    {bot.name}
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
             </div>
 
-            <div>
-              <Label htmlFor="product">Product (Optional)</Label>
+            <div className="border-b pb-6">
+              <h3 className="text-lg font-semibold flex items-center gap-2 mb-4">
+                <Briefcase className="w-5 h-5" />
+                Product & Inquiry Details
+              </h3>
+
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="product">Product Inquiring About</Label>
               <Select value={selectedProduct} onValueChange={setSelectedProduct}>
                 <SelectTrigger id="product">
-                  <SelectValue placeholder="Select a product or leave blank for general demo" />
+                  <SelectValue placeholder="Select a product" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No specific product</SelectItem>
                   {products.map((product) => (
                     <SelectItem key={product.id} value={product.id}>
                       {product.name}
@@ -250,22 +382,82 @@ const ProductDemoSetup = () => {
                   ))}
                 </SelectContent>
               </Select>
-            </div>
+                </div>
 
-            <div>
-              <Label htmlFor="persona">Buyer Persona</Label>
-              <Select value={buyerPersona} onValueChange={setBuyerPersona}>
-                <SelectTrigger id="persona">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="technical">Technical Buyer</SelectItem>
-                  <SelectItem value="business">Business Buyer</SelectItem>
-                  <SelectItem value="executive">Executive</SelectItem>
-                  <SelectItem value="procurement">Procurement</SelectItem>
-                  <SelectItem value="end_user">End User</SelectItem>
-                </SelectContent>
-              </Select>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="companySize">Company Size</Label>
+                    <Select
+                      value={productInquiry.companySize}
+                      onValueChange={(value) => setProductInquiry({ ...productInquiry, companySize: value })}
+                    >
+                      <SelectTrigger id="companySize">
+                        <SelectValue placeholder="Select size" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1-10">1-10 employees</SelectItem>
+                        <SelectItem value="11-50">11-50 employees</SelectItem>
+                        <SelectItem value="51-200">51-200 employees</SelectItem>
+                        <SelectItem value="201-500">201-500 employees</SelectItem>
+                        <SelectItem value="501-1000">501-1000 employees</SelectItem>
+                        <SelectItem value="1000+">1000+ employees</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="industry">Industry</Label>
+                    <Input
+                      id="industry"
+                      placeholder="e.g., SaaS, Healthcare, Finance"
+                      value={productInquiry.industry}
+                      onChange={(e) => setProductInquiry({ ...productInquiry, industry: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="budget">Budget Range</Label>
+                    <Input
+                      id="budget"
+                      placeholder="e.g., $10k-$50k annually"
+                      value={productInquiry.budget}
+                      onChange={(e) => setProductInquiry({ ...productInquiry, budget: e.target.value })}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="timeline">Implementation Timeline</Label>
+                    <Select
+                      value={productInquiry.timeline}
+                      onValueChange={(value) => setProductInquiry({ ...productInquiry, timeline: value })}
+                    >
+                      <SelectTrigger id="timeline">
+                        <SelectValue placeholder="Select timeline" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="immediate">Immediate (within 1 month)</SelectItem>
+                        <SelectItem value="short">Short term (1-3 months)</SelectItem>
+                        <SelectItem value="medium">Medium term (3-6 months)</SelectItem>
+                        <SelectItem value="long">Long term (6+ months)</SelectItem>
+                        <SelectItem value="exploring">Just exploring</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="specificNeeds">Specific Needs or Pain Points</Label>
+                  <Textarea
+                    id="specificNeeds"
+                    placeholder="What problems are they trying to solve? What features are they most interested in?"
+                    value={productInquiry.specificNeeds}
+                    onChange={(e) => setProductInquiry({ ...productInquiry, specificNeeds: e.target.value })}
+                    rows={3}
+                  />
+                </div>
+              </div>
             </div>
 
             <div>
@@ -312,6 +504,7 @@ const ProductDemoSetup = () => {
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <h3 className="font-semibold text-blue-900 mb-2">What to expect:</h3>
               <ul className="space-y-1 text-sm text-blue-800">
+                <li>• Multiple AI attendees based on your configuration</li>
                 <li>• Live AI validation of your product knowledge</li>
                 <li>• Real-time coaching assistance during the demo</li>
                 <li>• Screen sharing capability to show your product</li>
@@ -322,7 +515,7 @@ const ProductDemoSetup = () => {
 
             <Button
               onClick={handleStartDemo}
-              disabled={loading || !selectedBot}
+              disabled={loading || attendees.filter(a => a.name && a.botId).length === 0 || !selectedProduct}
               className="w-full"
               size="lg"
             >
