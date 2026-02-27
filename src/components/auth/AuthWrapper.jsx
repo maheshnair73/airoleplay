@@ -11,8 +11,14 @@ export default function AuthWrapper({ children }) {
     useEffect(() => {
         const checkAuth = async () => {
             try {
-                const currentUser = await User.me();
-                setUser(currentUser);
+                const { data: { session } } = await supabase.auth.getSession();
+
+                if (session) {
+                    const currentUser = await User.me();
+                    setUser(currentUser);
+                } else {
+                    setUser(null);
+                }
             } catch (error) {
                 console.error('Auth check error:', error);
                 setUser(null);
@@ -23,9 +29,15 @@ export default function AuthWrapper({ children }) {
 
         checkAuth();
 
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
             if (event === 'SIGNED_IN' && session) {
-                checkAuth();
+                try {
+                    const currentUser = await User.me();
+                    setUser(currentUser);
+                } catch (error) {
+                    console.error('Failed to load user profile:', error);
+                    setUser(null);
+                }
             } else if (event === 'SIGNED_OUT') {
                 setUser(null);
             }
