@@ -18,7 +18,9 @@ import {
     UserCog,
     Radio,
     FileText,
-    History
+    History,
+    MonitorUp,
+    CheckSquare
 } from 'lucide-react';
 
 export const navSections = [
@@ -48,6 +50,7 @@ export const navSections = [
                     { page: 'AIRoleplay', title: 'Single AI Roleplay', icon: Mic, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
                     { page: 'MultiPartyRoleplay', title: 'Multi-Party AI', icon: Users, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
                     { page: 'HumanRoleplay', title: 'Human-to-Human', icon: Video, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
+                    { page: 'ProductDemoSetup', title: 'Product Demo Practice', icon: MonitorUp, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
                     { page: 'AIRoleplayHistory', title: 'Roleplay History', icon: History, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
                     { page: 'AIRoleplayAnalysisDetailed', title: 'Roleplay Analytics', icon: BarChart3, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] }
                 ]
@@ -62,6 +65,7 @@ export const navSections = [
         items: [
             { page: 'ProductManagement', title: 'My Products', icon: Package },
             { page: 'CompetitorManagement', title: 'Competitor Intel', icon: Shield },
+            { page: 'ProductKnowledgeReview', title: 'Knowledge Review Queue', icon: CheckSquare, roles: ['admin', 'saas_admin', 'company_admin', 'sales_manager'] },
         ]
     },
     {

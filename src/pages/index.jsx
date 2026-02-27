@@ -216,6 +216,14 @@ import MultiPartyRoleplay from "./MultiPartyRoleplay";
 
 import CreateMultiPartyScenario from "./CreateMultiPartyScenario";
 
+import ProductDemoRoleplay from "./ProductDemoRoleplay";
+
+import ProductDemoAnalysis from "./ProductDemoAnalysis";
+
+import ProductKnowledgeReview from "./ProductKnowledgeReview";
+
+import ProductDemoSetup from "./ProductDemoSetup";
+
 import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
 
 const PAGES = {
@@ -433,9 +441,17 @@ const PAGES = {
     EffyDocProposalsProduct: EffyDocProposalsProduct,
     
     MultiPartyRoleplay: MultiPartyRoleplay,
-    
+
     CreateMultiPartyScenario: CreateMultiPartyScenario,
-    
+
+    ProductDemoRoleplay: ProductDemoRoleplay,
+
+    ProductDemoAnalysis: ProductDemoAnalysis,
+
+    ProductKnowledgeReview: ProductKnowledgeReview,
+
+    ProductDemoSetup: ProductDemoSetup,
+
 }
 
 function _getCurrentPage(url) {
@@ -677,9 +693,17 @@ function PagesContent() {
                 <Route path="/EffyDocProposalsProduct" element={<EffyDocProposalsProduct />} />
                 
                 <Route path="/MultiPartyRoleplay" element={<MultiPartyRoleplay />} />
-                
+
                 <Route path="/CreateMultiPartyScenario" element={<CreateMultiPartyScenario />} />
-                
+
+                <Route path="/ProductDemoRoleplay/:sessionId" element={<ProductDemoRoleplay />} />
+
+                <Route path="/product-demo-analysis/:sessionId" element={<ProductDemoAnalysis />} />
+
+                <Route path="/ProductKnowledgeReview" element={<ProductKnowledgeReview />} />
+
+                <Route path="/ProductDemoSetup" element={<ProductDemoSetup />} />
+
             </Routes>
         </Layout>
     );
