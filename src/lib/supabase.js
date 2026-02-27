@@ -1,13 +1,5 @@
-import { createClient } from '@supabase/supabase-js';
+import { mockSupabase } from './mockSupabase';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+console.log('Using Mock Supabase Client (No Network Connection Required)');
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Missing Supabase environment variables');
-  throw new Error('Missing Supabase configuration');
-}
-
-console.log('Using Real Supabase Client');
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = mockSupabase;
