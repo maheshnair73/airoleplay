@@ -29,15 +29,17 @@ export default function AuthWrapper({ children }) {
 
         checkAuth();
 
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
             if (event === 'SIGNED_IN' && session) {
-                try {
-                    const currentUser = await User.me();
-                    setUser(currentUser);
-                } catch (error) {
-                    console.error('Failed to load user profile:', error);
-                    setUser(null);
-                }
+                (async () => {
+                    try {
+                        const currentUser = await User.me();
+                        setUser(currentUser);
+                    } catch (error) {
+                        console.error('Failed to load user profile:', error);
+                        setUser(null);
+                    }
+                })();
             } else if (event === 'SIGNED_OUT') {
                 setUser(null);
             }
