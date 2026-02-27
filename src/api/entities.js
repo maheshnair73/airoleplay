@@ -1,6 +1,19 @@
 import { supabase } from '@/lib/supabase';
 import { mockData } from '@/lib/mockData';
 
+async function getUserRole() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data: profile } = await supabase
+    .from('user_profiles')
+    .select('role')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  return profile?.role || 'sales_agent';
+}
+
 function createEntity(tableName) {
   return {
     async list(orderBy) {
@@ -101,7 +114,9 @@ export const SharedQuestion = createEntity('shared_questions');
 export const SharedObjection = createEntity('shared_objections');
 export const AIAgentSubscription = createEntity('ai_agent_subscriptions');
 export const AIAgentActivity = createEntity('ai_agent_activities');
-export const RoleplayBot = createEntity('roleplay_bots');
+export const RoleplayBot = createEntity('ai_clients');
+export const AIClient = createEntity('ai_clients');
+export const AttendeeProfile = createEntity('attendee_profiles');
 export const GameProfile = createEntity('game_profiles');
 export const Achievement = createEntity('achievements');
 export const UserAchievement = createEntity('user_achievements');

@@ -177,6 +177,7 @@ import EffyDocProposals from "./EffyDocProposals";
 import UnifiedSalesAnalytics from "./UnifiedSalesAnalytics";
 
 import CreateRoleplayBot from "./CreateRoleplayBot";
+import CreateAIClient from "./CreateAIClient";
 
 import BotPerformanceDetails from "./BotPerformanceDetails";
 
@@ -405,6 +406,7 @@ const PAGES = {
     UnifiedSalesAnalytics: UnifiedSalesAnalytics,
     
     CreateRoleplayBot: CreateRoleplayBot,
+    CreateAIClient: CreateAIClient,
     
     BotPerformanceDetails: BotPerformanceDetails,
     
@@ -657,6 +659,7 @@ function PagesContent() {
                 <Route path="/UnifiedSalesAnalytics" element={<UnifiedSalesAnalytics />} />
                 
                 <Route path="/CreateRoleplayBot" element={<CreateRoleplayBot />} />
+                <Route path="/create-ai-client" element={<CreateAIClient />} />
                 
                 <Route path="/BotPerformanceDetails" element={<BotPerformanceDetails />} />
                 

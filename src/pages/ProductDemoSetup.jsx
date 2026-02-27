@@ -74,11 +74,10 @@ const ProductDemoSetup = () => {
       }
 
       const { data: botsData, error: botsError } = await supabase
-        .from('roleplay_bots')
+        .from('ai_clients')
         .select('*')
-        .eq('company_id', profile.company_id)
         .eq('is_active', true)
-        .order('name', { ascending: true });
+        .order('first_name', { ascending: true });
 
       if (botsError) {
         console.error('Bots error:', botsError);
@@ -237,12 +236,12 @@ const ProductDemoSetup = () => {
             <CardContent>
               <div className="text-center py-12">
                 <Sparkles className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">No AI Bots Available</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">No AI Clients Available</h3>
                 <p className="text-gray-600 mb-4">
-                  You need to create roleplay bots before starting product demo practice.
+                  You need to create AI Clients before starting product demo practice.
                 </p>
-                <Button onClick={() => navigate('/CreateRoleplayBot')}>
-                  Create Your First Bot
+                <Button onClick={() => navigate('/create-ai-client')}>
+                  Create Your First AI Client
                 </Button>
               </div>
             </CardContent>
@@ -334,20 +333,20 @@ const ProductDemoSetup = () => {
                           </Select>
                         </div>
                         <div>
-                          <Label>AI Bot</Label>
+                          <Label>AI Client</Label>
                           <Select
                             value={attendee.botId}
                             onValueChange={(value) => updateAttendee(attendee.id, 'botId', value)}
                           >
                             <SelectTrigger>
-                              <SelectValue placeholder="Select bot" />
+                              <SelectValue placeholder="Select AI Client" />
                             </SelectTrigger>
                             <SelectContent>
                               {bots.map((bot) => (
                                 <SelectItem key={bot.id} value={bot.id}>
                                   <div className="flex items-center gap-2">
                                     <Sparkles className="w-4 h-4" />
-                                    {bot.name}
+                                    {bot.first_name} {bot.last_name} - {bot.title}
                                   </div>
                                 </SelectItem>
                               ))}

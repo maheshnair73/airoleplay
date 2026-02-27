@@ -59,7 +59,7 @@ const ProductDemoRoleplay = () => {
         .from('roleplay_sessions')
         .select(`
           *,
-          roleplay_bots(*)
+          ai_clients(*)
         `)
         .eq('id', sessionId)
         .single();
@@ -301,7 +301,7 @@ const ProductDemoRoleplay = () => {
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Product Demo Roleplay</h1>
             <p className="text-sm text-gray-600 mt-1">
-              {session?.roleplay_bots?.name} - {demoSession?.buyer_persona} buyer persona
+              {session?.ai_clients?.name} - {demoSession?.buyer_persona} buyer persona
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -355,7 +355,7 @@ const ProductDemoRoleplay = () => {
                   <div className="w-32 h-32 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Sparkles className="w-16 h-16" />
                   </div>
-                  <p className="text-lg font-medium">{session?.roleplay_bots?.name}</p>
+                  <p className="text-lg font-medium">{session?.ai_clients?.name}</p>
                   <p className="text-sm text-gray-400">{demoSession?.buyer_persona} Buyer</p>
                 </div>
               </CardContent>

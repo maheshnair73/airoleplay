@@ -41,7 +41,7 @@ const ProductDemoAnalysis = () => {
         .from('roleplay_sessions')
         .select(`
           *,
-          roleplay_bots(*)
+          ai_clients(*)
         `)
         .eq('id', sessionId)
         .single();
@@ -166,7 +166,7 @@ const ProductDemoAnalysis = () => {
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Product Demo Analysis</h1>
               <p className="text-gray-600 mt-1">
-                Session with {session?.roleplay_bots?.name}
+                Session with {session?.ai_clients?.name}
               </p>
             </div>
             <div className="flex items-center gap-3">
