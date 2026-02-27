@@ -9,6 +9,7 @@ import { Phone, PhoneOff, Clock, Pause, Play, Mic, MicOff, Volume2, VolumeX, Boo
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { SalesKnowledgeBase, Product, Competitor } from '@/api/entities';
+import FloatingCallWidget from '@/components/calls/FloatingCallWidget';
 
 export default function CallControlPanel({ lead, onCallEnd, onCallStart }) {
   const [isCallActive, setIsCallActive] = useState(false);
@@ -102,6 +103,14 @@ export default function CallControlPanel({ lead, onCallEnd, onCallStart }) {
     toast.info(isMuted ? 'Unmuted' : 'Muted');
   };
 
+  const handleFloatingEndCall = () => {
+    handleEndCall();
+  };
+
+  const handleFloatingMuteToggle = () => {
+    toggleMute();
+  };
+
   const filteredKnowledge = knowledgeItems.filter(item =>
     item.title?.toLowerCase().includes(knowledgeSearch.toLowerCase()) ||
     item.content?.toLowerCase().includes(knowledgeSearch.toLowerCase()) ||
@@ -121,6 +130,17 @@ export default function CallControlPanel({ lead, onCallEnd, onCallStart }) {
 
   return (
     <>
+      {isCallActive && (
+        <FloatingCallWidget
+          lead={lead}
+          callDuration={callDuration}
+          onEndCall={handleFloatingEndCall}
+          onMuteToggle={handleFloatingMuteToggle}
+          isMuted={isMuted}
+          position="bottom-right"
+        />
+      )}
+
       <Card className={`shadow-lg border-2 ${isCallActive ? 'border-green-500 bg-green-50' : 'border-slate-200'}`}>
         <CardContent className="p-6">
           <div className="space-y-4">

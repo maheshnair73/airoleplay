@@ -17,6 +17,7 @@ import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { toast } from 'sonner';
 import GameActionTracker from '@/components/gamification/GameActionTracker';
+import FloatingCallWidget from '@/components/calls/FloatingCallWidget';
 
 const statusColumns = {
     new: { title: 'New Leads', color: 'border-t-blue-500' },
@@ -191,7 +192,20 @@ export default function EffyLeads() {
     const [sourceFilter, setSourceFilter] = useState('all');
     const [currentView, setCurrentView] = useState('table'); // 'table' or 'kanban'
     const [isSubmitting, setIsSubmitting] = useState(false); // Added for LeadForm submission state
+    const [activeCall, setActiveCall] = useState(null);
+    const [callDuration, setCallDuration] = useState(0);
+    const [isCallMuted, setIsCallMuted] = useState(false);
     const navigate = useNavigate();
+
+    useEffect(() => {
+        let interval;
+        if (activeCall) {
+            interval = setInterval(() => {
+                setCallDuration(prev => prev + 1);
+            }, 1000);
+        }
+        return () => clearInterval(interval);
+    }, [activeCall]);
 
     useEffect(() => {
         fetchLeads();
@@ -300,6 +314,32 @@ export default function EffyLeads() {
         setShowLeadForm(true);
     };
 
+    const handleStartCall = (lead) => {
+        if (lead.contact_phone) {
+            setActiveCall(lead);
+            setCallDuration(0);
+            setIsCallMuted(false);
+            toast.success(`Call started with ${lead.contact_name || lead.company_name}`);
+            window.open(`tel:${lead.contact_phone}`);
+        } else {
+            toast.error('No phone number available for this lead');
+        }
+    };
+
+    const handleEndCall = () => {
+        if (activeCall) {
+            toast.success(`Call ended. Duration: ${Math.floor(callDuration / 60)}:${String(callDuration % 60).padStart(2, '0')}`);
+            setActiveCall(null);
+            setCallDuration(0);
+            setIsCallMuted(false);
+        }
+    };
+
+    const handleMuteToggle = () => {
+        setIsCallMuted(!isCallMuted);
+        toast.info(isCallMuted ? 'Call unmuted' : 'Call muted');
+    };
+
     const filteredLeads = useMemo(() => {
         let filtered = leads;
 
@@ -374,6 +414,17 @@ export default function EffyLeads() {
 
     return (
         <div className="p-8 bg-slate-50 min-h-screen">
+            {activeCall && (
+                <FloatingCallWidget
+                    lead={activeCall}
+                    callDuration={callDuration}
+                    onEndCall={handleEndCall}
+                    onMuteToggle={handleMuteToggle}
+                    isMuted={isCallMuted}
+                    position="bottom-right"
+                />
+            )}
+
             <header className="flex justify-between items-center mb-8">
                 <div>
                     <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">effyLeads</h1>
@@ -546,9 +597,7 @@ export default function EffyLeads() {
                                                 className="flex-1 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white"
                                                 onClick={(e) => {
                                                     e.stopPropagation();
-                                                    if (lead.contact_phone) {
-                                                        window.open(`tel:${lead.contact_phone}`);
-                                                    }
+                                                    handleStartCall(lead);
                                                 }}
                                             >
                                                 <Phone className="w-3 h-3 mr-1" />
@@ -653,9 +702,7 @@ export default function EffyLeads() {
                                                 className="flex-1 bg-green-600 hover:bg-green-700 text-white"
                                                 onClick={(e) => {
                                                     e.stopPropagation();
-                                                    if (lead.contact_phone) {
-                                                        window.open(`tel:${lead.contact_phone}`);
-                                                    }
+                                                    handleStartCall(lead);
                                                 }}
                                             >
                                                 <Phone className="w-3 h-3 mr-1" />
