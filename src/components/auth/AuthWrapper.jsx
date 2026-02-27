@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { User } from '@/api/entities';
+import { supabase } from '@/lib/supabase';
 import { Loader2 } from 'lucide-react';
 import CorporateAuthMessage from './CorporateAuth';
 
@@ -13,12 +14,26 @@ export default function AuthWrapper({ children }) {
                 const currentUser = await User.me();
                 setUser(currentUser);
             } catch (error) {
+                console.error('Auth check error:', error);
                 setUser(null);
             } finally {
                 setIsLoading(false);
             }
         };
+
         checkAuth();
+
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_IN' && session) {
+                checkAuth();
+            } else if (event === 'SIGNED_OUT') {
+                setUser(null);
+            }
+        });
+
+        return () => {
+            subscription?.unsubscribe();
+        };
     }, []);
 
     if (isLoading) {

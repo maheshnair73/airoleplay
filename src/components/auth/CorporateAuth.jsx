@@ -83,7 +83,6 @@ export default function CorporateAuthMessage() {
             if (error) throw error;
 
             toast.success('Welcome back!');
-            window.location.reload();
         } catch (error) {
             console.error('Login error:', error);
             toast.error(error.message || 'Failed to sign in');
@@ -105,7 +104,6 @@ export default function CorporateAuthMessage() {
             if (error) throw error;
 
             toast.success(`Signed in as ${demoUser.label}`);
-            window.location.reload();
         } catch (error) {
             console.error('Login error:', error);
             toast.error(error.message || 'Failed to sign in with demo account');
