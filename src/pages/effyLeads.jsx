@@ -357,6 +357,13 @@ export default function EffyLeads() {
         };
     }, [leads]);
 
+    const pendingLeads = useMemo(() => {
+        return leads.filter(lead =>
+            lead.status === 'new' ||
+            (lead.disposition === 'callback_requested' && lead.status !== 'closed_won' && lead.status !== 'closed_lost')
+        );
+    }, [leads]);
+
     const handleRowClick = (lead) => {
         if (lead && lead.id) {
             navigate(createPageUrl(`LeadDetail?leadId=${lead.id}`));
@@ -453,6 +460,127 @@ export default function EffyLeads() {
                     </CardContent>
                 </Card>
             </div>
+
+            {pendingLeads.length > 0 && (
+                <Card className="mb-6 border-2 border-blue-200 bg-gradient-to-r from-blue-50 to-cyan-50">
+                    <CardContent className="p-6">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="flex items-center justify-center w-10 h-10 bg-blue-600 rounded-full">
+                                <PhoneCall className="w-6 h-6 text-white" />
+                            </div>
+                            <div>
+                                <h2 className="text-xl font-bold text-slate-900">Pending Leads to Contact</h2>
+                                <p className="text-sm text-slate-600">New leads and callback requests requiring attention</p>
+                            </div>
+                            <Badge className="ml-auto bg-blue-600 text-white text-lg px-3 py-1">
+                                {pendingLeads.length}
+                            </Badge>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {pendingLeads.slice(0, 6).map(lead => (
+                                <Card
+                                    key={lead.id}
+                                    className="cursor-pointer hover:shadow-lg transition-shadow border-l-4 border-l-blue-600 bg-white"
+                                    onClick={() => handleRowClick(lead)}
+                                >
+                                    <CardContent className="p-4">
+                                        <div className="flex justify-between items-start mb-3">
+                                            <div>
+                                                <h3 className="font-semibold text-slate-900">{lead.contact_name || lead.company_name}</h3>
+                                                <p className="text-sm text-slate-500">{lead.company_name}</p>
+                                            </div>
+                                            <Badge className={`${
+                                                lead.status === 'new' ? 'bg-blue-100 text-blue-700' : 'bg-yellow-100 text-yellow-700'
+                                            } text-xs`}>
+                                                {lead.status === 'new' ? 'New' : 'Callback'}
+                                            </Badge>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            {lead.contact_phone && (
+                                                <div className="flex items-center gap-2 text-sm text-slate-600">
+                                                    <Phone className="w-4 h-4 text-slate-400" />
+                                                    <span>{lead.contact_phone}</span>
+                                                </div>
+                                            )}
+
+                                            {lead.contact_email && (
+                                                <div className="flex items-center gap-2 text-sm text-slate-600">
+                                                    <Mail className="w-4 h-4 text-slate-400" />
+                                                    <span className="truncate">{lead.contact_email}</span>
+                                                </div>
+                                            )}
+
+                                            {lead.disposition && (
+                                                <div className="flex items-center gap-2">
+                                                    <PhoneCall className="w-4 h-4 text-slate-400" />
+                                                    <span className={`text-xs font-medium px-2 py-0.5 rounded ${
+                                                        lead.disposition === 'interested' ? 'bg-green-100 text-green-700' :
+                                                        lead.disposition === 'callback_requested' ? 'bg-yellow-100 text-yellow-700' :
+                                                        'bg-slate-100 text-slate-700'
+                                                    }`}>
+                                                        {lead.disposition.replace(/_/g, ' ')}
+                                                    </span>
+                                                </div>
+                                            )}
+
+                                            {lead.next_call_date && (
+                                                <div className="flex items-center gap-2 text-sm text-slate-600">
+                                                    <Clock className="w-4 h-4 text-slate-400" />
+                                                    <span>
+                                                        {new Date(lead.next_call_date).toLocaleString('en-US', {
+                                                            month: 'short',
+                                                            day: 'numeric',
+                                                            hour: 'numeric',
+                                                            minute: '2-digit'
+                                                        })}
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="flex gap-2 mt-4">
+                                            <Button
+                                                size="sm"
+                                                className="flex-1 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    if (lead.contact_phone) {
+                                                        window.open(`tel:${lead.contact_phone}`);
+                                                    }
+                                                }}
+                                            >
+                                                <Phone className="w-3 h-3 mr-1" />
+                                                Call Now
+                                            </Button>
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleRowClick(lead);
+                                                }}
+                                            >
+                                                <Eye className="w-3 h-3 mr-1" />
+                                                View
+                                            </Button>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
+
+                        {pendingLeads.length > 6 && (
+                            <div className="mt-4 text-center">
+                                <Button variant="outline" className="text-blue-600 border-blue-600 hover:bg-blue-50">
+                                    View All {pendingLeads.length} Pending Leads
+                                </Button>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+            )}
 
             {urgentFollowUps.length > 0 && (
                 <Card className="mb-6 border-2 border-orange-200 bg-gradient-to-r from-orange-50 to-red-50">
