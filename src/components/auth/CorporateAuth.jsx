@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -60,16 +60,6 @@ export default function CorporateAuthMessage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
-    const [demoUsersExist, setDemoUsersExist] = useState(true);
-    const [checkingDemoUsers, setCheckingDemoUsers] = useState(true);
-
-    useEffect(() => {
-        checkDemoUsers();
-    }, []);
-
-    const checkDemoUsers = async () => {
-        setCheckingDemoUsers(false);
-    };
 
     const handleSignIn = async (e) => {
         e.preventDefault();
@@ -126,45 +116,6 @@ export default function CorporateAuthMessage() {
             }
 
             toast.error(errorMessage, { duration: 5000 });
-            setIsLoading(false);
-        }
-    };
-
-    const createDemoUsers = async () => {
-        setIsLoading(true);
-
-        try {
-            const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-demo-users`;
-
-            const response = await fetch(apiUrl, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-                    'Content-Type': 'application/json',
-                }
-            });
-
-            const result = await response.json();
-
-            if (result.success) {
-                const successCount = result.results.filter(r =>
-                    r.status === 'success' || r.status === 'already_exists'
-                ).length;
-
-                if (successCount > 0) {
-                    toast.success(`Demo users ready! ${successCount} accounts available.`);
-                    setDemoUsersExist(true);
-                    await checkDemoUsers();
-                } else {
-                    toast.error('No demo users were created. Please try again.');
-                }
-            } else {
-                toast.error(`Failed to create demo users: ${result.error}`);
-            }
-        } catch (error) {
-            console.error('Error creating demo users:', error);
-            toast.error('Failed to create demo users. Please try again.');
-        } finally {
             setIsLoading(false);
         }
     };
@@ -238,71 +189,42 @@ export default function CorporateAuthMessage() {
                         </Button>
                     </form>
 
-                    {!checkingDemoUsers && (
-                        <>
-                            <div className="relative">
-                                <Separator className="my-4" />
-                                <div className="absolute inset-0 flex items-center justify-center">
-                                    <span className="bg-white px-3 text-sm text-slate-500">
-                                        Quick Login (Demo Accounts)
-                                    </span>
-                                </div>
-                            </div>
+                    <div className="relative">
+                        <Separator className="my-4" />
+                        <div className="absolute inset-0 flex items-center justify-center">
+                            <span className="bg-white px-3 text-sm text-slate-500">
+                                Quick Login (Demo Accounts)
+                            </span>
+                        </div>
+                    </div>
 
-                            {demoUsersExist ? (
-                                <TooltipProvider>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        {DEMO_USERS.map((demoUser) => {
-                                            return (
-                                                <Tooltip key={demoUser.email}>
-                                                    <TooltipTrigger asChild>
-                                                        <Button
-                                                            onClick={() => handleQuickLogin(demoUser)}
-                                                            disabled={isLoading}
-                                                            variant="outline"
-                                                            className={`h-auto py-6 ${demoUser.bgColor} ${demoUser.textColor} hover:shadow-xl hover:scale-105 transition-all duration-200 font-bold text-lg relative group rounded-xl`}
-                                                        >
-                                                            {demoUser.label}
-                                                            <Info className="h-3 w-3 absolute top-2 right-2 opacity-40 group-hover:opacity-70" />
-                                                        </Button>
-                                                    </TooltipTrigger>
-                                                    <TooltipContent side="bottom" className="bg-slate-800 text-white p-3">
-                                                        <div className="space-y-1 text-xs">
-                                                            <div><span className="font-semibold">Email:</span> {demoUser.email}</div>
-                                                            <div><span className="font-semibold">Password:</span> {demoUser.password}</div>
-                                                        </div>
-                                                    </TooltipContent>
-                                                </Tooltip>
-                                            );
-                                        })}
-                                    </div>
-                                </TooltipProvider>
-                            ) : (
-                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
-                                    <p className="text-sm text-slate-700 font-medium text-center">
-                                        First Time Setup?
-                                    </p>
-                                    <p className="text-xs text-slate-600 text-center">
-                                        Demo users don't exist yet. Click below to create them.
-                                    </p>
-                                    <Button
-                                        onClick={createDemoUsers}
-                                        disabled={isLoading}
-                                        className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-medium shadow-md"
-                                    >
-                                        {isLoading ? (
-                                            <>
-                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                                Creating Demo Users...
-                                            </>
-                                        ) : (
-                                            'Create Demo Users'
-                                        )}
-                                    </Button>
-                                </div>
-                            )}
-                        </>
-                    )}
+                    <TooltipProvider>
+                        <div className="grid grid-cols-2 gap-4">
+                            {DEMO_USERS.map((demoUser) => {
+                                return (
+                                    <Tooltip key={demoUser.email}>
+                                        <TooltipTrigger asChild>
+                                            <Button
+                                                onClick={() => handleQuickLogin(demoUser)}
+                                                disabled={isLoading}
+                                                variant="outline"
+                                                className={`h-auto py-6 ${demoUser.bgColor} ${demoUser.textColor} hover:shadow-xl hover:scale-105 transition-all duration-200 font-bold text-lg relative group rounded-xl`}
+                                            >
+                                                {demoUser.label}
+                                                <Info className="h-3 w-3 absolute top-2 right-2 opacity-40 group-hover:opacity-70" />
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="bottom" className="bg-slate-800 text-white p-3">
+                                            <div className="space-y-1 text-xs">
+                                                <div><span className="font-semibold">Email:</span> {demoUser.email}</div>
+                                                <div><span className="font-semibold">Password:</span> {demoUser.password}</div>
+                                            </div>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                );
+                            })}
+                        </div>
+                    </TooltipProvider>
                 </CardContent>
             </Card>
         </div>

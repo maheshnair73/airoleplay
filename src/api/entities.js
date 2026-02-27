@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { mockData } from '@/lib/mockData';
 
 function createEntity(tableName) {
   return {
@@ -23,15 +24,14 @@ function createEntity(tableName) {
     },
 
     async filter(filters) {
-      let query = supabase.from(tableName).select('*');
+      const data = mockData[tableName] || [];
+      let filtered = data;
 
       Object.entries(filters).forEach(([key, value]) => {
-        query = query.eq(key, value);
+        filtered = filtered.filter(item => item[key] === value);
       });
 
-      const { data, error } = await query;
-      if (error) throw error;
-      return data || [];
+      return filtered;
     },
 
     async create(data) {
@@ -127,11 +127,7 @@ export const User = {
     if (error) throw error;
 
     if (user) {
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('id', user.id)
-        .maybeSingle();
+      const profile = mockData.user_profiles.find(p => p.id === user.id);
 
       return {
         ...user,
@@ -144,9 +140,7 @@ export const User = {
   },
 
   async list() {
-    const { data, error } = await supabase.from('user_profiles').select('*');
-    if (error) throw error;
-    return data || [];
+    return mockData.user_profiles || [];
   },
 
   async signIn(email, password) {
