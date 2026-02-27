@@ -1,19 +1,19 @@
 
 import React, { useState, useEffect } from 'react';
 import { Meeting } from '@/api/entities';
-import { User } from '@/api/entities'; // Preserving User import as per functionality preservation
+import { User } from '@/api/entities';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Video, CheckCircle, Clock, Users, Calendar, Link as LinkIcon } from 'lucide-react'; // Updated lucide-react imports
+import { Loader2, Video, CheckCircle, Clock, Users, Calendar, Plus } from 'lucide-react';
 import { format } from 'date-fns';
 import { createPageUrl } from '@/utils';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import MeetingDetailSheet from '@/components/meetings/MeetingDetailSheet';
-import RescheduleModal from '@/components/meetings/RescheduleModal'; // New import
-import InviteModal from '@/components/meetings/InviteModal'; // New import
+import RescheduleModal from '@/components/meetings/RescheduleModal';
+import InviteModal from '@/components/meetings/InviteModal';
 
 const IntegrationCard = ({ platform, icon, isConnected, onConnect }) => (
     <Card className="bg-white"> {/* Removed hover:shadow-md transition-shadow */}
@@ -121,6 +121,7 @@ const MeetingItem = ({ meeting, onSelectMeeting }) => {
 };
 
 export default function LiveMeetings() {
+    const navigate = useNavigate();
     const [meetings, setMeetings] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [selectedMeeting, setSelectedMeeting] = useState(null);
@@ -248,13 +249,25 @@ export default function LiveMeetings() {
     return (
         <div className="p-6 md:p-10 bg-gradient-to-br from-slate-50 via-white to-blue-50 min-h-screen">
             <header className="mb-8">
-                <div className="flex items-center gap-3 mb-2">
-                     <div className="w-10 h-10 bg-gradient-to-r from-violet-500 to-purple-500 rounded-lg flex items-center justify-center">
-                        <Video className="w-5 h-5 text-white" />
+                <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gradient-to-r from-violet-500 to-purple-500 rounded-lg flex items-center justify-center">
+                            <Video className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                            <h1 className="text-4xl font-bold text-slate-900">effyMeeting Assistant</h1>
+                            <p className="text-slate-600 max-w-3xl mt-1">Connect your calendar to have the effyMeeting Assistant join, record, and analyze your sales meetings.</p>
+                        </div>
                     </div>
-                    <h1 className="text-4xl font-bold text-slate-900">effyMeeting Assistant</h1>
+                    <Button
+                        onClick={() => navigate(createPageUrl('HumanRoleplay'))}
+                        size="lg"
+                        className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700"
+                    >
+                        <Plus className="w-5 h-5 mr-2" />
+                        Start New Meeting
+                    </Button>
                 </div>
-                <p className="text-slate-600 max-w-3xl">Connect your calendar to have the effyMeeting Assistant join, record, and analyze your sales meetings on Zoom, Google Meet, and Microsoft Teams.</p>
             </header>
 
             <Tabs defaultValue="upcoming" className="w-full">

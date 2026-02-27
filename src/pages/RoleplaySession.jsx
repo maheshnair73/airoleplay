@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Users, Play, Square, Mic, MicOff, Video, VideoOff, Phone, CheckCircle, User as UserIcon, Building, Briefcase, Target, Lightbulb, FileText, MessageSquare } from 'lucide-react';
+import { ArrowLeft, Users, Play, Square, Mic, MicOff, Video, VideoOff, Phone, CheckCircle, User as UserIcon, Building, Briefcase, Target, Lightbulb, FileText, MessageSquare, BarChart } from 'lucide-react';
 import { toast } from 'sonner';
 import { createPageUrl } from '@/utils';
 import VideoCallIntegration from '@/components/roleplay/VideoCallIntegration';
@@ -231,7 +231,14 @@ export default function RoleplaySessionPage() {
                                         <div className="bg-blue-50 p-6 rounded-lg text-center">
                                             <CheckCircle className="w-12 h-12 text-blue-600 mx-auto mb-4" />
                                             <h3 className="font-semibold text-blue-800 mb-2">Session Completed</h3>
-                                            <p className="text-blue-700">Duration: {formatTime(session.session_duration || sessionTime)}</p>
+                                            <p className="text-blue-700 mb-4">Duration: {formatTime(session.session_duration || sessionTime)}</p>
+                                            <Button
+                                                onClick={() => navigate(createPageUrl(`HumanRoleplayAnalysis?sessionId=${session.id}`))}
+                                                className="bg-blue-600 hover:bg-blue-700"
+                                            >
+                                                <BarChart className="w-4 h-4 mr-2" />
+                                                View Full Analysis
+                                            </Button>
                                         </div>
 
                                         <Tabs defaultValue="transcription" className="w-full">

@@ -132,6 +132,8 @@ import TaskSubmission from "./TaskSubmission";
 
 import HumanRoleplay from "./HumanRoleplay";
 
+import HumanRoleplayAnalysis from "./HumanRoleplayAnalysis";
+
 import RoleplaySession from "./RoleplaySession";
 
 import RoleplaySessionPage from "./RoleplaySessionPage";
@@ -360,6 +362,7 @@ const PAGES = {
     TaskSubmission: TaskSubmission,
     
     HumanRoleplay: HumanRoleplay,
+    HumanRoleplayAnalysis: HumanRoleplayAnalysis,
     
     RoleplaySession: RoleplaySession,
     
@@ -612,7 +615,9 @@ function PagesContent() {
                 <Route path="/TaskSubmission" element={<TaskSubmission />} />
                 
                 <Route path="/HumanRoleplay" element={<HumanRoleplay />} />
-                
+
+                <Route path="/HumanRoleplayAnalysis" element={<HumanRoleplayAnalysis />} />
+
                 <Route path="/RoleplaySession" element={<RoleplaySession />} />
                 <Route path="/roleplaysession" element={<RoleplaySession />} />
 

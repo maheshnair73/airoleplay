@@ -263,7 +263,12 @@ export default function HumanRoleplay() {
             const session = await RoleplaySession.create(sessionPayload);
 
             toast.success('Roleplay session created! Participants have been notified.');
-            navigate(createPageUrl(`RoleplaySession?sessionId=${session.id}`));
+
+            if (meetingPlatform === 'our_platform') {
+                navigate(createPageUrl(`RoleplaySession?sessionId=${session.id}`));
+            } else {
+                navigate(createPageUrl('LiveMeetings'));
+            }
         } catch (error) {
             console.error('Error creating roleplay session:', error);
             toast.error(`Failed to create roleplay session: ${error.message}`);
