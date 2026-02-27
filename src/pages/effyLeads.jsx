@@ -343,6 +343,20 @@ export default function EffyLeads() {
             .sort((a, b) => new Date(a.next_call_date) - new Date(b.next_call_date));
     }, [leads]);
 
+    const leadStats = useMemo(() => {
+        return {
+            total: leads.length,
+            new: leads.filter(lead => lead.status === 'new').length,
+            contacted: leads.filter(lead => lead.status === 'contacted').length,
+            qualified: leads.filter(lead => lead.status === 'qualified').length,
+            closedWon: leads.filter(lead => lead.status === 'closed_won').length,
+            pendingContact: leads.filter(lead =>
+                lead.status === 'new' ||
+                (lead.disposition === 'callback_requested' && lead.status !== 'closed_won' && lead.status !== 'closed_lost')
+            ).length,
+        };
+    }, [leads]);
+
     const handleRowClick = (lead) => {
         if (lead && lead.id) {
             navigate(createPageUrl(`LeadDetail?leadId=${lead.id}`));
@@ -380,6 +394,65 @@ export default function EffyLeads() {
                     setShowLeadForm(false);
                 }}
             />
+
+            {/* Lead Statistics Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <Card className="border-l-4 border-l-blue-500 bg-white hover:shadow-lg transition-shadow">
+                    <CardContent className="p-6">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm font-medium text-slate-600">Total Leads</p>
+                                <p className="text-3xl font-bold text-slate-900 mt-2">{leadStats.total}</p>
+                            </div>
+                            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                                <Users className="w-6 h-6 text-blue-600" />
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card className="border-l-4 border-l-orange-500 bg-white hover:shadow-lg transition-shadow">
+                    <CardContent className="p-6">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm font-medium text-slate-600">Pending Contact</p>
+                                <p className="text-3xl font-bold text-slate-900 mt-2">{leadStats.pendingContact}</p>
+                            </div>
+                            <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
+                                <AlertCircle className="w-6 h-6 text-orange-600" />
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card className="border-l-4 border-l-yellow-500 bg-white hover:shadow-lg transition-shadow">
+                    <CardContent className="p-6">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm font-medium text-slate-600">Qualified</p>
+                                <p className="text-3xl font-bold text-slate-900 mt-2">{leadStats.qualified}</p>
+                            </div>
+                            <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
+                                <CheckCircle2 className="w-6 h-6 text-yellow-600" />
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card className="border-l-4 border-l-green-500 bg-white hover:shadow-lg transition-shadow">
+                    <CardContent className="p-6">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm font-medium text-slate-600">Closed Won</p>
+                                <p className="text-3xl font-bold text-slate-900 mt-2">{leadStats.closedWon}</p>
+                            </div>
+                            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                                <CheckCircle2 className="w-6 h-6 text-green-600" />
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
 
             {urgentFollowUps.length > 0 && (
                 <Card className="mb-6 border-2 border-orange-200 bg-gradient-to-r from-orange-50 to-red-50">
