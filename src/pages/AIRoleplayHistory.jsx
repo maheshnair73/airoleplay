@@ -21,6 +21,7 @@ export default function AIRoleplayHistory() {
     const [isLoading, setIsLoading] = useState(true);
     const [selectedType, setSelectedType] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
+    const [error, setError] = useState(null);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -29,6 +30,7 @@ export default function AIRoleplayHistory() {
 
     const loadSessions = async () => {
         try {
+            setError(null);
             const data = await RoleplaySession.list('-created_at');
 
             if (data && data.length > 0) {
@@ -38,6 +40,7 @@ export default function AIRoleplayHistory() {
             }
         } catch (error) {
             console.error('Error loading sessions:', error);
+            setError(error.message);
             setSessions(getDummyData());
         } finally {
             setIsLoading(false);
@@ -284,7 +287,20 @@ export default function AIRoleplayHistory() {
         );
     }
 
-    return (
+    if (error) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="text-center">
+                    <div className="text-red-600 mb-4">Error loading sessions</div>
+                    <p className="text-slate-500 mb-4">{error}</p>
+                    <Button onClick={loadSessions}>Retry</Button>
+                </div>
+            </div>
+        );
+    }
+
+    try {
+        return (
         <div className="p-6 bg-slate-50 min-h-screen">
             <div className="mb-6">
                 <Link to={createPageUrl('AIRoleplay')} className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 transition-colors">
@@ -555,5 +571,17 @@ export default function AIRoleplayHistory() {
                 </Card>
             </div>
         </div>
-    );
+        );
+    } catch (renderError) {
+        console.error('Render error:', renderError);
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="text-center">
+                    <div className="text-red-600 mb-4">Error rendering page</div>
+                    <p className="text-slate-500 mb-4">{renderError.message}</p>
+                    <Button onClick={() => window.location.reload()}>Reload Page</Button>
+                </div>
+            </div>
+        );
+    }
 }
