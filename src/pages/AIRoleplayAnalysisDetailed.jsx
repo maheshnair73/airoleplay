@@ -389,6 +389,7 @@ export default function AIRoleplayAnalysisDetailed() {
                     {sessions.map((session) => {
                       const sessionTypeLabel = session.session_type === 'human_roleplay' ? '👥' :
                                                session.session_type === 'multi_party' ? '🎭' :
+                                               session.session_type === 'product_demo' ? '🖥️' :
                                                '🤖';
                       return (
                         <SelectItem key={session.id} value={session.id}>

@@ -160,6 +160,24 @@ export default function AIRoleplayHistory() {
                 created_date: new Date(now.getTime() - 25 * 24 * 60 * 60 * 1000).toISOString(),
                 session_duration: 660,
                 analysis_results: { overall_score: 69 }
+            },
+            {
+                id: 'dummy-13',
+                session_type: 'product_demo',
+                bot_name: 'Alex Martinez - CTO',
+                scenario: 'Product Demo: Enterprise Platform Features Walkthrough',
+                created_date: new Date(now.getTime() - 4 * 24 * 60 * 60 * 1000).toISOString(),
+                session_duration: 2400,
+                analysis_results: { overall_score: 89 }
+            },
+            {
+                id: 'dummy-14',
+                session_type: 'product_demo',
+                bot_name: 'Jennifer Lee - VP Product',
+                scenario: 'Product Demo: Analytics Dashboard Deep Dive',
+                created_date: new Date(now.getTime() - 8 * 24 * 60 * 60 * 1000).toISOString(),
+                session_duration: 1800,
+                analysis_results: { overall_score: 92 }
             }
         ];
     };
@@ -181,6 +199,7 @@ export default function AIRoleplayHistory() {
         { id: 'ai_roleplay', label: 'Single AI Roleplay', icon: Mic, color: 'bg-blue-100 text-blue-700 hover:bg-blue-200' },
         { id: 'multi_party', label: 'Multi-Party AI', icon: Users, color: 'bg-purple-100 text-purple-700 hover:bg-purple-200' },
         { id: 'human_roleplay', label: 'Human-to-Human', icon: Video, color: 'bg-green-100 text-green-700 hover:bg-green-200' },
+        { id: 'product_demo', label: 'Product Demo', icon: Bot, color: 'bg-orange-100 text-orange-700 hover:bg-orange-200' },
     ];
 
     const filteredSessions = useMemo(() => {
@@ -208,6 +227,7 @@ export default function AIRoleplayHistory() {
                 aiSessions: 0,
                 multiPartySessions: 0,
                 humanSessions: 0,
+                productDemoSessions: 0,
                 averageScore: 0,
                 totalPracticeTime: 0,
             };
@@ -217,6 +237,7 @@ export default function AIRoleplayHistory() {
         const aiSessions = sessions.filter(s => s.session_type === 'ai_roleplay').length;
         const multiPartySessions = sessions.filter(s => s.session_type === 'multi_party').length;
         const humanSessions = sessions.filter(s => s.session_type === 'human_roleplay').length;
+        const productDemoSessions = sessions.filter(s => s.session_type === 'product_demo').length;
         const totalScore = sessions.reduce((sum, s) => sum + (s.analysis_results?.overall_score || 0), 0);
         const averageScore = (totalScore / totalSessions).toFixed(0);
         const totalPracticeTime = sessions.reduce((sum, s) => sum + (s.session_duration || 0), 0);
@@ -226,6 +247,7 @@ export default function AIRoleplayHistory() {
             aiSessions,
             multiPartySessions,
             humanSessions,
+            productDemoSessions,
             averageScore,
             totalPracticeTime,
         };
@@ -236,6 +258,7 @@ export default function AIRoleplayHistory() {
             case 'ai_roleplay': return 'Single AI';
             case 'multi_party': return 'Multi-Party';
             case 'human_roleplay': return 'Human-to-Human';
+            case 'product_demo': return 'Product Demo';
             default: return 'Unknown';
         }
     };
@@ -245,6 +268,7 @@ export default function AIRoleplayHistory() {
             case 'ai_roleplay': return 'bg-blue-100 text-blue-700 border-blue-200';
             case 'multi_party': return 'bg-purple-100 text-purple-700 border-purple-200';
             case 'human_roleplay': return 'bg-green-100 text-green-700 border-green-200';
+            case 'product_demo': return 'bg-orange-100 text-orange-700 border-orange-200';
             default: return 'bg-slate-100 text-slate-700 border-slate-200';
         }
     };
@@ -291,7 +315,7 @@ export default function AIRoleplayHistory() {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 mb-8">
                     <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium text-slate-600">Total Sessions</CardTitle>
@@ -341,6 +365,19 @@ export default function AIRoleplayHistory() {
                         <CardContent>
                             <div className="text-2xl font-bold text-slate-900">{stats.humanSessions}</div>
                             <p className="text-xs text-slate-500 mt-1">Human roleplay sessions</p>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium text-slate-600">Product Demos</CardTitle>
+                            <div className="p-2 bg-orange-100 rounded-lg">
+                                <Bot className="h-4 w-4 text-orange-600" />
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold text-slate-900">{stats.productDemoSessions}</div>
+                            <p className="text-xs text-slate-500 mt-1">Demo practice sessions</p>
                         </CardContent>
                     </Card>
 
@@ -398,7 +435,8 @@ export default function AIRoleplayHistory() {
                                             {type.id === 'all' ? stats.totalSessions :
                                              type.id === 'ai_roleplay' ? stats.aiSessions :
                                              type.id === 'multi_party' ? stats.multiPartySessions :
-                                             stats.humanSessions}
+                                             type.id === 'human_roleplay' ? stats.humanSessions :
+                                             stats.productDemoSessions}
                                         </Badge>
                                     </Button>
                                 );
@@ -478,7 +516,11 @@ export default function AIRoleplayHistory() {
                                                     size="sm"
                                                     className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                                                 >
-                                                    <Link to={createPageUrl(`AIRoleplayAnalysis?id=${session.id}`)}>
+                                                    <Link to={
+                                                        session.session_type === 'product_demo'
+                                                            ? createPageUrl(`ProductDemoAnalysis/${session.id}`)
+                                                            : createPageUrl(`AIRoleplayAnalysis?id=${session.id}`)
+                                                    }>
                                                         <Eye className="w-4 h-4 mr-1" />
                                                         View
                                                     </Link>
