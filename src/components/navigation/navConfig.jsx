@@ -20,7 +20,8 @@ import {
     FileText,
     History,
     MonitorUp,
-    CheckSquare
+    CheckSquare,
+    Database
 } from 'lucide-react';
 
 export const navSections = [
@@ -96,6 +97,7 @@ export const adminNavConfig = [
     { page: 'ModuleManagement', title: 'Module Management', icon: HardDrive },
     { page: 'DialerSettings', title: 'Dialer Settings', icon: Settings },
     { page: 'AISalesAgentSettings', title: 'AI Agent Settings', icon: UserCog },
+    { page: 'DatabaseSchema', title: 'Database Schema', icon: Database },
 ];
 
 export const effyAíCallsNavConfig = [

@@ -227,6 +227,8 @@ import ProductKnowledgeReview from "./ProductKnowledgeReview";
 
 import ProductDemoSetup from "./ProductDemoSetup";
 
+import DatabaseSchema from "./DatabaseSchema";
+
 import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
 
 const PAGES = {
@@ -456,6 +458,8 @@ const PAGES = {
     ProductKnowledgeReview: ProductKnowledgeReview,
 
     ProductDemoSetup: ProductDemoSetup,
+
+    DatabaseSchema: DatabaseSchema,
 
 }
 
@@ -711,6 +715,8 @@ function PagesContent() {
                 <Route path="/ProductKnowledgeReview" element={<ProductKnowledgeReview />} />
 
                 <Route path="/ProductDemoSetup" element={<ProductDemoSetup />} />
+
+                <Route path="/DatabaseSchema" element={<DatabaseSchema />} />
 
             </Routes>
         </Layout>
