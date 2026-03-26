@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import SlackIntegrationModal from "@/components/integrations/SlackIntegrationModal";
 import OutlookIntegrationModal from "@/components/integrations/OutlookIntegrationModal";
 import AITriggerModal from "@/components/integrations/AITriggerModal";
+import IntegrationEventsPanel from "@/components/integrations/IntegrationEventsPanel";
 
 const IntegrationManagement = () => {
   const [connections, setConnections] = useState([]);
@@ -237,6 +238,10 @@ const IntegrationManagement = () => {
             <Settings className="h-4 w-4" />
             AI Triggers
           </TabsTrigger>
+          <TabsTrigger value="events" className="gap-2">
+            <RefreshCw className="h-4 w-4" />
+            Events & Activity
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="connections" className="space-y-4">
@@ -386,6 +391,10 @@ const IntegrationManagement = () => {
               ))}
             </div>
           )}
+        </TabsContent>
+
+        <TabsContent value="events" className="space-y-4">
+          <IntegrationEventsPanel connections={connections} />
         </TabsContent>
       </Tabs>
 

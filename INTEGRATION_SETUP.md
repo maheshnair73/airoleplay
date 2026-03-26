@@ -50,6 +50,11 @@ The Integration Management system allows admins to connect external platforms (S
 
 **Required Role:** Admin, Company Admin, or Super Admin
 
+**Tabs:**
+1. **Connections** - Connect and configure Slack/Outlook
+2. **AI Triggers** - Create rules for automatic session generation
+3. **Events & Activity** - View recent events and manually scan emails
+
 ## Setup Instructions
 
 ### Slack Setup
@@ -97,15 +102,45 @@ The Integration Management system allows admins to connect external platforms (S
 
 ### Outlook Email Detection Flow
 
+**Automatic Scanning (Backend):**
 1. System scans emails at configured interval (default: 30 minutes)
-2. Checks for keywords in subject and body
-3. When keyword match found, creates integration_event record
-4. Checks ai_roleplay_triggers for matching rules
-5. If match found and trigger is active:
-   - Creates roleplay session
+2. Edge function `process-integration-events` connects to Microsoft Graph API
+3. Retrieves emails received since last scan
+4. For each email, checks subject and body for trigger keywords
+
+**Manual Scanning (Frontend):**
+1. Admin navigates to Integration Management → Events & Activity tab
+2. Clicks "Scan Emails Now" button
+3. Triggers immediate email scan via edge function
+4. Results appear in Recent Integration Events
+
+**Event Processing:**
+1. When keyword match found, creates `integration_event` record in database
+2. Checks `ai_roleplay_triggers` table for matching active triggers
+3. If match found and trigger is active:
+   - Creates `roleplay_session` with specified scenario type and difficulty
    - Sets session for X hours before event (default: 24 hours)
-   - Assigns to the user
-   - Optionally sends notification via Slack
+   - Links event to session via `roleplay_session_id`
+   - Assigns to the user who owns the integration
+4. If Slack is connected and auto-post is enabled:
+   - Sends notification to configured Slack channel
+   - Includes session details and link to start prep
+
+**Example Workflow:**
+```
+Email arrives: "Meeting scheduled for Product Demo next Tuesday at 2 PM"
+  ↓
+Keyword "demo" detected in trigger
+  ↓
+Roleplay session created:
+- Type: Product Demo
+- Difficulty: Medium
+- Scheduled: 24 hours before meeting (Monday 2 PM)
+  ↓
+Slack notification sent: "🎯 New AI Roleplay Prep Session Created!"
+  ↓
+User sees session in AI Roleplay → Reports → Roleplay History
+```
 
 ### Slack Integration Flow
 
