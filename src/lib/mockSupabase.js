@@ -177,29 +177,32 @@ export const mockSupabase = {
 
       async insert(data) {
         await delay(300);
-        const newItem = {
-          ...data,
-          id: data.id || `mock-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          created_at: data.created_at || new Date().toISOString()
-        };
+        const items = Array.isArray(data) ? data : [data];
+        const newItems = items.map(item => ({
+          ...item,
+          id: item.id || `mock-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          created_at: item.created_at || new Date().toISOString()
+        }));
 
         if (!mockData[tableName]) {
           mockData[tableName] = [];
         }
-        mockData[tableName].push(newItem);
+        mockData[tableName].push(...newItems);
+
+        const returnItem = newItems.length === 1 ? newItems[0] : newItems;
 
         return {
           select() {
             return {
               single() {
                 return {
-                  data: newItem,
+                  data: returnItem,
                   error: null
                 };
               }
             };
           },
-          data: newItem,
+          data: returnItem,
           error: null
         };
       },

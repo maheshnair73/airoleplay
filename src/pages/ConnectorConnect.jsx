@@ -58,10 +58,33 @@ export default function ConnectorConnect() {
     }
   };
 
-  const handleOAuth2Connect = () => {
+  const handleOAuth2Connect = async () => {
     setConnecting(true);
 
-    const { data: { user } } = supabase.auth.getUser();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    const isMockMode = import.meta.env.VITE_SUPABASE_URL === undefined ||
+                       import.meta.env.VITE_SUPABASE_URL === 'mock';
+
+    if (isMockMode) {
+      setTimeout(() => {
+        const mockOAuthData = {
+          access_token: `mock_access_token_${connector.name}_${Date.now()}`,
+          refresh_token: `mock_refresh_token_${connector.name}_${Date.now()}`,
+          token_type: 'Bearer',
+          expires_in: 3600,
+          scope: 'read write',
+          external_user_id: `external_user_${Math.random().toString(36).substring(7)}`,
+          external_email: user?.email || 'demo@example.com',
+          external_display_name: user?.full_name || 'Demo User',
+          instance_url: connector.name === 'salesforce' ? 'https://demo.salesforce.com' : null,
+        };
+
+        const encodedData = btoa(JSON.stringify(mockOAuthData));
+        handleOAuthSuccess({ type: 'connector-oauth-success', data: encodedData });
+      }, 1500);
+      return;
+    }
 
     const authUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/connector-oauth/authorize?connector=${connector.name}&user_id=${user?.id}`;
 
