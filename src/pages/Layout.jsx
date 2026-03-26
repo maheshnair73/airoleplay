@@ -119,11 +119,12 @@ const PrivateLayout = ({ children, currentPageName }) => {
         if (item.roles && !item.roles.includes(effectiveRole)) {
             return null;
         }
-        
-        const isActive = location.pathname === createPageUrl(item.page);
+
+        const itemPath = item.path || createPageUrl(item.page);
+        const isActive = location.pathname === itemPath;
         const hasSubmenu = item.submenu && item.submenu.length > 0;
         const isExpanded = expandedMenus.has(item.page);
-        
+
         return (
             <div>
                 <div className={`flex items-center ${hasSubmenu ? 'justify-between' : ''} px-3 py-2 text-sm font-medium rounded-md transition-colors ${
@@ -132,7 +133,7 @@ const PrivateLayout = ({ children, currentPageName }) => {
                         : 'text-slate-300 hover:bg-slate-700 hover:text-white'
                 } ${isSubmenuItem ? 'ml-6 pl-6' : ''}`}>
                     <Link
-                        to={createPageUrl(item.page)}
+                        to={itemPath}
                         className="flex items-center flex-1"
                     >
                         <item.icon className="w-5 h-5 mr-3" />

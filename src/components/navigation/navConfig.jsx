@@ -107,6 +107,7 @@ export const adminNavConfig = [
     { page: 'DialerSettings', title: 'Dialer Settings', icon: Settings },
     { page: 'AISalesAgentSettings', title: 'AI Agent Settings', icon: UserCog },
     { page: 'IntegrationManagement', title: 'Integration Management', icon: Zap },
+    { page: 'IntegrationPlatform', title: 'Integration Platform', icon: Zap, path: '/integrations/platform' },
     { page: 'DatabaseSchema', title: 'Database Schema', icon: Database },
 ];
 
