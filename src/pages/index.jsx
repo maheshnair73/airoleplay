@@ -229,6 +229,8 @@ import ProductDemoSetup from "./ProductDemoSetup";
 
 import DatabaseSchema from "./DatabaseSchema";
 
+import IntegrationManagement from "./IntegrationManagement";
+
 import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
 
 const PAGES = {
@@ -460,6 +462,8 @@ const PAGES = {
     ProductDemoSetup: ProductDemoSetup,
 
     DatabaseSchema: DatabaseSchema,
+
+    IntegrationManagement: IntegrationManagement,
 
 }
 
@@ -717,6 +721,8 @@ function PagesContent() {
                 <Route path="/ProductDemoSetup" element={<ProductDemoSetup />} />
 
                 <Route path="/DatabaseSchema" element={<DatabaseSchema />} />
+
+                <Route path="/IntegrationManagement" element={<IntegrationManagement />} />
 
             </Routes>
         </Layout>

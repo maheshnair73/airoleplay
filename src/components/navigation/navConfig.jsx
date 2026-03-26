@@ -21,7 +21,8 @@ import {
     History,
     MonitorUp,
     CheckSquare,
-    Database
+    Database,
+    Zap
 } from 'lucide-react';
 
 export const navSections = [
@@ -97,6 +98,7 @@ export const adminNavConfig = [
     { page: 'ModuleManagement', title: 'Module Management', icon: HardDrive },
     { page: 'DialerSettings', title: 'Dialer Settings', icon: Settings },
     { page: 'AISalesAgentSettings', title: 'AI Agent Settings', icon: UserCog },
+    { page: 'IntegrationManagement', title: 'Integration Management', icon: Zap },
     { page: 'DatabaseSchema', title: 'Database Schema', icon: Database },
 ];
 
