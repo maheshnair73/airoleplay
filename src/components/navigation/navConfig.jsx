@@ -52,14 +52,22 @@ export const navSections = [
                     { page: 'AIRoleplay', title: 'Single AI Roleplay', icon: Mic, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
                     { page: 'MultiPartyRoleplay', title: 'Multi-Party AI', icon: Users, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
                     { page: 'HumanRoleplay', title: 'Human-to-Human', icon: Video, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
-                    { page: 'ProductDemoSetup', title: 'Product Demo Practice', icon: MonitorUp, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
-                    { page: 'AIRoleplayHistory', title: 'Roleplay History', icon: History, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
-                    { page: 'AIRoleplayAnalysisDetailed', title: 'Roleplay Analytics', icon: BarChart3, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] }
+                    { page: 'ProductDemoSetup', title: 'Product Demo Practice', icon: MonitorUp, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] }
                 ]
             },
             { page: 'CoachingHub', title: 'Coaching Hub', icon: GraduationCap, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
             { page: 'LiveMeetings', title: 'effyMeeting Assistant', icon: Video, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
             { page: 'CallInsights', title: 'Call Recordings', icon: HardDrive, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
+            {
+                page: 'AIRoleplayHistory',
+                title: 'Reports',
+                icon: BarChart3,
+                roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'],
+                submenu: [
+                    { page: 'AIRoleplayHistory', title: 'Roleplay History', icon: History, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
+                    { page: 'AIRoleplayAnalysisDetailed', title: 'Roleplay Analytics', icon: BarChart3, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] }
+                ]
+            }
         ]
     },
     {
