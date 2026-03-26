@@ -243,6 +243,24 @@ const PrivateLayout = ({ children, currentPageName }) => {
                             <span>Search...</span>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
+                        <DropdownMenuLabel>Switch Role (Demo)</DropdownMenuLabel>
+                        <DropdownMenuItem onClick={() => handleRoleSwitch('sales_agent')} className="cursor-pointer">
+                            <UserIcon className="mr-2 h-4 w-4" />
+                            <span>Sales Agent</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleRoleSwitch('admin')} className="cursor-pointer">
+                            <Shield className="mr-2 h-4 w-4" />
+                            <span>Admin</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleRoleSwitch('company_admin')} className="cursor-pointer">
+                            <Building className="mr-2 h-4 w-4" />
+                            <span>Company Admin</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleRoleSwitch('super_admin')} className="cursor-pointer">
+                            <Globe className="mr-2 h-4 w-4" />
+                            <span>Super Admin</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-500 focus:text-red-500 focus:bg-red-50">
                             <LogOut className="mr-2 h-4 w-4" />
                             <span>Log Out</span>
