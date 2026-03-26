@@ -231,6 +231,14 @@ import DatabaseSchema from "./DatabaseSchema";
 
 import IntegrationManagement from "./IntegrationManagement";
 
+import IntegrationPlatform from "./IntegrationPlatform";
+
+import ConnectorConnect from "./ConnectorConnect";
+
+import IntegrationFlows from "./IntegrationFlows";
+
+import FlowBuilder from "./FlowBuilder";
+
 import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
 
 const PAGES = {
@@ -464,6 +472,14 @@ const PAGES = {
     DatabaseSchema: DatabaseSchema,
 
     IntegrationManagement: IntegrationManagement,
+
+    IntegrationPlatform: IntegrationPlatform,
+
+    ConnectorConnect: ConnectorConnect,
+
+    IntegrationFlows: IntegrationFlows,
+
+    FlowBuilder: FlowBuilder,
 
 }
 
@@ -723,6 +739,16 @@ function PagesContent() {
                 <Route path="/DatabaseSchema" element={<DatabaseSchema />} />
 
                 <Route path="/IntegrationManagement" element={<IntegrationManagement />} />
+
+                <Route path="/integrations/platform" element={<IntegrationPlatform />} />
+
+                <Route path="/integrations/connect" element={<ConnectorConnect />} />
+
+                <Route path="/integrations/flows" element={<IntegrationFlows />} />
+
+                <Route path="/integrations/flows/new" element={<FlowBuilder />} />
+
+                <Route path="/integrations/flows/:flowId/edit" element={<FlowBuilder />} />
 
             </Routes>
         </Layout>
