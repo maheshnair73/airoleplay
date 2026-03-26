@@ -55,10 +55,11 @@ const PrivateLayout = ({ children, currentPageName }) => {
             try {
                 const currentUser = await User.me();
                 setUser(currentUser);
-                setDemoRole(currentUser.role || 'sales_agent');
+                setDemoRole(currentUser.role);
             } catch (e) {
+                console.error('Failed to fetch user:', e);
                 setUser(null);
-                setDemoRole('sales_agent');
+                setDemoRole(null);
             }
         };
         fetchUser();
@@ -97,10 +98,10 @@ const PrivateLayout = ({ children, currentPageName }) => {
     };
 
     const resetToDefaultRole = () => {
-        setDemoRole(user?.role || 'sales_agent');
+        setDemoRole(user?.role);
     };
 
-    const effectiveRole = demoRole || user?.role || 'sales_agent';
+    const effectiveRole = demoRole || user?.role;
 
     const toggleSubmenu = (menuPage) => {
         setExpandedMenus(prev => {
