@@ -777,6 +777,10 @@ export const mockData = {
       documentation_url: 'https://developers.hubspot.com/docs/api/overview',
       base_url: 'https://api.hubapi.com',
       supports_webhooks: true,
+      client_id_env: 'HUBSPOT_CLIENT_ID',
+      client_secret_env: 'HUBSPOT_CLIENT_SECRET',
+      authorize_url: 'https://app.hubspot.com/oauth/authorize',
+      token_url: 'https://api.hubapi.com/oauth/v1/token',
       triggers: [
         { id: 'new_contact', name: 'New Contact', description: 'Triggers when a new contact is created' },
         { id: 'updated_contact', name: 'Updated Contact', description: 'Triggers when a contact is updated' },

@@ -63,42 +63,45 @@ export default function ConnectorConnect() {
   const handleOAuth2Connect = async () => {
     setConnecting(true);
 
-    const { data: { user } } = await supabase.auth.getUser();
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
 
-    const isMockMode = supabase.isMockClient === true;
+      const authUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/connector-oauth/authorize?connector=${connector.name}&user_id=${user?.id}`;
 
-    if (isMockMode) {
-      setTimeout(() => {
-        const mockOAuthData = {
-          access_token: `mock_access_token_${connector.name}_${Date.now()}`,
-          refresh_token: `mock_refresh_token_${connector.name}_${Date.now()}`,
-          token_type: 'Bearer',
-          expires_in: 3600,
-          scope: 'read write',
-          external_user_id: `external_user_${Math.random().toString(36).substring(7)}`,
-          external_email: user?.email || 'demo@example.com',
-          external_display_name: user?.full_name || 'Demo User',
-          instance_url: connector.name === 'salesforce' ? 'https://demo.salesforce.com' : null,
-        };
+      const width = 600;
+      const height = 700;
+      const left = window.screenX + (window.outerWidth - width) / 2;
+      const top = window.screenY + (window.outerHeight - height) / 2;
 
-        const encodedData = btoa(JSON.stringify(mockOAuthData));
-        handleOAuthSuccess({ type: 'connector-oauth-success', data: encodedData });
-      }, 1500);
-      return;
+      const popup = window.open(
+        authUrl,
+        'connector-oauth',
+        `width=${width},height=${height},left=${left},top=${top}`
+      );
+
+      if (!popup) {
+        toast.error('Please allow popups to connect to ' + connector.display_name);
+        setConnecting(false);
+        return;
+      }
+
+      const checkPopupClosed = setInterval(() => {
+        if (popup.closed) {
+          clearInterval(checkPopupClosed);
+          setTimeout(() => {
+            if (connecting) {
+              setConnecting(false);
+              toast.info('Connection window closed');
+            }
+          }, 500);
+        }
+      }, 500);
+
+    } catch (error) {
+      console.error('Error initiating OAuth:', error);
+      toast.error('Failed to start connection process');
+      setConnecting(false);
     }
-
-    const authUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/connector-oauth/authorize?connector=${connector.name}&user_id=${user?.id}`;
-
-    const width = 600;
-    const height = 700;
-    const left = window.screenX + (window.outerWidth - width) / 2;
-    const top = window.screenY + (window.outerHeight - height) / 2;
-
-    window.open(
-      authUrl,
-      'connector-oauth',
-      `width=${width},height=${height},left=${left},top=${top}`
-    );
   };
 
   const handleOAuthSuccess = async (eventData) => {
@@ -303,10 +306,29 @@ export default function ConnectorConnect() {
                 <div className="flex items-start gap-3">
                   <AlertCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
                   <div className="text-sm text-blue-900">
-                    <p className="font-medium mb-1">Connect with one click!</p>
-                    <p className="text-blue-800">
-                      Securely connect your {connector.display_name} account using OAuth.
-                      Your credentials are never stored in our system.
+                    <p className="font-medium mb-2">How OAuth Connection Works:</p>
+                    <ol className="list-decimal ml-4 space-y-1 text-blue-800">
+                      <li>Click "Connect {connector.display_name}" below</li>
+                      <li>A popup will open with {connector.display_name}'s login page</li>
+                      <li>Log in with <strong>your actual {connector.display_name} account</strong></li>
+                      <li>Authorize the app to access your {connector.display_name} data</li>
+                      <li>The popup closes and your account is connected</li>
+                    </ol>
+                    <p className="mt-2 text-xs text-blue-700">
+                      Your credentials are securely handled by {connector.display_name} - we never see your password.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm text-amber-900">
+                    <p className="font-medium mb-1">Setup Required</p>
+                    <p className="text-amber-800">
+                      To connect {connector.display_name}, you need to configure OAuth credentials in your Supabase project.
+                      Contact your administrator to set up the <code className="bg-amber-100 px-1 rounded">{connector.client_id_env}</code> and <code className="bg-amber-100 px-1 rounded">{connector.client_secret_env}</code> environment variables.
                     </p>
                   </div>
                 </div>
@@ -318,7 +340,7 @@ export default function ConnectorConnect() {
                 onClick={handleOAuth2Connect}
                 disabled={connecting}
               >
-                {connecting ? 'Connecting...' : existingConnection ? 'Reconnect' : `Connect ${connector.display_name}`}
+                {connecting ? 'Connecting...' : existingConnection ? 'Reconnect' : `Connect to Your ${connector.display_name} Account`}
                 <ExternalLink className="h-4 w-4 ml-2" />
               </Button>
             </div>
