@@ -21,6 +21,8 @@ export default function ConnectorConnect() {
 
   useEffect(() => {
     if (!connector) {
+      console.error('No connector found in location.state');
+      toast.error('Connector not found. Redirecting...');
       navigate('/integrations/platform');
       return;
     }

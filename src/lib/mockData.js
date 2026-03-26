@@ -751,7 +751,19 @@ export const mockData = {
       auth_type: 'oauth2',
       status: 'active',
       logo_url: null,
-      documentation_url: 'https://developer.salesforce.com/docs/apis'
+      documentation_url: 'https://developer.salesforce.com/docs/apis',
+      base_url: 'https://login.salesforce.com',
+      supports_webhooks: true,
+      triggers: [
+        { id: 'new_lead', name: 'New Lead', description: 'Triggers when a new lead is created' },
+        { id: 'updated_lead', name: 'Updated Lead', description: 'Triggers when a lead is updated' },
+        { id: 'new_opportunity', name: 'New Opportunity', description: 'Triggers when a new opportunity is created' }
+      ],
+      actions: [
+        { id: 'create_lead', name: 'Create Lead', description: 'Creates a new lead' },
+        { id: 'create_contact', name: 'Create Contact', description: 'Creates a new contact' },
+        { id: 'create_opportunity', name: 'Create Opportunity', description: 'Creates a new opportunity' }
+      ]
     },
     {
       id: 'connector-002',
@@ -762,7 +774,21 @@ export const mockData = {
       auth_type: 'oauth2',
       status: 'active',
       logo_url: null,
-      documentation_url: 'https://developers.hubspot.com/docs/api/overview'
+      documentation_url: 'https://developers.hubspot.com/docs/api/overview',
+      base_url: 'https://api.hubapi.com',
+      supports_webhooks: true,
+      triggers: [
+        { id: 'new_contact', name: 'New Contact', description: 'Triggers when a new contact is created' },
+        { id: 'updated_contact', name: 'Updated Contact', description: 'Triggers when a contact is updated' },
+        { id: 'new_deal', name: 'New Deal', description: 'Triggers when a new deal is created' },
+        { id: 'new_company', name: 'New Company', description: 'Triggers when a new company is created' }
+      ],
+      actions: [
+        { id: 'create_contact', name: 'Create Contact', description: 'Creates a new contact' },
+        { id: 'update_contact', name: 'Update Contact', description: 'Updates a contact' },
+        { id: 'create_deal', name: 'Create Deal', description: 'Creates a new deal' },
+        { id: 'create_company', name: 'Create Company', description: 'Creates a new company' }
+      ]
     },
     {
       id: 'connector-003',
@@ -839,7 +865,19 @@ export const mockData = {
       auth_type: 'oauth2',
       status: 'active',
       logo_url: null,
-      documentation_url: 'https://developers.google.com/identity/protocols/oauth2'
+      documentation_url: 'https://developers.google.com/identity/protocols/oauth2',
+      base_url: 'https://www.googleapis.com',
+      supports_webhooks: true,
+      triggers: [
+        { id: 'new_email', name: 'New Email', description: 'Triggers when a new email arrives in Gmail' },
+        { id: 'new_calendar_event', name: 'New Calendar Event', description: 'Triggers when a new calendar event is created' },
+        { id: 'new_file', name: 'New File', description: 'Triggers when a new file is added to Drive' }
+      ],
+      actions: [
+        { id: 'send_email', name: 'Send Email', description: 'Sends an email via Gmail' },
+        { id: 'create_calendar_event', name: 'Create Calendar Event', description: 'Creates a calendar event' },
+        { id: 'create_drive_file', name: 'Create Drive File', description: 'Creates a file in Google Drive' }
+      ]
     },
     {
       id: 'connector-010',
