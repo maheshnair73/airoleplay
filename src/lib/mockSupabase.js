@@ -6,6 +6,8 @@ let authListeners = [];
 const delay = (ms = 300) => new Promise(resolve => setTimeout(resolve, ms));
 
 export const mockSupabase = {
+  isMockClient: true,
+
   auth: {
     async signInWithPassword({ email, password }) {
       await delay(500);

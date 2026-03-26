@@ -63,8 +63,7 @@ export default function ConnectorConnect() {
 
     const { data: { user } } = await supabase.auth.getUser();
 
-    const isMockMode = import.meta.env.VITE_SUPABASE_URL === undefined ||
-                       import.meta.env.VITE_SUPABASE_URL === 'mock';
+    const isMockMode = supabase.isMockClient === true;
 
     if (isMockMode) {
       setTimeout(() => {
