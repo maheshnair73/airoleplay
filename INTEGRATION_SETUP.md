@@ -73,15 +73,26 @@ The Integration Management system allows admins to connect external platforms (S
 
 ### Outlook Setup
 
-1. Go to [Azure Portal](https://portal.azure.com)
-2. Register a new application
-3. Add Microsoft Graph API permissions:
-   - `Mail.Read`
-   - `Calendars.Read`
-4. Create a client secret
-5. Copy Application ID, Tenant ID, and Client Secret
-6. In Integration Management, click "Connect Outlook"
-7. Paste credentials and configure detection settings
+**Simple One-Click OAuth Flow:**
+
+1. Navigate to **Integration Management → Connections** tab
+2. Click **"Connect"** on the Outlook card
+3. Click **"Connect with Outlook"** button
+4. Sign in with your Microsoft account in the popup window
+5. Grant permissions to read your emails
+6. Configure detection settings:
+   - Auto-detect meetings (toggle on/off)
+   - Auto-detect demos (toggle on/off)
+   - Prep hours before event (default: 24 hours)
+   - Scan interval (default: 30 minutes)
+   - Keywords for trigger detection
+7. Click **"Save Connection"**
+
+**What happens behind the scenes:**
+- OAuth 2.0 flow authenticates securely with Microsoft
+- Access and refresh tokens stored encrypted in database
+- No manual Azure AD configuration needed
+- Tokens automatically refreshed when expired
 
 ## Creating AI Triggers
 

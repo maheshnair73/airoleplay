@@ -12,18 +12,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Mail, AlertCircle, CheckCircle } from "lucide-react";
+import { Mail, AlertCircle, CheckCircle, ExternalLink } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
 const OutlookIntegrationModal = ({ open, onClose, connectionId }) => {
   const [loading, setLoading] = useState(false);
+  const [connecting, setConnecting] = useState(false);
   const [authStatus, setAuthStatus] = useState("disconnected");
+  const [connectionData, setConnectionData] = useState(null);
   const [formData, setFormData] = useState({
-    client_id: "",
-    client_secret: "",
-    tenant_id: "",
-    email_address: "",
     auto_detect_meetings: true,
     auto_detect_demos: true,
     prep_hours_before: 24,
@@ -35,6 +33,15 @@ const OutlookIntegrationModal = ({ open, onClose, connectionId }) => {
     if (connectionId) {
       loadConnection();
     }
+
+    const handleMessage = (event) => {
+      if (event.data?.type === 'outlook-oauth-success') {
+        handleOAuthSuccess(event.data.data);
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
   }, [connectionId]);
 
   const loadConnection = async () => {
@@ -48,11 +55,8 @@ const OutlookIntegrationModal = ({ open, onClose, connectionId }) => {
       if (error) throw error;
       if (data) {
         setAuthStatus(data.status || "disconnected");
+        setConnectionData(data);
         setFormData({
-          client_id: data.config?.client_id || "",
-          client_secret: data.config?.client_secret || "",
-          tenant_id: data.config?.tenant_id || "",
-          email_address: data.config?.email_address || "",
           auto_detect_meetings: data.config?.auto_detect_meetings ?? true,
           auto_detect_demos: data.config?.auto_detect_demos ?? true,
           prep_hours_before: data.config?.prep_hours_before || 24,
@@ -66,8 +70,43 @@ const OutlookIntegrationModal = ({ open, onClose, connectionId }) => {
     }
   };
 
+  const handleConnectOutlook = () => {
+    setConnecting(true);
+    const authUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/outlook-oauth/authorize`;
+    const width = 600;
+    const height = 700;
+    const left = window.screenX + (window.outerWidth - width) / 2;
+    const top = window.screenY + (window.outerHeight - height) / 2;
+
+    window.open(
+      authUrl,
+      'outlook-oauth',
+      `width=${width},height=${height},left=${left},top=${top}`
+    );
+  };
+
+  const handleOAuthSuccess = async (encodedData) => {
+    try {
+      const data = JSON.parse(atob(encodedData));
+      setConnectionData(data);
+      setAuthStatus("connected");
+      setConnecting(false);
+      toast.success(`Connected as ${data.display_name}`);
+    } catch (error) {
+      console.error("Error parsing OAuth data:", error);
+      toast.error("Failed to process connection");
+      setConnecting(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!connectionData) {
+      toast.error("Please connect your Outlook account first");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -80,32 +119,36 @@ const OutlookIntegrationModal = ({ open, onClose, connectionId }) => {
         .eq("id", user.id)
         .maybeSingle();
 
-      const connectionData = {
+      const saveData = {
         user_id: user.id,
         company_id: profile?.company_id,
         integration_type: "outlook",
         status: "connected",
         config: {
-          client_id: formData.client_id,
-          client_secret: formData.client_secret,
-          tenant_id: formData.tenant_id,
-          email_address: formData.email_address,
+          email_address: connectionData.email,
+          display_name: connectionData.display_name,
           auto_detect_meetings: formData.auto_detect_meetings,
           auto_detect_demos: formData.auto_detect_demos,
           prep_hours_before: formData.prep_hours_before,
           scan_interval_minutes: formData.scan_interval_minutes,
           keywords: formData.keywords
         },
+        auth_tokens: {
+          access_token: connectionData.access_token,
+          refresh_token: connectionData.refresh_token,
+          expires_at: new Date(Date.now() + connectionData.expires_in * 1000).toISOString()
+        },
         metadata: {
           connected_at: new Date().toISOString(),
-          last_sync: null
+          last_sync: null,
+          user_id: connectionData.user_id
         }
       };
 
       if (connectionId) {
         const { error } = await supabase
           .from("integration_connections")
-          .update(connectionData)
+          .update(saveData)
           .eq("id", connectionId);
 
         if (error) throw error;
@@ -113,17 +156,16 @@ const OutlookIntegrationModal = ({ open, onClose, connectionId }) => {
       } else {
         const { error } = await supabase
           .from("integration_connections")
-          .insert([connectionData]);
+          .insert([saveData]);
 
         if (error) throw error;
         toast.success("Outlook connected successfully");
       }
 
-      setAuthStatus("connected");
       onClose();
     } catch (error) {
       console.error("Error saving Outlook integration:", error);
-      toast.error("Failed to connect Outlook");
+      toast.error("Failed to save Outlook integration");
     } finally {
       setLoading(false);
     }
@@ -169,68 +211,49 @@ const OutlookIntegrationModal = ({ open, onClose, connectionId }) => {
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex gap-3">
-            <AlertCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-            <div className="text-sm text-blue-900">
-              <p className="font-medium mb-1">Setup Instructions:</p>
-              <ol className="list-decimal list-inside space-y-1 text-blue-800">
-                <li>Register an app in Azure AD Portal</li>
-                <li>Add Microsoft Graph API permissions: Mail.Read, Calendars.Read</li>
-                <li>Create a client secret</li>
-                <li>Copy the Application ID, Tenant ID, and Client Secret</li>
-                <li>Paste the credentials below</li>
-              </ol>
-            </div>
-          </div>
+          {authStatus === "disconnected" && !connectionData && (
+            <>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex gap-3">
+                <AlertCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                <div className="text-sm text-blue-900">
+                  <p className="font-medium mb-1">Connect with one click!</p>
+                  <p className="text-blue-800">
+                    Securely connect your Microsoft Outlook account using OAuth. No need to manually configure anything.
+                  </p>
+                </div>
+              </div>
 
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="email_address">Email Address</Label>
-              <Input
-                id="email_address"
-                type="email"
-                placeholder="user@company.com"
-                value={formData.email_address}
-                onChange={(e) => setFormData({ ...formData, email_address: e.target.value })}
-                required
-              />
-            </div>
+              <div className="flex justify-center py-4">
+                <Button
+                  type="button"
+                  onClick={handleConnectOutlook}
+                  disabled={connecting}
+                  size="lg"
+                  className="gap-2"
+                >
+                  <Mail className="h-5 w-5" />
+                  {connecting ? "Connecting..." : "Connect with Outlook"}
+                  <ExternalLink className="h-4 w-4" />
+                </Button>
+              </div>
+            </>
+          )}
 
-            <div>
-              <Label htmlFor="client_id">Application (Client) ID</Label>
-              <Input
-                id="client_id"
-                placeholder="12345678-1234-1234-1234-123456789012"
-                value={formData.client_id}
-                onChange={(e) => setFormData({ ...formData, client_id: e.target.value })}
-                required
-              />
+          {connectionData && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-start gap-3">
+              <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-medium text-green-900 mb-1">Connected Successfully!</p>
+                <p className="text-sm text-green-800">
+                  <strong>{connectionData.display_name}</strong>
+                </p>
+                <p className="text-sm text-green-700">{connectionData.email}</p>
+              </div>
             </div>
+          )}
 
-            <div>
-              <Label htmlFor="tenant_id">Directory (Tenant) ID</Label>
-              <Input
-                id="tenant_id"
-                placeholder="87654321-4321-4321-4321-210987654321"
-                value={formData.tenant_id}
-                onChange={(e) => setFormData({ ...formData, tenant_id: e.target.value })}
-                required
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="client_secret">Client Secret</Label>
-              <Input
-                id="client_secret"
-                type="password"
-                placeholder="Enter your client secret"
-                value={formData.client_secret}
-                onChange={(e) => setFormData({ ...formData, client_secret: e.target.value })}
-                required
-              />
-            </div>
-
-            <div className="space-y-4 pt-4 border-t">
+          {(authStatus === "connected" || connectionData) && (
+            <div className="space-y-4">
               <h4 className="font-medium">Detection Settings</h4>
 
               <div className="flex items-center justify-between">
@@ -317,15 +340,17 @@ const OutlookIntegrationModal = ({ open, onClose, connectionId }) => {
                 </p>
               </div>
             </div>
-          </div>
+          )}
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? "Connecting..." : connectionId ? "Update" : "Connect Outlook"}
-            </Button>
+            {(authStatus === "connected" || connectionData) && (
+              <Button type="submit" disabled={loading}>
+                {loading ? "Saving..." : connectionId ? "Update Settings" : "Save Connection"}
+              </Button>
+            )}
           </DialogFooter>
         </form>
       </DialogContent>
