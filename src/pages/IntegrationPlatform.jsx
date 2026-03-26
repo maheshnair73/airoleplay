@@ -48,9 +48,20 @@ export default function IntegrationPlatform() {
         supabase.from('integration_flows').select('*').order('created_at', { ascending: false }),
       ]);
 
-      if (connectorsRes.error) throw connectorsRes.error;
-      if (accountsRes.error) throw accountsRes.error;
-      if (flowsRes.error) throw flowsRes.error;
+      console.log('Connectors response:', connectorsRes);
+      console.log('Accounts response:', accountsRes);
+      console.log('Flows response:', flowsRes);
+
+      if (connectorsRes.error) {
+        console.error('Connectors error:', connectorsRes.error);
+        toast.error(`Connectors error: ${connectorsRes.error.message}`);
+      }
+      if (accountsRes.error) {
+        console.error('Accounts error:', accountsRes.error);
+      }
+      if (flowsRes.error) {
+        console.error('Flows error:', flowsRes.error);
+      }
 
       setConnectors(connectorsRes.data || []);
       setConnectedAccounts(accountsRes.data || []);

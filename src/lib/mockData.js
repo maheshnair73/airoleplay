@@ -739,5 +739,122 @@ export const mockData = {
       is_active: true,
       created_at: '2024-01-24T10:00:00Z'
     }
-  ]
+  ],
+
+  connectors: [
+    {
+      id: 'connector-001',
+      name: 'salesforce',
+      display_name: 'Salesforce',
+      description: 'Connect to Salesforce CRM for leads, contacts, opportunities, and accounts management',
+      type: 'crm',
+      auth_type: 'oauth2',
+      status: 'active',
+      logo_url: null,
+      documentation_url: 'https://developer.salesforce.com/docs/apis'
+    },
+    {
+      id: 'connector-002',
+      name: 'hubspot',
+      display_name: 'HubSpot',
+      description: 'Connect to HubSpot CRM for contacts, deals, companies, and marketing automation',
+      type: 'crm',
+      auth_type: 'oauth2',
+      status: 'active',
+      logo_url: null,
+      documentation_url: 'https://developers.hubspot.com/docs/api/overview'
+    },
+    {
+      id: 'connector-003',
+      name: 'zoho_crm',
+      display_name: 'Zoho CRM',
+      description: 'Connect to Zoho CRM for leads, contacts, deals, and accounts management',
+      type: 'crm',
+      auth_type: 'oauth2',
+      status: 'active',
+      logo_url: null,
+      documentation_url: 'https://www.zoho.com/crm/developer/docs/api/v3/'
+    },
+    {
+      id: 'connector-004',
+      name: 'microsoft_dynamics',
+      display_name: 'Microsoft Dynamics 365',
+      description: 'Connect to Microsoft Dynamics 365 CRM for comprehensive business management',
+      type: 'crm',
+      auth_type: 'oauth2',
+      status: 'active',
+      logo_url: null,
+      documentation_url: 'https://learn.microsoft.com/en-us/dynamics365/'
+    },
+    {
+      id: 'connector-005',
+      name: 'moodle',
+      display_name: 'Moodle',
+      description: 'Connect to Moodle LMS for course and user management',
+      type: 'lms',
+      auth_type: 'api_key',
+      status: 'active',
+      logo_url: null,
+      documentation_url: 'https://docs.moodle.org/dev/Web_services'
+    },
+    {
+      id: 'connector-006',
+      name: 'talentlms',
+      display_name: 'TalentLMS',
+      description: 'Connect to TalentLMS for training and course management',
+      type: 'lms',
+      auth_type: 'api_key',
+      status: 'active',
+      logo_url: null,
+      documentation_url: 'https://www.talentlms.com/pages/docs/'
+    },
+    {
+      id: 'connector-007',
+      name: 'learnworlds',
+      display_name: 'LearnWorlds',
+      description: 'Connect to LearnWorlds for online course creation and management',
+      type: 'lms',
+      auth_type: 'api_key',
+      status: 'active',
+      logo_url: null,
+      documentation_url: 'https://www.learnworlds.com/help/article/learnworlds-api/'
+    },
+    {
+      id: 'connector-008',
+      name: 'google_classroom',
+      display_name: 'Google Classroom',
+      description: 'Connect to Google Classroom for educational course management',
+      type: 'lms',
+      auth_type: 'oauth2',
+      status: 'active',
+      logo_url: null,
+      documentation_url: 'https://developers.google.com/classroom'
+    },
+    {
+      id: 'connector-009',
+      name: 'google',
+      display_name: 'Google',
+      description: 'Connect to Google services (Gmail, Calendar, Drive, etc.)',
+      type: 'auth',
+      auth_type: 'oauth2',
+      status: 'active',
+      logo_url: null,
+      documentation_url: 'https://developers.google.com/identity/protocols/oauth2'
+    },
+    {
+      id: 'connector-010',
+      name: 'microsoft',
+      display_name: 'Microsoft',
+      description: 'Connect to Microsoft services (Outlook, Teams, OneDrive, etc.)',
+      type: 'auth',
+      auth_type: 'oauth2',
+      status: 'active',
+      logo_url: null,
+      documentation_url: 'https://learn.microsoft.com/en-us/graph/overview'
+    }
+  ],
+
+  connected_accounts: [],
+
+  integration_flows: []
 };
