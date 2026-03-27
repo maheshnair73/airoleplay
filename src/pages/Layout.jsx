@@ -174,14 +174,19 @@ const PrivateLayout = ({ children, currentPageName }) => {
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 space-y-6">
-                {navSections.filter(s => !s.items.some(i => i.page === 'AIAssistant')).map((section, index) => (
-                    <div key={index}>
-                        {section.title && <h3 className="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">{section.title}</h3>}
-                        <nav className="space-y-1">
-                            {section.items.map(item => <NavItem key={item.page} item={item} />)}
-                        </nav>
-                    </div>
-                ))}
+                {navSections.filter(s => !s.items.some(i => i.page === 'AIAssistant')).map((section, index) => {
+                    const visibleItems = section.items.filter(item => !item.roles || item.roles.includes(effectiveRole));
+                    if (visibleItems.length === 0) return null;
+
+                    return (
+                        <div key={index}>
+                            {section.title && <h3 className="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">{section.title}</h3>}
+                            <nav className="space-y-1">
+                                {section.items.map(item => <NavItem key={item.page} item={item} />)}
+                            </nav>
+                        </div>
+                    );
+                })}
                 
                 {(effectiveRole === 'admin' || effectiveRole === 'saas_admin' || effectiveRole === 'company_admin') && (
                     <div>
