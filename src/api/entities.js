@@ -142,7 +142,11 @@ export const User = {
     if (error) throw error;
 
     if (user) {
-      const profile = mockData.user_profiles.find(p => p.id === user.id);
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('id', user.id)
+        .maybeSingle();
 
       return {
         ...user,
@@ -155,7 +159,9 @@ export const User = {
   },
 
   async list() {
-    return mockData.user_profiles || [];
+    const { data, error } = await supabase.from('user_profiles').select('*');
+    if (error) throw error;
+    return data || [];
   },
 
   async signIn(email, password) {

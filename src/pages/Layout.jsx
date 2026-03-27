@@ -217,7 +217,7 @@ const PrivateLayout = ({ children, currentPageName }) => {
             </div>
             
             <div className="p-4 border-t border-slate-700">
-                 <NavItem item={{ page: 'AIAssistant', title: 'Chat with Effy', icon: Bot }} />
+                 <NavItem item={{ page: 'AIAssistant', title: 'Chat with Effy', icon: Bot, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] }} />
             </div>
 
             <div className="p-4 border-t border-slate-700">
