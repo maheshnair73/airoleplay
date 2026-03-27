@@ -73,15 +73,15 @@ export const navSections = [
     {
         title: 'Knowledge Hub',
         items: [
-            { page: 'ProductManagement', title: 'My Products', icon: Package },
-            { page: 'CompetitorManagement', title: 'Competitor Intel', icon: Shield },
+            { page: 'ProductManagement', title: 'My Products', icon: Package, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
+            { page: 'CompetitorManagement', title: 'Competitor Intel', icon: Shield, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
             { page: 'ProductKnowledgeReview', title: 'Knowledge Review Queue', icon: CheckSquare, roles: ['admin', 'saas_admin', 'company_admin', 'sales_manager'] },
         ]
     },
     {
         title: 'Gamification & Rewards',
         items: [
-            { page: 'Leaderboard', title: 'Leaderboard', icon: Trophy },
+            { page: 'Leaderboard', title: 'Leaderboard', icon: Trophy, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
             { page: 'GamificationAdmin', title: 'Gamification Hub', icon: Trophy, roles: ['admin', 'saas_admin', 'company_admin', 'sales_manager'] },
             { page: 'AchievementManagement', title: 'Manage Achievements', icon: Award, roles: ['admin', 'saas_admin', 'company_admin'] },
             { page: 'ChallengeManagement', title: 'Manage Challenges', icon: ChallengeIcon, roles: ['admin', 'saas_admin', 'company_admin'] },
@@ -90,7 +90,7 @@ export const navSections = [
     {
         title: 'KPIs & Analytics',
         items: [
-            { page: 'KPIDashboard', title: 'My KPIs', icon: BarChart3 },
+            { page: 'KPIDashboard', title: 'My KPIs', icon: BarChart3, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
             { page: 'KPIManagement', title: 'Manage KPIs', icon: Settings, roles: ['admin', 'saas_admin', 'company_admin', 'sales_manager'] },
         ]
     },
