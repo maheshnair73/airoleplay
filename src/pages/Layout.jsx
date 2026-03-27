@@ -141,8 +141,13 @@ const PrivateLayout = ({ children, currentPageName }) => {
                     </Link>
                     {hasSubmenu && (
                         <button
-                            onClick={() => toggleSubmenu(item.page)}
-                            className="p-1 hover:bg-slate-600 rounded"
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                toggleSubmenu(item.page);
+                            }}
+                            className="p-1 hover:bg-slate-600 rounded flex-shrink-0"
+                            type="button"
                         >
                             {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                         </button>
