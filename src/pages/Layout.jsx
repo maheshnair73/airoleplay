@@ -286,7 +286,7 @@ const PrivateLayout = ({ children, currentPageName }) => {
     return (
         <AuthWrapper>
             <div className="flex h-screen bg-slate-50">
-                <div className="hidden md:flex md:flex-shrink-0">
+                <div className="flex flex-shrink-0">
                     <div className="flex flex-col w-64 border-r border-slate-700 bg-slate-800">
                         <UserNav />
                     </div>
@@ -294,14 +294,6 @@ const PrivateLayout = ({ children, currentPageName }) => {
 
                 <div className="flex flex-col flex-1 overflow-hidden">
                     <main className="flex-1 overflow-y-auto relative">
-                        <Sheet>
-                            <SheetTrigger asChild className="md:hidden absolute top-4 left-4 z-10">
-                                <Button variant="ghost" size="icon"><Menu className="h-6 w-6" /></Button>
-                            </SheetTrigger>
-                            <SheetContent side="left" className="w-72 p-0 bg-slate-800 border-r-0">
-                                <UserNav />
-                            </SheetContent>
-                        </Sheet>
                         <Suspense fallback={<div>Loading page...</div>}>
                            {children}
                         </Suspense>

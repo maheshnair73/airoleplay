@@ -96,7 +96,7 @@ export const navSections = [
     },
     {
         items: [
-             { page: 'AIAssistant', title: 'Chat with Effy', icon: Bot },
+             { page: 'AIAssistant', title: 'Chat with Effy', icon: Bot, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
         ]
     }
 ];
