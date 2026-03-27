@@ -49,7 +49,7 @@ export default function IntegratedModules() {
     };
 
     const hasAccess = (moduleId) => {
-        const accessRecord = moduleAccess.find(m => m.module_name === moduleId);
+        const accessRecord = moduleAccess.find(m => m.module_id === moduleId);
 
         if (!accessRecord || !accessRecord.is_enabled) {
             return false;
