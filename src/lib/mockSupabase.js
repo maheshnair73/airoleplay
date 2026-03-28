@@ -1,6 +1,25 @@
 import { mockData } from './mockData';
 
-let currentUser = null;
+const STORAGE_KEY = 'mock-supabase-user';
+
+const getStoredUser = () => {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return stored ? JSON.parse(stored) : null;
+  } catch {
+    return null;
+  }
+};
+
+const setStoredUser = (user) => {
+  if (user) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
+  } else {
+    localStorage.removeItem(STORAGE_KEY);
+  }
+};
+
+let currentUser = getStoredUser();
 let authListeners = [];
 
 const delay = (ms = 300) => new Promise(resolve => setTimeout(resolve, ms));
@@ -19,6 +38,7 @@ export const mockSupabase = {
       }
 
       currentUser = user;
+      setStoredUser(user);
 
       const session = {
         user: {
@@ -41,6 +61,7 @@ export const mockSupabase = {
       await delay(200);
       const prevUser = currentUser;
       currentUser = null;
+      setStoredUser(null);
 
       authListeners.forEach(listener => {
         listener('SIGNED_OUT', null);

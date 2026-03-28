@@ -898,5 +898,22 @@ export const mockData = {
 
   connected_accounts: [],
 
-  integration_flows: []
+  integration_flows: [],
+
+  module_configuration: [
+    { id: '1', module_id: 'Dashboard', module_name: 'Dashboard', is_enabled: true, access_type: 'all_users', allowed_users: [], created_at: '2024-01-01T00:00:00Z', updated_at: '2024-01-01T00:00:00Z' },
+    { id: '2', module_id: 'Leads', module_name: 'Leads', is_enabled: true, access_type: 'all_users', allowed_users: [], created_at: '2024-01-01T00:00:00Z', updated_at: '2024-01-01T00:00:00Z' },
+    { id: '3', module_id: 'Deals', module_name: 'Deals', is_enabled: true, access_type: 'all_users', allowed_users: [], created_at: '2024-01-01T00:00:00Z', updated_at: '2024-01-01T00:00:00Z' },
+    { id: '4', module_id: 'EmailHub', module_name: 'Email Hub', is_enabled: true, access_type: 'all_users', allowed_users: [], created_at: '2024-01-01T00:00:00Z', updated_at: '2024-01-01T00:00:00Z' },
+    { id: '5', module_id: 'Documents', module_name: 'Documents', is_enabled: true, access_type: 'all_users', allowed_users: [], created_at: '2024-01-01T00:00:00Z', updated_at: '2024-01-01T00:00:00Z' },
+    { id: '6', module_id: 'Playbooks', module_name: 'Playbooks', is_enabled: true, access_type: 'all_users', allowed_users: [], created_at: '2024-01-01T00:00:00Z', updated_at: '2024-01-01T00:00:00Z' },
+    { id: '7', module_id: 'DigitalSalesRooms', module_name: 'Digital Sales Rooms', is_enabled: true, access_type: 'all_users', allowed_users: [], created_at: '2024-01-01T00:00:00Z', updated_at: '2024-01-01T00:00:00Z' },
+    { id: '8', module_id: 'AISalesAgent', module_name: 'AI Sales Agent', is_enabled: true, access_type: 'all_users', allowed_users: [], created_at: '2024-01-01T00:00:00Z', updated_at: '2024-01-01T00:00:00Z' },
+    { id: '9', module_id: 'CoachingHub', module_name: 'AI Coaching Hub', is_enabled: true, access_type: 'all_users', allowed_users: [], created_at: '2024-01-01T00:00:00Z', updated_at: '2024-01-01T00:00:00Z' },
+    { id: '10', module_id: 'AIRoleplay', module_name: 'AI Roleplay', is_enabled: true, access_type: 'all_users', allowed_users: [], created_at: '2024-01-01T00:00:00Z', updated_at: '2024-01-01T00:00:00Z' },
+    { id: '11', module_id: 'CallAnalytics', module_name: 'Call Analytics', is_enabled: true, access_type: 'all_users', allowed_users: [], created_at: '2024-01-01T00:00:00Z', updated_at: '2024-01-01T00:00:00Z' },
+    { id: '12', module_id: 'Analytics', module_name: 'Performance Analytics', is_enabled: true, access_type: 'all_users', allowed_users: [], created_at: '2024-01-01T00:00:00Z', updated_at: '2024-01-01T00:00:00Z' },
+    { id: '13', module_id: 'VoiceAIDialer', module_name: 'AI Voice Dialer', is_enabled: true, access_type: 'all_users', allowed_users: [], created_at: '2024-01-01T00:00:00Z', updated_at: '2024-01-01T00:00:00Z' },
+    { id: '14', module_id: 'Dialer', module_name: 'Manual Dialer', is_enabled: true, access_type: 'all_users', allowed_users: [], created_at: '2024-01-01T00:00:00Z', updated_at: '2024-01-01T00:00:00Z' }
+  ]
 };
