@@ -54,6 +54,8 @@ const PrivateLayout = ({ children, currentPageName }) => {
         const fetchUser = async () => {
             try {
                 const currentUser = await User.me();
+                console.log('Current user:', currentUser);
+                console.log('User role:', currentUser.role);
                 setUser(currentUser);
                 setDemoRole(currentUser.role);
             } catch (e) {
@@ -117,6 +119,7 @@ const PrivateLayout = ({ children, currentPageName }) => {
 
     const NavItem = ({ item, isSubmenuItem = false }) => {
         if (item.roles && !item.roles.includes(effectiveRole)) {
+            console.log('Hiding item:', item.title, 'Role:', effectiveRole, 'Allowed:', item.roles);
             return null;
         }
 
