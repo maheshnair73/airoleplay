@@ -142,17 +142,24 @@ export const User = {
     if (error) throw error;
 
     if (user) {
-      const { data: profile } = await supabase
+      console.log('[User.me] Auth user:', user);
+
+      const { data: profile, error: profileError } = await supabase
         .from('user_profiles')
         .select('*')
         .eq('id', user.id)
         .maybeSingle();
 
-      return {
+      console.log('[User.me] Profile query result:', { profile, profileError });
+
+      const result = {
         ...user,
         ...profile,
-        role: profile?.role || 'sales_agent'
+        role: profile?.role || user?.role || 'sales_agent'
       };
+
+      console.log('[User.me] Final result:', result);
+      return result;
     }
 
     return user;
