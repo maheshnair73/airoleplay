@@ -29,6 +29,14 @@ export const mockData = {
       full_name: 'Agent Two',
       company_id: 'company-001',
       created_at: '2024-01-01T00:00:00Z'
+    },
+    {
+      id: 'mock-user-001',
+      email: 'user@effysalespro.com',
+      role: 'user',
+      full_name: 'Regular User',
+      company_id: 'company-001',
+      created_at: '2024-01-01T00:00:00Z'
     }
   ],
 
@@ -62,6 +70,14 @@ export const mockData = {
       email: 'agent2@effysalespro.com',
       role: 'sales_agent',
       full_name: 'Agent Two',
+      company_id: 'company-001',
+      created_at: '2024-01-01T00:00:00Z'
+    },
+    {
+      id: 'mock-user-001',
+      email: 'user@effysalespro.com',
+      role: 'user',
+      full_name: 'Regular User',
       company_id: 'company-001',
       created_at: '2024-01-01T00:00:00Z'
     }

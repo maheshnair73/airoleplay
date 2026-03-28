@@ -51,6 +51,16 @@ const DEMO_USERS = [
         textColor: 'text-orange-800',
         icon: UserCircle,
         description: 'Sales Agent'
+    },
+    {
+        email: 'user@effysalespro.com',
+        password: 'demo123',
+        role: 'user',
+        label: 'User',
+        bgColor: 'bg-gray-100 border-2 border-gray-300',
+        textColor: 'text-gray-800',
+        icon: UserCircle,
+        description: 'Regular User'
     }
 ];
 
