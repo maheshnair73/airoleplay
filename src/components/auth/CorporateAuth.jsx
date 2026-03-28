@@ -33,26 +33,6 @@ const DEMO_USERS = [
         description: 'Team Manager'
     },
     {
-        email: 'agent1@effysalespro.com',
-        password: 'demo123',
-        role: 'sales_agent',
-        label: 'Agent 1',
-        bgColor: 'bg-emerald-100 border-2 border-emerald-300',
-        textColor: 'text-emerald-800',
-        icon: UserCircle,
-        description: 'Sales Agent'
-    },
-    {
-        email: 'agent2@effysalespro.com',
-        password: 'demo123',
-        role: 'sales_agent',
-        label: 'Agent 2',
-        bgColor: 'bg-orange-100 border-2 border-orange-300',
-        textColor: 'text-orange-800',
-        icon: UserCircle,
-        description: 'Sales Agent'
-    },
-    {
         email: 'user@effysalespro.com',
         password: 'demo123',
         role: 'user',
