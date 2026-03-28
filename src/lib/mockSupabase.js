@@ -109,6 +109,20 @@ export const mockSupabase = {
 
     onAuthStateChange(callback) {
       authListeners.push(callback);
+
+      if (currentUser) {
+        setTimeout(() => {
+          callback('SIGNED_IN', {
+            user: {
+              id: currentUser.id,
+              email: currentUser.email,
+              role: currentUser.role
+            },
+            access_token: 'mock-token-' + currentUser.id
+          });
+        }, 0);
+      }
+
       return {
         data: {
           subscription: {
