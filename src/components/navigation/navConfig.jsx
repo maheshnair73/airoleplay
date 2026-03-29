@@ -121,6 +121,7 @@ export const adminNavConfig = [
     { page: 'IntegrationManagement', title: 'Integration Management', icon: Zap },
     { page: 'IntegrationPlatform', title: 'Integration Platform', icon: Zap, path: '/integrations/platform' },
     { page: 'DatabaseSchema', title: 'Database Schema', icon: Database },
+    { page: 'SystemDocumentation', title: 'Documentation', icon: BookOpen },
 ];
 
 export const effyAíCallsNavConfig = [

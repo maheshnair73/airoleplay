@@ -1,13 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { 
-    Code, 
-    Database, 
-    Zap, 
-    Shield, 
-    Smartphone, 
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+    Code,
+    Database,
+    Zap,
+    Shield,
+    Smartphone,
     Bot,
     FileText,
     Users,
@@ -20,8 +22,12 @@ import {
     BookOpen,
     Sparkles,
     Target,
-    GraduationCap
+    GraduationCap,
+    TrendingUp,
+    Layers,
+    Workflow
 } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 
 const TechnicalSection = ({ title, icon: Icon, children, className = "" }) => (
     <Card className={`card-print ${className}`}>
@@ -127,7 +133,56 @@ const ModuleSection = ({ title, icon: Icon, description, features, apiEndpoints,
     </TechnicalSection>
 );
 
+const GUIDE_DOCS = {
+  training_guide: {
+    title: 'Training System Complete Guide',
+    icon: Brain,
+    file: 'TRAINING_SYSTEM_GUIDE.md'
+  },
+  training_summary: {
+    title: 'Training System Summary',
+    icon: TrendingUp,
+    file: 'TRAINING_SYSTEM_SUMMARY.md'
+  },
+  integration_platform: {
+    title: 'Integration Platform Guide',
+    icon: Zap,
+    file: 'INTEGRATION_PLATFORM_GUIDE.md'
+  },
+  integration_setup: {
+    title: 'Integration Setup Instructions',
+    icon: Code,
+    file: 'INTEGRATION_SETUP.md'
+  },
+  ai_triggers: {
+    title: 'AI Triggers Explained',
+    icon: Sparkles,
+    file: 'AI_TRIGGERS_EXPLAINED.md'
+  },
+  oauth_flow: {
+    title: 'OAuth Flow Documentation',
+    icon: Shield,
+    file: 'OAUTH_FLOW.md'
+  },
+  evaluation_frameworks: {
+    title: 'Evaluation Frameworks',
+    icon: Layers,
+    file: 'EVALUATION_FRAMEWORKS.md'
+  },
+  product_demo: {
+    title: 'Product Demo Feature',
+    icon: Presentation,
+    file: 'PRODUCT_DEMO_FEATURE.md'
+  },
+  accessing_integrations: {
+    title: 'Accessing Integrations',
+    icon: Workflow,
+    file: 'ACCESSING_INTEGRATIONS.md'
+  }
+};
+
 export default function TechnicalDocumentation() {
+    const [activeTab, setActiveTab] = useState('platform');
     const lastUpdatedDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
     const handleDownload = () => {

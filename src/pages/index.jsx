@@ -247,6 +247,8 @@ import TrainingROIAnalytics from "./TrainingROIAnalytics";
 
 import AgentTrainingProfile from "./AgentTrainingProfile";
 
+import SystemDocumentation from "./SystemDocumentation";
+
 import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
 
 const PAGES = {
@@ -496,6 +498,8 @@ const PAGES = {
     TrainingROIAnalytics: TrainingROIAnalytics,
 
     AgentTrainingProfile: AgentTrainingProfile,
+
+    SystemDocumentation: SystemDocumentation,
 
 }
 
@@ -753,6 +757,8 @@ function PagesContent() {
                 <Route path="/TrainingROIAnalytics" element={<TrainingROIAnalytics />} />
 
                 <Route path="/AgentTrainingProfile" element={<AgentTrainingProfile />} />
+
+                <Route path="/SystemDocumentation" element={<SystemDocumentation />} />
 
                 <Route path="/product-demo-analysis/:sessionId" element={<ProductDemoAnalysis />} />
 
