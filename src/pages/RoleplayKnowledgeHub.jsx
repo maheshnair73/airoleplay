@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,7 +12,7 @@ import { supabase } from '@/lib/supabase';
 import { User } from '@/api/entities';
 import {
   FileText, Video, Headphones, Plus, Search, Clock, Award, TrendingUp,
-  Upload, Eye, Trash2, Filter, BookOpen, Brain, Target, Play
+  Upload, Eye, Trash2, Filter, BookOpen, Brain, Target, Play, Link as LinkIcon, Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
@@ -56,6 +56,10 @@ export default function RoleplayKnowledgeHub() {
     category: 'Product Knowledge',
     tags: []
   });
+  const [uploadMethod, setUploadMethod] = useState('file');
+  const [isDragging, setIsDragging] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     loadData();
@@ -118,6 +122,73 @@ export default function RoleplayKnowledgeHub() {
     setFilteredMaterials(filtered);
   };
 
+  const handleFileUpload = async (file) => {
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const filePath = `knowledge-materials/${currentUser?.company_id || 'public'}/${fileName}`;
+
+      const { error: uploadError, data } = await supabase.storage
+        .from('documents')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('documents')
+        .getPublicUrl(filePath);
+
+      setNewMaterial({ ...newMaterial, file_url: publicUrl });
+      toast.success('File uploaded successfully');
+    } catch (error) {
+      console.error('Upload failed:', error);
+      toast.error('Failed to upload file');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      handleFileUpload(file);
+    }
+  };
+
+  const handlePaste = (e) => {
+    const items = e.clipboardData.items;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].kind === 'file') {
+        const file = items[i].getAsFile();
+        handleFileUpload(file);
+        return;
+      }
+    }
+    const text = e.clipboardData.getData('text');
+    if (text && (text.startsWith('http://') || text.startsWith('https://'))) {
+      setNewMaterial({ ...newMaterial, file_url: text });
+      toast.success('URL pasted');
+    }
+  };
+
   const handleCreateMaterial = async () => {
     if (!newMaterial.title) {
       toast.error('Title is required');
@@ -156,6 +227,7 @@ export default function RoleplayKnowledgeHub() {
         category: 'Product Knowledge',
         tags: []
       });
+      setUploadMethod('file');
       loadData();
     } catch (error) {
       console.error('Failed to create material:', error);
@@ -314,16 +386,139 @@ export default function RoleplayKnowledgeHub() {
                       />
                     </div>
                   ) : (
-                    <div>
-                      <Label>File URL</Label>
-                      <Input
-                        value={newMaterial.file_url}
-                        onChange={(e) => setNewMaterial({ ...newMaterial, file_url: e.target.value })}
-                        placeholder="https://example.com/document.pdf"
-                      />
-                      <p className="text-xs text-slate-500 mt-1">
-                        Upload file to cloud storage and paste the public URL
-                      </p>
+                    <div className="space-y-4">
+                      <Label>Upload Method</Label>
+                      <Tabs value={uploadMethod} onValueChange={setUploadMethod}>
+                        <TabsList className="grid w-full grid-cols-3">
+                          <TabsTrigger value="file">
+                            <Upload className="w-4 h-4 mr-2" />
+                            Upload
+                          </TabsTrigger>
+                          <TabsTrigger value="url">
+                            <LinkIcon className="w-4 h-4 mr-2" />
+                            URL
+                          </TabsTrigger>
+                          <TabsTrigger value="paste">
+                            <FileText className="w-4 h-4 mr-2" />
+                            Paste
+                          </TabsTrigger>
+                        </TabsList>
+
+                        <TabsContent value="file" className="mt-4">
+                          <div
+                            onDragOver={handleDragOver}
+                            onDragLeave={handleDragLeave}
+                            onDrop={handleDrop}
+                            className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+                              isDragging
+                                ? 'border-blue-500 bg-blue-50'
+                                : 'border-slate-300 hover:border-slate-400'
+                            }`}
+                          >
+                            {isUploading ? (
+                              <div className="flex flex-col items-center gap-3">
+                                <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+                                <p className="text-sm text-slate-600">Uploading...</p>
+                              </div>
+                            ) : newMaterial.file_url ? (
+                              <div className="flex flex-col items-center gap-3">
+                                <div className="p-3 bg-green-100 rounded-full">
+                                  <FileText className="w-6 h-6 text-green-600" />
+                                </div>
+                                <p className="text-sm font-medium text-slate-900">File uploaded successfully</p>
+                                <p className="text-xs text-slate-500 break-all max-w-full">
+                                  {newMaterial.file_url}
+                                </p>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setNewMaterial({ ...newMaterial, file_url: '' })}
+                                >
+                                  Change File
+                                </Button>
+                              </div>
+                            ) : (
+                              <>
+                                <Upload className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+                                <p className="text-slate-700 font-medium mb-1">
+                                  Drag and drop your file here
+                                </p>
+                                <p className="text-sm text-slate-500 mb-4">or</p>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  onClick={() => fileInputRef.current?.click()}
+                                >
+                                  Browse Files
+                                </Button>
+                                <input
+                                  ref={fileInputRef}
+                                  type="file"
+                                  className="hidden"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) handleFileUpload(file);
+                                  }}
+                                  accept=".pdf,.doc,.docx,.txt,.mp4,.mp3,.wav"
+                                />
+                                <p className="text-xs text-slate-500 mt-4">
+                                  Supported: PDF, DOC, DOCX, TXT, MP4, MP3, WAV
+                                </p>
+                              </>
+                            )}
+                          </div>
+                        </TabsContent>
+
+                        <TabsContent value="url" className="mt-4">
+                          <div className="space-y-2">
+                            <Input
+                              value={newMaterial.file_url}
+                              onChange={(e) => setNewMaterial({ ...newMaterial, file_url: e.target.value })}
+                              placeholder="https://example.com/document.pdf"
+                            />
+                            <p className="text-xs text-slate-500">
+                              Enter a public URL to your document, video, or audio file
+                            </p>
+                          </div>
+                        </TabsContent>
+
+                        <TabsContent value="paste" className="mt-4">
+                          <div
+                            onPaste={handlePaste}
+                            className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center hover:border-slate-400 transition-colors cursor-text"
+                            tabIndex={0}
+                          >
+                            {newMaterial.file_url ? (
+                              <div className="flex flex-col items-center gap-3">
+                                <div className="p-3 bg-green-100 rounded-full">
+                                  <FileText className="w-6 h-6 text-green-600" />
+                                </div>
+                                <p className="text-sm font-medium text-slate-900">Content pasted</p>
+                                <p className="text-xs text-slate-500 break-all max-w-full">
+                                  {newMaterial.file_url}
+                                </p>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setNewMaterial({ ...newMaterial, file_url: '' })}
+                                >
+                                  Clear
+                                </Button>
+                              </div>
+                            ) : (
+                              <>
+                                <FileText className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+                                <p className="text-slate-700 font-medium mb-1">
+                                  Click here and paste (Ctrl+V / Cmd+V)
+                                </p>
+                                <p className="text-sm text-slate-500">
+                                  Paste a file or URL from your clipboard
+                                </p>
+                              </>
+                            )}
+                          </div>
+                        </TabsContent>
+                      </Tabs>
                     </div>
                   )}
                   <div>
