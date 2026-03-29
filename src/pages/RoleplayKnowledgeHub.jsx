@@ -125,9 +125,15 @@ export default function RoleplayKnowledgeHub() {
   const handleFileUpload = async (file) => {
     if (!file) return;
 
+    const maxSize = 50 * 1024 * 1024;
+    if (file.size > maxSize) {
+      toast.error('File size exceeds 50MB limit');
+      return;
+    }
+
     setIsUploading(true);
     try {
-      const fileExt = file.name.split('.').pop();
+      const fileExt = file.name.split('.').pop().toLowerCase();
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
       const filePath = `knowledge-materials/${currentUser?.company_id || 'public'}/${fileName}`;
 
@@ -138,7 +144,10 @@ export default function RoleplayKnowledgeHub() {
           upsert: false
         });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('Upload error details:', uploadError);
+        throw new Error(uploadError.message || 'Upload failed');
+      }
 
       const { data: { publicUrl } } = supabase.storage
         .from('documents')
@@ -148,7 +157,7 @@ export default function RoleplayKnowledgeHub() {
       toast.success('File uploaded successfully');
     } catch (error) {
       console.error('Upload failed:', error);
-      toast.error('Failed to upload file');
+      toast.error(error.message || 'Failed to upload file. Please check the file type and size.');
     } finally {
       setIsUploading(false);
     }
