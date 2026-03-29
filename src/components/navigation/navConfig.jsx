@@ -33,15 +33,15 @@ export const navSections = [
         title: 'Manage Leads',
         items: [
             { page: 'Dashboard', title: 'Dashboard', icon: LayoutDashboard, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
-            { page: 'effyLeads', title: 'effyLeads', icon: Users, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
-            { page: 'IntegratedModules', title: 'My Modules', icon: HardDrive, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] }
+            { page: 'effyLeads', title: 'effyLeads', icon: Users, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] }
         ]
     },
     {
         title: 'Sales Execution',
         items: [
             { page: 'DigitalSalesRooms', title: 'Digital Sales Rooms', icon: Building, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
-            { page: 'EffyDocProposals', title: 'effyDoc (Proposals)', icon: FileText, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] }
+            { page: 'EffyDocProposals', title: 'effyDoc (Proposals)', icon: FileText, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
+            { page: 'IntegratedModules', title: 'My Modules', icon: HardDrive, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] }
         ]
     },
     {
