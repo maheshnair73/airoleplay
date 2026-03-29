@@ -76,6 +76,7 @@ export const navSections = [
     {
         title: 'Knowledge Hub',
         items: [
+            { page: 'RoleplayKnowledgeHub', title: 'Practice Materials', icon: Brain, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
             { page: 'ProductManagement', title: 'My Products', icon: Package, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
             { page: 'CompetitorManagement', title: 'Competitor Intel', icon: Shield, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
             { page: 'ProductKnowledgeReview', title: 'Knowledge Review Queue', icon: CheckSquare, roles: ['admin', 'saas_admin', 'company_admin', 'sales_manager'] },
