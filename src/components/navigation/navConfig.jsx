@@ -22,7 +22,10 @@ import {
     MonitorUp,
     CheckSquare,
     Database,
-    Zap
+    Zap,
+    BookOpen,
+    Brain,
+    TrendingUp
 } from 'lucide-react';
 
 export const navSections = [
@@ -77,6 +80,14 @@ export const navSections = [
             { page: 'ProductManagement', title: 'My Products', icon: Package, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
             { page: 'CompetitorManagement', title: 'Competitor Intel', icon: Shield, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
             { page: 'ProductKnowledgeReview', title: 'Knowledge Review Queue', icon: CheckSquare, roles: ['admin', 'saas_admin', 'company_admin', 'sales_manager'] },
+        ]
+    },
+    {
+        title: 'Training & Certification',
+        items: [
+            { page: 'TrainingLibrary', title: 'Training Library', icon: BookOpen, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
+            { page: 'AgentTrainingProfile', title: 'My Training Profile', icon: Brain, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
+            { page: 'TrainingROIAnalytics', title: 'Training ROI Analytics', icon: TrendingUp, roles: ['admin', 'saas_admin', 'company_admin', 'sales_manager'] },
         ]
     },
     {

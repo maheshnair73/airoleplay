@@ -135,6 +135,12 @@ export const Deal = createEntity('deals');
 export const AnalysisFramework = createEntity('analysis_frameworks');
 export const AnalysisConfiguration = createEntity('analysis_configurations');
 export const SessionAnalysisResult = createEntity('session_analysis_results');
+export const TrainingDocument = createEntity('training_documents');
+export const TrainingQuizQuestion = createEntity('training_quiz_questions');
+export const AgentTrainingAttempt = createEntity('agent_training_attempts');
+export const AgentCertification = createEntity('agent_certifications');
+export const PersonalizedTrainingAssignment = createEntity('personalized_training_assignments');
+export const TrainingPerformanceCorrelation = createEntity('training_performance_correlation');
 
 export const User = {
   async me() {

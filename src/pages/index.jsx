@@ -239,6 +239,14 @@ import IntegrationFlows from "./IntegrationFlows";
 
 import FlowBuilder from "./FlowBuilder";
 
+import TrainingLibrary from "./TrainingLibrary";
+
+import TrainerBot from "./TrainerBot";
+
+import TrainingROIAnalytics from "./TrainingROIAnalytics";
+
+import AgentTrainingProfile from "./AgentTrainingProfile";
+
 import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
 
 const PAGES = {
@@ -480,6 +488,14 @@ const PAGES = {
     IntegrationFlows: IntegrationFlows,
 
     FlowBuilder: FlowBuilder,
+
+    TrainingLibrary: TrainingLibrary,
+
+    TrainerBot: TrainerBot,
+
+    TrainingROIAnalytics: TrainingROIAnalytics,
+
+    AgentTrainingProfile: AgentTrainingProfile,
 
 }
 
@@ -729,6 +745,14 @@ function PagesContent() {
                 <Route path="/CreateMultiPartyScenario" element={<CreateMultiPartyScenario />} />
 
                 <Route path="/ProductDemoRoleplay/:sessionId" element={<ProductDemoRoleplay />} />
+
+                <Route path="/TrainingLibrary" element={<TrainingLibrary />} />
+
+                <Route path="/TrainerBot" element={<TrainerBot />} />
+
+                <Route path="/TrainingROIAnalytics" element={<TrainingROIAnalytics />} />
+
+                <Route path="/AgentTrainingProfile" element={<AgentTrainingProfile />} />
 
                 <Route path="/product-demo-analysis/:sessionId" element={<ProductDemoAnalysis />} />
 
