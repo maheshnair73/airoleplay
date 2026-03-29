@@ -24,6 +24,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { User } from '@/api/entities';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
+import { supabase } from '@/lib/supabase';
+import { Checkbox } from '@/components/ui/checkbox';
 
 // New Sidebar component for live call assistance
 const CallAssistantSidebar = ({ prospect }) => {
@@ -116,7 +118,7 @@ const CallAssistantSidebar = ({ prospect }) => {
 
 
 // Call in progress component with conversational flow
-const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete }) => {
+const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMaterialIds = [] }) => {
     const [callStatus, setCallStatus] = useState('connecting');
     const [transcript, setTranscript] = useState([]);
     const transcriptRef = useRef(transcript); // Ref to hold the latest transcript for stable callbacks
@@ -252,7 +254,8 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete }) => {
             const { data } = await aiRoleplay({
                 userText,
                 prospect,
-                transcriptHistory: history
+                transcriptHistory: history,
+                knowledgeMaterialIds
             });
 
             console.log('Received from AI:', data.text);
@@ -288,7 +291,12 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete }) => {
         callStartTime.current = Date.now(); // Set call start time
         setIsAIResponding(true);
         try {
-            const { data } = await aiRoleplay({ userText: null, prospect, transcriptHistory: [] });
+            const { data } = await aiRoleplay({
+                userText: null,
+                prospect,
+                transcriptHistory: [],
+                knowledgeMaterialIds
+            });
 
             // Handle different response modes
             if (data.error || data.fallback_mode) {
@@ -824,6 +832,9 @@ export default function AIRoleplay() {
     const location = useLocation();
     const navigate = useNavigate();
 
+    const [knowledgeMaterials, setKnowledgeMaterials] = useState([]);
+    const [selectedMaterials, setSelectedMaterials] = useState([]);
+
     // Enhanced lead-specific roleplay state
     const [isLeadSpecific, setIsLeadSpecific] = useState(false);
     const [leadRoleplayBot, setLeadRoleplayBot] = useState(null);
@@ -863,7 +874,24 @@ export default function AIRoleplay() {
                 setFilteredBots([]); // Ensure we show empty state instead of cached data
             }
         };
+
+        const fetchKnowledgeMaterials = async () => {
+            try {
+                const { data, error } = await supabase
+                    .from('roleplay_knowledge_materials')
+                    .select('*')
+                    .eq('is_active', true)
+                    .order('created_date', { ascending: false });
+
+                if (error) throw error;
+                setKnowledgeMaterials(data || []);
+            } catch (error) {
+                console.error("Failed to fetch knowledge materials:", error);
+            }
+        };
+
         fetchBots();
+        fetchKnowledgeMaterials();
     }, []);
 
     const handleStartCall = useCallback((bot) => {
@@ -1075,6 +1103,14 @@ export default function AIRoleplay() {
         }
     };
 
+    const toggleMaterial = (materialId) => {
+        setSelectedMaterials(prev =>
+            prev.includes(materialId)
+                ? prev.filter(id => id !== materialId)
+                : [...prev, materialId]
+        );
+    };
+
     const handleAnalysisComplete = (session) => {
         setShowCallModal(false); // Close the call modal when analysis is complete
         setSelectedBot(null); // Clear selected bot
@@ -1268,12 +1304,13 @@ export default function AIRoleplay() {
                     prospect={selectedBot}
                     onEndCall={handleImmediateCallEnd}
                     onAnalysisComplete={handleAnalysisComplete}
+                    knowledgeMaterialIds={selectedMaterials}
                 />
             )}
 
             {botToCall && (
                  <Dialog open={showConfirmationModal} onOpenChange={setShowConfirmationModal}>
-                    <DialogContent>
+                    <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
                         <DialogHeader>
                             <DialogTitle>
                                 {isLeadSpecific ? `Ready to practice with ${botToCall.name}?` : `Let's get started with ${botToCall.name}`}
@@ -1296,9 +1333,52 @@ export default function AIRoleplay() {
                                 )}
                             </DialogDescription>
                         </DialogHeader>
+
+                        {knowledgeMaterials.length > 0 && (
+                            <div className="py-4 space-y-3">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <BookOpen className="w-5 h-5 text-blue-600" />
+                                    <h4 className="font-semibold text-sm">Training Materials (Optional)</h4>
+                                </div>
+                                <p className="text-sm text-slate-600 mb-3">
+                                    Select training materials for the AI coach to reference during the roleplay.
+                                    The AI will test your knowledge and ask questions based on these materials.
+                                </p>
+                                <div className="space-y-2 max-h-64 overflow-y-auto border rounded-lg p-3 bg-slate-50">
+                                    {knowledgeMaterials.map((material) => (
+                                        <div
+                                            key={material.id}
+                                            className="flex items-start gap-3 p-2 hover:bg-white rounded transition-colors"
+                                        >
+                                            <Checkbox
+                                                id={material.id}
+                                                checked={selectedMaterials.includes(material.id)}
+                                                onCheckedChange={() => toggleMaterial(material.id)}
+                                            />
+                                            <label
+                                                htmlFor={material.id}
+                                                className="flex-1 cursor-pointer"
+                                            >
+                                                <p className="font-medium text-sm text-slate-900">{material.title}</p>
+                                                <p className="text-xs text-slate-500">{material.category}</p>
+                                                {material.description && (
+                                                    <p className="text-xs text-slate-600 mt-1">{material.description}</p>
+                                                )}
+                                            </label>
+                                        </div>
+                                    ))}
+                                </div>
+                                {selectedMaterials.length > 0 && (
+                                    <p className="text-sm text-blue-600">
+                                        {selectedMaterials.length} material{selectedMaterials.length > 1 ? 's' : ''} selected
+                                    </p>
+                                )}
+                            </div>
+                        )}
+
                         <DialogFooter>
                             <Button variant="outline" onClick={() => setShowConfirmationModal(false)}>Cancel</Button>
-                            <Button onClick={confirmStartCall} className="bg-purple-600 hover:bg-purple-700">
+                            <Button onClick={confirmStartCall} className="bg-blue-600 hover:bg-blue-700">
                                 {isLeadSpecific ? 'Start Pitch Practice' : 'I understand, start call'}
                             </Button>
                         </DialogFooter>
