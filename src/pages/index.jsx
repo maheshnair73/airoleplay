@@ -762,6 +762,8 @@ function PagesContent() {
 
                 <Route path="/AgentTrainingProfile" element={<AgentTrainingProfile />} />
 
+                <Route path="/RoleplayKnowledgeHub" element={<RoleplayKnowledgeHub />} />
+
                 <Route path="/SystemDocumentation" element={<SystemDocumentation />} />
 
                 <Route path="/product-demo-analysis/:sessionId" element={<ProductDemoAnalysis />} />
