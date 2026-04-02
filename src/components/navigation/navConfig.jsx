@@ -14,6 +14,7 @@ import {
     Shield,
     Trophy,
     Award,
+    Target,
     Target as ChallengeIcon,
     UserCog,
     Radio,
@@ -44,11 +45,19 @@ export const navSections = [
         ]
     },
     {
+        title: 'Practice Hub',
+        items: [
+            { page: 'PracticeHub', title: 'My Practice Sessions', icon: Target, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
+            { page: 'CreatePracticeSession', title: 'Create Practice', icon: Mic, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
+            { page: 'PracticeAnalytics', title: 'Practice Analytics', icon: BarChart3, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
+        ]
+    },
+    {
         title: 'AI Sales Coach',
         items: [
             {
                 page: 'AIRoleplay',
-                title: 'AI Roleplay',
+                title: 'AI Roleplay (Legacy)',
                 icon: Mic,
                 roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'],
                 submenu: [
@@ -58,7 +67,7 @@ export const navSections = [
                     { page: 'ProductDemoSetup', title: 'Product Demo Practice', icon: MonitorUp, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] }
                 ]
             },
-            { page: 'CoachingHub', title: 'Coaching Hub', icon: GraduationCap, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
+            { page: 'CoachingHub', title: 'Coaching Hub (Legacy)', icon: GraduationCap, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
             { page: 'LiveMeetings', title: 'effyMeeting Assistant', icon: Video, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
             { page: 'CallInsights', title: 'Call Recordings', icon: HardDrive, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
             {

@@ -141,6 +141,11 @@ export const AgentTrainingAttempt = createEntity('agent_training_attempts');
 export const AgentCertification = createEntity('agent_certifications');
 export const PersonalizedTrainingAssignment = createEntity('personalized_training_assignments');
 export const TrainingPerformanceCorrelation = createEntity('training_performance_correlation');
+export const PracticeSession = createEntity('practice_sessions');
+export const PracticeParticipant = createEntity('practice_participants');
+export const PracticeEvaluation = createEntity('practice_evaluations');
+export const PracticeRecording = createEntity('practice_recordings');
+export const PracticeMaterial = createEntity('practice_materials_junction');
 
 export const User = {
   async me() {

@@ -251,6 +251,16 @@ import RoleplayKnowledgeHub from "./RoleplayKnowledgeHub";
 
 import SystemDocumentation from "./SystemDocumentation";
 
+import PracticeHub from "./PracticeHub";
+
+import CreatePracticeSession from "./CreatePracticeSession";
+
+import PracticeSessionDetail from "./PracticeSessionDetail";
+
+import PracticeEvaluation from "./PracticeEvaluation";
+
+import PracticeAnalytics from "./PracticeAnalytics";
+
 import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
 
 const PAGES = {
@@ -504,6 +514,16 @@ const PAGES = {
     RoleplayKnowledgeHub: RoleplayKnowledgeHub,
 
     SystemDocumentation: SystemDocumentation,
+
+    PracticeHub: PracticeHub,
+
+    CreatePracticeSession: CreatePracticeSession,
+
+    PracticeSessionDetail: PracticeSessionDetail,
+
+    PracticeEvaluation: PracticeEvaluation,
+
+    PracticeAnalytics: PracticeAnalytics,
 
 }
 
@@ -785,6 +805,16 @@ function PagesContent() {
                 <Route path="/integrations/flows/new" element={<FlowBuilder />} />
 
                 <Route path="/integrations/flows/:flowId/edit" element={<FlowBuilder />} />
+
+                <Route path="/PracticeHub" element={<PracticeHub />} />
+
+                <Route path="/CreatePracticeSession" element={<CreatePracticeSession />} />
+
+                <Route path="/PracticeSessionDetail/:id" element={<PracticeSessionDetail />} />
+
+                <Route path="/PracticeEvaluation/:sessionId" element={<PracticeEvaluation />} />
+
+                <Route path="/PracticeAnalytics" element={<PracticeAnalytics />} />
 
             </Routes>
         </Layout>
