@@ -91,12 +91,16 @@ export default function CreatePracticeSession() {
         Challenge.filter({ status: 'active' })
       ]);
 
+      console.log('Loaded AI Clients:', clientsData);
+
       setUsers(usersData);
-      setAiClients(clientsData.map(bot => ({
+      const mappedClients = clientsData.map(bot => ({
         ...bot,
         name: [bot.first_name, bot.last_name].filter(Boolean).join(' ') || 'AI Bot',
         job_title: bot.title
-      })));
+      }));
+      console.log('Mapped AI Clients:', mappedClients);
+      setAiClients(mappedClients);
       setKnowledgeMaterials(materialsData.data || []);
       setChallenges(challengesData);
 
