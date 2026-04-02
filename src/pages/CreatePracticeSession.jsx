@@ -94,7 +94,8 @@ export default function CreatePracticeSession() {
       setUsers(usersData);
       setAiClients(clientsData.map(bot => ({
         ...bot,
-        name: [bot.first_name, bot.last_name].filter(Boolean).join(' ') || 'AI Bot'
+        name: [bot.first_name, bot.last_name].filter(Boolean).join(' ') || 'AI Bot',
+        job_title: bot.title
       })));
       setKnowledgeMaterials(materialsData.data || []);
       setChallenges(challengesData);
