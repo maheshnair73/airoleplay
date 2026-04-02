@@ -372,6 +372,11 @@ export default function CreateCoachingTask() {
 
                         {/* Tab 2: Training Materials & Roleplay */}
                         <TabsContent value="training" className="space-y-6">
+                            {/* Debug: Ensure tab is rendering */}
+                            <div className="p-4 bg-yellow-100 border border-yellow-400 rounded mb-4">
+                                <p className="text-sm">Training Tab Loaded - Materials: {knowledgeMaterials.length}, AI Clients: {aiClients.length}</p>
+                            </div>
+
                             <Card className="shadow-xl border-0">
                                 <CardHeader className="bg-gradient-to-r from-slate-50 to-blue-50 rounded-t-lg">
                                     <CardTitle className="flex items-center gap-2 text-xl">
