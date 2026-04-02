@@ -11,7 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { ArrowLeft, User, Building2, BrainCircuit, Mic, ShieldAlert, Target, Sparkles, Wand2, Bot, Linkedin, Snowflake, Search, Flame, Check, RefreshCw, Settings, PenSquare, Plus, X, Package } from 'lucide-react'; // Add Package icon
+import { ArrowLeft, User, Building2, BrainCircuit, Mic, ShieldAlert, Target, Sparkles, Wand2, Bot, Linkedin, Snowflake, Search, Flame, Check, RefreshCw, Settings, PenSquare, Plus, X, Package, ShoppingBag } from 'lucide-react'; // Add Package icon
 import { createPageUrl } from '@/utils';
 
 const steps = [
@@ -158,7 +158,11 @@ export default function CreateAIClient() {
         persona_tags: [],
         call_goal_tags: [],
         visibility: 'creator_only',
-        shared_with_user_ids: []
+        shared_with_user_ids: [],
+        selling_context: '',
+        call_goal: '',
+        buyer_awareness_level: 'Is Aware of Problem',
+        background: ''
     });
     const [isLoading, setIsLoading] = useState(false);
     const [customRoleplayType, setCustomRoleplayType] = useState('');
@@ -602,11 +606,14 @@ export default function CreateAIClient() {
                             )}
 
                             <div>
-                                <Label htmlFor="roleplay_scenario" className="font-semibold">Roleplay Scenario</Label>
+                                <Label htmlFor="buyer_awareness_level" className="font-semibold">Buyer Awareness Level</Label>
                                 <p className="text-sm text-slate-600 mb-2">Define the buyer's current scenario — are they just aware of the problem, solution-aware, exploring options, or ready to buy?</p>
-                                <Select value={formData.roleplay_scenario} onValueChange={(v) => handleInputChange('roleplay_scenario', v)}>
+                                <Select value={formData.buyer_awareness_level} onValueChange={(v) => {
+                                    handleInputChange('buyer_awareness_level', v);
+                                    handleInputChange('roleplay_scenario', v);
+                                }}>
                                     <SelectTrigger>
-                                        <SelectValue placeholder="Select Scenario" />
+                                        <SelectValue placeholder="Select Awareness Level" />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {roleplayScenarios.map((scenario) => (
@@ -614,6 +621,23 @@ export default function CreateAIClient() {
                                         ))}
                                     </SelectContent>
                                 </Select>
+                            </div>
+
+                            <div>
+                                <Label htmlFor="selling_context" className="font-semibold text-base flex items-center gap-2">
+                                    <ShoppingBag className="w-4 h-4" />
+                                    What You're Selling to {formData.first_name || 'This Client'}
+                                </Label>
+                                <p className="text-sm text-slate-600 mb-3">
+                                    Describe your company's offering and value proposition for this specific prospect.
+                                </p>
+                                <Textarea
+                                    id="selling_context"
+                                    placeholder="e.g., 'TechFlow provides a B2B SaaS platform for real-time data pipelines, serving mid-market to enterprise customers in fintech and marketplaces.'"
+                                    value={formData.selling_context}
+                                    onChange={(e) => handleInputChange('selling_context', e.target.value)}
+                                    className="h-24"
+                                />
                             </div>
 
                             <div>
@@ -635,10 +659,10 @@ export default function CreateAIClient() {
 
                                 {/* Description field */}
                                 <Textarea
-                                    id="persona_details"
+                                    id="call_goal"
                                     placeholder="Describe your primary objective for this practice call. e.g., 'My goal is to book a 15-minute discovery meeting by highlighting our value proposition for marketing teams.'"
-                                    value={formData.persona_details}
-                                    onChange={(e) => handleInputChange('persona_details', e.target.value)}
+                                    value={formData.call_goal}
+                                    onChange={(e) => handleInputChange('call_goal', e.target.value)}
                                     className="h-24"
                                 />
                             </div>

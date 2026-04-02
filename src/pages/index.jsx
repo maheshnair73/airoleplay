@@ -181,6 +181,7 @@ import UnifiedSalesAnalytics from "./UnifiedSalesAnalytics";
 import CreateRoleplayBot from "./CreateRoleplayBot";
 import CreateAIClient from "./CreateAIClient";
 import BrowseAIClients from "./BrowseAIClients";
+import AIClientDetail from "./AIClientDetail";
 
 import BotPerformanceDetails from "./BotPerformanceDetails";
 
@@ -446,6 +447,7 @@ const PAGES = {
     CreateRoleplayBot: CreateRoleplayBot,
     CreateAIClient: CreateAIClient,
     BrowseAIClients: BrowseAIClients,
+    AIClientDetail: AIClientDetail,
     
     BotPerformanceDetails: BotPerformanceDetails,
     
@@ -736,6 +738,7 @@ function PagesContent() {
                 <Route path="/CreateRoleplayBot" element={<CreateRoleplayBot />} />
                 <Route path="/create-ai-client" element={<CreateAIClient />} />
                 <Route path="/browse-ai-clients" element={<BrowseAIClients />} />
+                <Route path="/ai-client-detail" element={<AIClientDetail />} />
                 
                 <Route path="/BotPerformanceDetails" element={<BotPerformanceDetails />} />
                 

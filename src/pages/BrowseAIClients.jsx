@@ -300,7 +300,12 @@ export default function BrowseAIClients() {
                       className="flex-1"
                       onClick={(e) => {
                         e.stopPropagation();
-                        navigate(`/create-ai-client?id=${client.id}`);
+                        navigate(`/ai-client-detail?id=${client.id}`, {
+                          state: {
+                            returnPath: '/browse-ai-clients',
+                            selectionMode: isSelectionMode
+                          }
+                        });
                       }}
                     >
                       View Details
