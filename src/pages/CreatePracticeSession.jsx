@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { PracticeSession, PracticeMaterial, PracticeParticipant, User, RoleplayBot, Challenge } from '@/api/entities';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,6 +21,7 @@ import { supabase } from '@/lib/supabase';
 
 export default function CreatePracticeSession() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const sessionId = searchParams.get('id');
   const [isLoading, setIsLoading] = useState(false);
@@ -78,6 +79,20 @@ export default function CreatePracticeSession() {
   useEffect(() => {
     loadInitialData();
   }, [sessionId]);
+
+  useEffect(() => {
+    if (location.state?.selectedBots) {
+      const newBotIds = location.state.selectedBots;
+      setSession(prev => ({
+        ...prev,
+        ai_config: {
+          ...prev.ai_config,
+          bot_ids: [...new Set([...prev.ai_config.bot_ids, ...newBotIds])]
+        }
+      }));
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state]);
 
   const loadInitialData = async () => {
     try {
@@ -479,8 +494,28 @@ export default function CreatePracticeSession() {
             {(session.practice_mode === 'solo_ai' || session.practice_mode === 'ai_multi_party') && (
               <Card>
                 <CardHeader>
-                  <CardTitle>AI Bots *</CardTitle>
-                  <CardDescription>Select AI bots for your practice session</CardDescription>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle>AI Bots *</CardTitle>
+                      <CardDescription>Select AI bots for your practice session</CardDescription>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        navigate('/browse-ai-clients', {
+                          state: {
+                            selectionMode: true,
+                            returnPath: '/create-practice-session'
+                          }
+                        });
+                      }}
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Browse & Create Bots
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
