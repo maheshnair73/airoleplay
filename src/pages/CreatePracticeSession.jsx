@@ -475,6 +475,58 @@ export default function CreatePracticeSession() {
                 </div>
               </CardContent>
             </Card>
+
+            {(session.practice_mode === 'solo_ai' || session.practice_mode === 'ai_multi_party') && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>AI Bots *</CardTitle>
+                  <CardDescription>Select AI bots for your practice session</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {session.ai_config.bot_ids.map(botId => {
+                      const bot = aiClients.find(b => b.id === botId);
+                      return bot ? (
+                        <div key={botId} className="flex items-center justify-between p-3 border rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <Bot className="w-5 h-5 text-blue-600" />
+                            <div>
+                              <div className="font-medium">{bot.name}</div>
+                              <div className="text-sm text-muted-foreground">
+                                {bot.job_title} at {bot.company_name}
+                              </div>
+                            </div>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeAIBot(botId)}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      ) : null;
+                    })}
+
+                    <Select onValueChange={(value) => addAIBot(value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Add AI Bot..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {aiClients
+                          .filter(bot => !session.ai_config.bot_ids.includes(bot.id))
+                          .map(bot => (
+                            <SelectItem key={bot.id} value={bot.id}>
+                              {bot.name} - {bot.job_title}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           <TabsContent value="participants" className="space-y-6">
