@@ -263,6 +263,13 @@ import PracticeEvaluation from "./PracticeEvaluation";
 
 import PracticeAnalytics from "./PracticeAnalytics";
 
+import CertifyHub from "./CertifyHub";
+import CreateCertification from "./CreateCertification";
+import ChallengeHub from "./ChallengeHub";
+import UnifiedHubAnalytics from "./UnifiedHubAnalytics";
+import CertificationTest from "./CertificationTest";
+import CertificationResults from "./CertificationResults";
+
 import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
 
 const PAGES = {
@@ -528,6 +535,13 @@ const PAGES = {
     PracticeEvaluation: PracticeEvaluation,
 
     PracticeAnalytics: PracticeAnalytics,
+
+    CertifyHub: CertifyHub,
+    CreateCertification: CreateCertification,
+    ChallengeHub: ChallengeHub,
+    UnifiedHubAnalytics: UnifiedHubAnalytics,
+    CertificationTest: CertificationTest,
+    CertificationResults: CertificationResults,
 
 }
 
@@ -821,6 +835,18 @@ function PagesContent() {
                 <Route path="/PracticeEvaluation/:sessionId" element={<PracticeEvaluation />} />
 
                 <Route path="/PracticeAnalytics" element={<PracticeAnalytics />} />
+
+                <Route path="/CertifyHub" element={<CertifyHub />} />
+
+                <Route path="/CreateCertification" element={<CreateCertification />} />
+
+                <Route path="/ChallengeHub" element={<ChallengeHub />} />
+
+                <Route path="/UnifiedHubAnalytics" element={<UnifiedHubAnalytics />} />
+
+                <Route path="/certification-test/:id" element={<CertificationTest />} />
+
+                <Route path="/certification-results/:attemptId" element={<CertificationResults />} />
 
             </Routes>
         </Layout>
