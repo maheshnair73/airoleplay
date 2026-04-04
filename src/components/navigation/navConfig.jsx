@@ -96,6 +96,8 @@ export const navSections = [
         items: [
             { page: 'TrainingLibrary', title: 'Training Library', icon: BookOpen, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
             { page: 'AgentTrainingProfile', title: 'My Training Profile', icon: Brain, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
+            { page: 'CertifyHub', title: 'Certify Hub', icon: Award, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
+            { page: 'CreateCertification', title: 'Create Certification', icon: Award, roles: ['admin', 'saas_admin', 'company_admin', 'sales_manager'] },
             { page: 'TrainingROIAnalytics', title: 'Training ROI Analytics', icon: TrendingUp, roles: ['admin', 'saas_admin', 'company_admin', 'sales_manager'] },
         ]
     },
