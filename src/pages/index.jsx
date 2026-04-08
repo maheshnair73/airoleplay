@@ -243,6 +243,8 @@ import FlowBuilder from "./FlowBuilder";
 
 import TrainingLibrary from "./TrainingLibrary";
 
+import ManageQuestions from "./ManageQuestions";
+
 import TrainerBot from "./TrainerBot";
 
 import TrainingROIAnalytics from "./TrainingROIAnalytics";
@@ -515,6 +517,8 @@ const PAGES = {
     FlowBuilder: FlowBuilder,
 
     TrainingLibrary: TrainingLibrary,
+
+    ManageQuestions: ManageQuestions,
 
     TrainerBot: TrainerBot,
 
@@ -795,6 +799,8 @@ function PagesContent() {
                 <Route path="/ProductDemoRoleplay/:sessionId" element={<ProductDemoRoleplay />} />
 
                 <Route path="/TrainingLibrary" element={<TrainingLibrary />} />
+
+                <Route path="/ManageQuestions" element={<ManageQuestions />} />
 
                 <Route path="/TrainerBot" element={<TrainerBot />} />
 

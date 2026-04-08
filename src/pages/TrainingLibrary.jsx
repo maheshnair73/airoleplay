@@ -11,11 +11,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { TrainingDocument, AgentTrainingAttempt, AgentCertification, User } from '@/api/entities';
 import {
   BookOpen, Plus, Search, Clock, Award, TrendingUp, Users,
-  CheckCircle, Target, Brain, Filter, Edit, Trash2, Eye
+  CheckCircle, Target, Brain, Filter, Edit, Trash2, Eye, Upload, Sparkles
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
+import { supabase } from '@/lib/supabase';
+import TrainingUploadWizard from '@/components/training/TrainingUploadWizard';
+import TrainingDocumentCard from '@/components/training/TrainingDocumentCard';
 
 const CATEGORIES = [
   'Product Knowledge',
@@ -31,6 +34,7 @@ const CATEGORIES = [
 const DIFFICULTY_LEVELS = ['beginner', 'intermediate', 'advanced'];
 
 export default function TrainingLibrary() {
+  const navigate = useNavigate();
   const [documents, setDocuments] = useState([]);
   const [filteredDocs, setFilteredDocs] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -39,6 +43,7 @@ export default function TrainingLibrary() {
   const [currentUser, setCurrentUser] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showUploadWizard, setShowUploadWizard] = useState(false);
   const [stats, setStats] = useState({});
   const [newDoc, setNewDoc] = useState({
     title: '',
@@ -150,17 +155,107 @@ export default function TrainingLibrary() {
     }
   };
 
-  const handleDeleteDocument = async (docId) => {
+  const handleDeleteDocument = async (doc) => {
     if (!confirm('Are you sure you want to delete this training document?')) return;
 
     try {
-      await TrainingDocument.delete(docId);
+      await TrainingDocument.delete(doc.id);
       toast.success('Training document deleted');
       loadData();
     } catch (error) {
       console.error('Failed to delete document:', error);
       toast.error('Failed to delete training document');
     }
+  };
+
+  const handleManageQuestions = (doc) => {
+    navigate(createPageUrl(`ManageQuestions?docId=${doc.id}`));
+  };
+
+  const handleGenerateQuiz = async (doc) => {
+    if (!doc.content) {
+      toast.error('No content available to generate quiz from');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-training-quiz`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          documentId: doc.id,
+          content: doc.content,
+          title: doc.title,
+          difficulty: doc.difficulty_level,
+          questionCount: 8
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        toast.success(`Generated ${result.questions.length} quiz questions`);
+        navigate(createPageUrl(`ManageQuestions?docId=${doc.id}`));
+      } else {
+        throw new Error(result.error || 'Failed to generate quiz');
+      }
+    } catch (error) {
+      console.error('Generate quiz error:', error);
+      toast.error('Failed to generate quiz questions');
+    }
+  };
+
+  const handleDuplicateDocument = async (doc) => {
+    try {
+      const { data, error } = await supabase
+        .from('training_documents')
+        .insert({
+          ...doc,
+          id: undefined,
+          title: `${doc.title} (Copy)`,
+          created_by: currentUser?.email || 'admin@effyai.com',
+          created_date: undefined,
+          updated_date: undefined
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast.success('Training document duplicated');
+      loadData();
+    } catch (error) {
+      console.error('Duplicate error:', error);
+      toast.error('Failed to duplicate training document');
+    }
+  };
+
+  const handleArchiveDocument = async (doc) => {
+    try {
+      const { error } = await supabase
+        .from('training_documents')
+        .update({ is_active: !doc.is_active })
+        .eq('id', doc.id);
+
+      if (error) throw error;
+
+      toast.success(`Training ${doc.is_active ? 'archived' : 'activated'}`);
+      loadData();
+    } catch (error) {
+      console.error('Archive error:', error);
+      toast.error('Failed to update training status');
+    }
+  };
+
+  const handleViewStats = (doc) => {
+    toast.info('Statistics view coming soon');
+  };
+
+  const handleEditDocument = (doc) => {
+    toast.info('Edit functionality coming soon');
   };
 
   const getCategoryColor = (category) => {
@@ -208,13 +303,22 @@ export default function TrainingLibrary() {
             </p>
           </div>
           {isAdmin && (
-            <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
-              <DialogTrigger asChild>
-                <Button className="bg-blue-600 hover:bg-blue-700">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create Training
-                </Button>
-              </DialogTrigger>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowUploadWizard(true)}
+                className="border-blue-600 text-blue-600 hover:bg-blue-50"
+              >
+                <Upload className="w-4 h-4 mr-2" />
+                Upload Document
+              </Button>
+              <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
+                <DialogTrigger asChild>
+                  <Button className="bg-blue-600 hover:bg-blue-700">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create Training
+                  </Button>
+                </DialogTrigger>
               <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Create Training Document</DialogTitle>
@@ -298,6 +402,7 @@ export default function TrainingLibrary() {
                 </div>
               </DialogContent>
             </Dialog>
+            </div>
           )}
         </div>
 
@@ -388,82 +493,29 @@ export default function TrainingLibrary() {
           {filteredDocs.map(doc => {
             const docStats = stats[doc.id] || {};
             return (
-              <Card key={doc.id} className="hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <CardTitle className="text-lg line-clamp-2">{doc.title}</CardTitle>
-                      <CardDescription className="mt-2 line-clamp-2">
-                        {doc.description}
-                      </CardDescription>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 mt-3 flex-wrap">
-                    <Badge className={getCategoryColor(doc.category)}>
-                      {doc.category}
-                    </Badge>
-                    <Badge className={getDifficultyColor(doc.difficulty_level)}>
-                      {doc.difficulty_level}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-slate-600 flex items-center gap-1">
-                        <Clock className="w-4 h-4" />
-                        {doc.estimated_time_minutes} min
-                      </span>
-                      <span className="text-slate-600 flex items-center gap-1">
-                        <Target className="w-4 h-4" />
-                        Pass: {doc.passing_score}%
-                      </span>
-                    </div>
-
-                    <div className="border-t pt-3 space-y-2">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-slate-600">Completion Rate</span>
-                        <span className="font-semibold text-slate-900">
-                          {Math.round(docStats.completionRate || 0)}%
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-slate-600">Avg Score</span>
-                        <span className="font-semibold text-slate-900">
-                          {docStats.avgScore || 0}%
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-slate-600">Learners</span>
-                        <span className="font-semibold text-slate-900">
-                          {docStats.uniqueUsers || 0}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 pt-3">
-                      <Link to={createPageUrl(`TrainerBot?docId=${doc.id}`)} className="flex-1">
-                        <Button className="w-full bg-blue-600 hover:bg-blue-700">
-                          <Brain className="w-4 h-4 mr-2" />
-                          Start Training
-                        </Button>
-                      </Link>
-                      {isAdmin && (
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => handleDeleteDocument(doc.id)}
-                        >
-                          <Trash2 className="w-4 h-4 text-red-600" />
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              <TrainingDocumentCard
+                key={doc.id}
+                document={doc}
+                stats={docStats}
+                isAdmin={isAdmin}
+                onEdit={handleEditDocument}
+                onDelete={handleDeleteDocument}
+                onManageQuestions={handleManageQuestions}
+                onGenerateQuiz={handleGenerateQuiz}
+                onDuplicate={handleDuplicateDocument}
+                onArchive={handleArchiveDocument}
+                onViewStats={handleViewStats}
+              />
             );
           })}
         </div>
+
+        <TrainingUploadWizard
+          open={showUploadWizard}
+          onClose={() => setShowUploadWizard(false)}
+          onSuccess={loadData}
+          currentUser={currentUser}
+        />
 
         {filteredDocs.length === 0 && (
           <Card className="p-12">
