@@ -1,8 +1,8 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { RoleplayBot } from '@/api/entities';
-import { Product } from '@/api/entities'; // Add Product import
+import { Product } from '@/api/entities';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,15 +10,27 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { ArrowLeft, User, Building2, BrainCircuit, Mic, ShieldAlert, Target, Sparkles, Wand2, Bot, Linkedin, Snowflake, Search, Flame, Check, RefreshCw, Settings, PenSquare, Plus, X, Package } from 'lucide-react'; // Add Package icon
+import { ArrowLeft, User, Building2, BrainCircuit, Mic, Target, Sparkles, Wand2, Bot, Snowflake, Search, Flame, Check, RefreshCw, Settings, PenSquare, Plus, X, Package, BookOpen, Upload, Link2, FileText, Globe, CheckCircle2 } from 'lucide-react';
 import { createPageUrl } from '@/utils';
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+    import.meta.env.VITE_SUPABASE_URL,
+    import.meta.env.VITE_SUPABASE_ANON_KEY
+);
+
+const MATERIAL_CATEGORIES = [
+    'General Training', 'Product Knowledge', 'Objection Handling',
+    'Sales Scripts', 'Industry Knowledge', 'Competitive Analysis', 'Pricing & Packaging'
+];
 
 const steps = [
     { id: 'start', name: 'Start', icon: Sparkles },
-    { id: 'industry', name: 'Industry', icon: Building2 }, // New step
+    { id: 'industry', name: 'Industry', icon: Building2 },
     { id: 'persona', name: 'Persona', icon: User },
     { id: 'scenario', name: 'Scenario', icon: Target },
     { id: 'details', name: 'Details', icon: BrainCircuit },
+    { id: 'knowledge', name: 'Knowledge', icon: BookOpen },
     { id: 'advanced', name: 'Advanced', icon: Settings },
 ];
 
@@ -155,6 +167,18 @@ export default function CreateRoleplayBot() {
     const [isLoading, setIsLoading] = useState(false);
     const [customRoleplayType, setCustomRoleplayType] = useState('');
 
+    const [knowledgeTab, setKnowledgeTab] = useState('file');
+    const [knowledgeFile, setKnowledgeFile] = useState(null);
+    const [knowledgeUrl, setKnowledgeUrl] = useState('');
+    const [knowledgeText, setKnowledgeText] = useState('');
+    const [knowledgeTitle, setKnowledgeTitle] = useState('');
+    const [knowledgeCategory, setKnowledgeCategory] = useState('General Training');
+    const [isUploadingKnowledge, setIsUploadingKnowledge] = useState(false);
+    const [knowledgeFileUrl, setKnowledgeFileUrl] = useState('');
+    const [savedKnowledgeMaterials, setSavedKnowledgeMaterials] = useState([]);
+    const [isDraggingKnowledge, setIsDraggingKnowledge] = useState(false);
+    const knowledgeFileRef = useRef(null);
+
     // NEW: Load products on component mount
     useEffect(() => {
         const loadProducts = async () => {
@@ -268,6 +292,57 @@ export default function CreateRoleplayBot() {
         }, 1500);
     };
 
+    const handleKnowledgeFileUpload = async (file) => {
+        if (!file) return;
+        if (file.size > 50 * 1024 * 1024) { toast.error('File size exceeds 50MB limit'); return; }
+        setIsUploadingKnowledge(true);
+        try {
+            const fileExt = file.name.split('.').pop().toLowerCase();
+            const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+            const filePath = `knowledge-materials/bot-creation/${fileName}`;
+            const { error: uploadError } = await supabase.storage.from('documents').upload(filePath, file, { cacheControl: '3600', upsert: false });
+            if (uploadError) throw new Error(uploadError.message || 'Upload failed');
+            const { data: { publicUrl } } = supabase.storage.from('documents').getPublicUrl(filePath);
+            setKnowledgeFileUrl(publicUrl);
+            setKnowledgeFile(file);
+            if (!knowledgeTitle) setKnowledgeTitle(file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' '));
+            toast.success('File uploaded — add a title and save');
+        } catch (error) {
+            toast.error(error.message || 'Failed to upload file');
+        } finally {
+            setIsUploadingKnowledge(false);
+        }
+    };
+
+    const handleAddKnowledgeMaterial = () => {
+        if (!knowledgeTitle.trim()) { toast.error('Please enter a title'); return; }
+        if (knowledgeTab === 'text' && !knowledgeText.trim()) { toast.error('Please enter text content'); return; }
+        if (knowledgeTab === 'file' && !knowledgeFileUrl) { toast.error('Please upload a file first'); return; }
+        if (knowledgeTab === 'url' && !knowledgeUrl.trim()) { toast.error('Please enter a URL'); return; }
+
+        const material = {
+            title: knowledgeTitle.trim(),
+            category: knowledgeCategory,
+            material_type: knowledgeTab === 'text' ? 'text' : 'document',
+            file_url: knowledgeTab === 'file' ? knowledgeFileUrl : (knowledgeTab === 'url' ? knowledgeUrl.trim() : ''),
+            content_text: knowledgeTab === 'text' ? knowledgeText.trim() : '',
+            description: '',
+            is_active: true,
+        };
+        setSavedKnowledgeMaterials(prev => [...prev, material]);
+        setKnowledgeTitle('');
+        setKnowledgeUrl('');
+        setKnowledgeText('');
+        setKnowledgeFileUrl('');
+        setKnowledgeFile(null);
+        setKnowledgeTab('file');
+        toast.success('Knowledge material added');
+    };
+
+    const removeKnowledgeMaterial = (index) => {
+        setSavedKnowledgeMaterials(prev => prev.filter((_, i) => i !== index));
+    };
+
     const handleCreateBot = async () => {
         setIsLoading(true);
         try {
@@ -287,9 +362,29 @@ export default function CreateRoleplayBot() {
 
             // The new fields (industry, product_interest, persona_tags, call_goal_tags) are already part of botDataToCreate
 
-            await RoleplayBot.create(botDataToCreate);
+            const bot = await RoleplayBot.create(botDataToCreate);
+
+            if (savedKnowledgeMaterials.length > 0) {
+                const { data: { user } } = await supabase.auth.getUser();
+                const company_id = user?.user_metadata?.company_id || null;
+                const email = user?.email || '';
+
+                const materialsToInsert = savedKnowledgeMaterials.map(m => ({
+                    ...m,
+                    uploaded_by: email,
+                    company_id,
+                    is_active: true,
+                }));
+
+                const { error: matError } = await supabase
+                    .from('roleplay_knowledge_materials')
+                    .insert(materialsToInsert);
+
+                if (matError) console.error('Failed to save knowledge materials:', matError);
+            }
+
             toast.success("Roleplay bot created successfully!");
-            navigate(createPageUrl('AIRoleplay')); // Or back to the bot list
+            navigate(createPageUrl('AIRoleplay'));
         } catch (error) {
             console.error("Error creating bot:", error);
             toast.error("Failed to create bot. Please check all fields.");
@@ -797,7 +892,176 @@ export default function CreateRoleplayBot() {
                         </CardContent>
                     </>
                 );
-            case 5: // Advanced Configuration (updated step number)
+            case 5: // Knowledge Materials (optional)
+                return (
+                    <>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <BookOpen className="text-blue-600" />
+                                Knowledge Materials
+                                <span className="ml-2 text-xs font-normal text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">Optional</span>
+                            </CardTitle>
+                            <CardDescription>
+                                Upload documents, add a website URL, or paste text that the AI prospect will reference and quiz the sales rep on. Skip this step if not needed.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6 p-6">
+                            {savedKnowledgeMaterials.length > 0 && (
+                                <div className="space-y-2">
+                                    <Label className="font-semibold">Added Materials ({savedKnowledgeMaterials.length})</Label>
+                                    <div className="space-y-2">
+                                        {savedKnowledgeMaterials.map((mat, idx) => (
+                                            <div key={idx} className="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                                                <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0" />
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-sm font-medium text-slate-800 truncate">{mat.title}</p>
+                                                    <p className="text-xs text-slate-500">
+                                                        {mat.material_type === 'text' ? 'Text content' : mat.file_url ? 'Uploaded file / URL' : ''} · {mat.category}
+                                                    </p>
+                                                </div>
+                                                <button type="button" onClick={() => removeKnowledgeMaterial(idx)} className="text-red-400 hover:text-red-600">
+                                                    <X className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="border border-slate-200 rounded-xl overflow-hidden">
+                                <div className="flex border-b border-slate-200 bg-slate-50">
+                                    {[
+                                        { id: 'file', label: 'Upload File', icon: Upload },
+                                        { id: 'url', label: 'Website URL', icon: Globe },
+                                        { id: 'text', label: 'Paste Text', icon: FileText },
+                                    ].map(tab => (
+                                        <button
+                                            key={tab.id}
+                                            type="button"
+                                            onClick={() => setKnowledgeTab(tab.id)}
+                                            className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors ${
+                                                knowledgeTab === tab.id
+                                                    ? 'bg-white text-blue-600 border-b-2 border-blue-600'
+                                                    : 'text-slate-500 hover:text-slate-700'
+                                            }`}
+                                        >
+                                            <tab.icon className="w-4 h-4" />
+                                            {tab.label}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                <div className="p-4">
+                                    {knowledgeTab === 'file' && (
+                                        <div
+                                            onDragOver={(e) => { e.preventDefault(); setIsDraggingKnowledge(true); }}
+                                            onDragLeave={() => setIsDraggingKnowledge(false)}
+                                            onDrop={(e) => {
+                                                e.preventDefault();
+                                                setIsDraggingKnowledge(false);
+                                                const file = e.dataTransfer.files[0];
+                                                if (file) handleKnowledgeFileUpload(file);
+                                            }}
+                                            onClick={() => !knowledgeFileUrl && knowledgeFileRef.current?.click()}
+                                            className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+                                                isDraggingKnowledge ? 'border-blue-400 bg-blue-50' :
+                                                knowledgeFileUrl ? 'border-green-400 bg-green-50 cursor-default' :
+                                                'border-slate-300 hover:border-blue-400 hover:bg-slate-50 cursor-pointer'
+                                            }`}
+                                        >
+                                            <input
+                                                ref={knowledgeFileRef}
+                                                type="file"
+                                                className="hidden"
+                                                accept=".pdf,.doc,.docx,.txt,.md,.csv,.html"
+                                                onChange={(e) => { if (e.target.files[0]) handleKnowledgeFileUpload(e.target.files[0]); }}
+                                            />
+                                            {isUploadingKnowledge ? (
+                                                <div className="flex flex-col items-center gap-2">
+                                                    <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                                                    <p className="text-sm text-slate-500">Uploading...</p>
+                                                </div>
+                                            ) : knowledgeFileUrl ? (
+                                                <div className="flex flex-col items-center gap-2">
+                                                    <CheckCircle2 className="w-8 h-8 text-green-500" />
+                                                    <p className="text-sm font-medium text-green-700">{knowledgeFile?.name || 'File uploaded'}</p>
+                                                    <button type="button" onClick={(e) => { e.stopPropagation(); setKnowledgeFileUrl(''); setKnowledgeFile(null); knowledgeFileRef.current?.click(); }} className="text-xs text-blue-500 hover:underline">Replace file</button>
+                                                </div>
+                                            ) : (
+                                                <div className="flex flex-col items-center gap-2">
+                                                    <Upload className="w-8 h-8 text-slate-400" />
+                                                    <p className="text-sm font-medium text-slate-600">Drop a file or click to browse</p>
+                                                    <p className="text-xs text-slate-400">PDF, DOC, DOCX, TXT, MD, CSV, HTML — max 50MB</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                    {knowledgeTab === 'url' && (
+                                        <div className="space-y-2">
+                                            <Label className="text-sm">Website or Document URL</Label>
+                                            <div className="flex gap-2 items-center">
+                                                <Link2 className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                                                <Input
+                                                    placeholder="https://yoursite.com/product-page"
+                                                    value={knowledgeUrl}
+                                                    onChange={(e) => setKnowledgeUrl(e.target.value)}
+                                                />
+                                            </div>
+                                            <p className="text-xs text-slate-400">The AI will fetch and read the page content during roleplay sessions.</p>
+                                        </div>
+                                    )}
+                                    {knowledgeTab === 'text' && (
+                                        <div className="space-y-2">
+                                            <Label className="text-sm">Paste Training Content</Label>
+                                            <Textarea
+                                                placeholder="Paste your product info, scripts, FAQs, pricing sheets, or any text you want the AI to know and quiz the rep on..."
+                                                value={knowledgeText}
+                                                onChange={(e) => setKnowledgeText(e.target.value)}
+                                                className="h-36"
+                                            />
+                                            <p className="text-xs text-slate-400">The AI will reference this text during the roleplay session.</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label>Material Title <span className="text-red-500">*</span></Label>
+                                    <Input
+                                        placeholder="e.g., Product Pricing Sheet, FAQ Document"
+                                        value={knowledgeTitle}
+                                        onChange={(e) => setKnowledgeTitle(e.target.value)}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Category</Label>
+                                    <Select value={knowledgeCategory} onValueChange={setKnowledgeCategory}>
+                                        <SelectTrigger><SelectValue /></SelectTrigger>
+                                        <SelectContent>
+                                            {MATERIAL_CATEGORIES.map(cat => (
+                                                <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+
+                            <Button type="button" onClick={handleAddKnowledgeMaterial} disabled={isUploadingKnowledge} className="w-full" variant="outline">
+                                <Plus className="w-4 h-4 mr-2" />
+                                Add This Material
+                            </Button>
+
+                            {savedKnowledgeMaterials.length === 0 && (
+                                <p className="text-center text-sm text-slate-400 py-2">
+                                    No materials added yet. Skip this step if not needed — you can always add materials later from the AI Roleplay page.
+                                </p>
+                            )}
+                        </CardContent>
+                    </>
+                );
+
+            case 6: // Advanced Configuration
                 return (
                     <>
                         <CardHeader>
@@ -914,7 +1178,9 @@ export default function CreateRoleplayBot() {
                         <CardFooter className="flex justify-between p-6 bg-slate-50/70 border-t">
                             <Button variant="outline" onClick={prevStep}>Back</Button>
                             {currentStep < steps.length - 1 ? (
-                                <Button onClick={nextStep} disabled={currentStep === 1 && !formData.industry}>Next</Button>
+                                <Button onClick={nextStep} disabled={currentStep === 1 && !formData.industry}>
+                                    {currentStep === 5 && savedKnowledgeMaterials.length === 0 ? 'Skip & Continue' : 'Next'}
+                                </Button>
                             ) : (
                                 <Button onClick={handleCreateBot} disabled={isLoading} className="bg-green-600 hover:bg-green-700">
                                     {isLoading ? 'Creating...' : 'Create Bot'}
