@@ -28,6 +28,67 @@ interface RoleplayRequest {
   knowledgeMaterialIds?: string[];
 }
 
+async function extractTextFromUrl(url: string, materialType: string): Promise<string> {
+  try {
+    const response = await fetch(url, { signal: AbortSignal.timeout(8000) });
+    if (!response.ok) return "";
+
+    const contentType = response.headers.get("content-type") || "";
+
+    if (
+      materialType === "text" ||
+      contentType.includes("text/plain") ||
+      url.endsWith(".txt") ||
+      url.endsWith(".md")
+    ) {
+      const text = await response.text();
+      return text.substring(0, 8000);
+    }
+
+    if (
+      contentType.includes("text/html") ||
+      url.endsWith(".html") ||
+      url.endsWith(".htm")
+    ) {
+      const html = await response.text();
+      const stripped = html
+        .replace(/<script[\s\S]*?<\/script>/gi, "")
+        .replace(/<style[\s\S]*?<\/style>/gi, "")
+        .replace(/<[^>]+>/g, " ")
+        .replace(/\s{2,}/g, " ")
+        .trim();
+      return stripped.substring(0, 8000);
+    }
+
+    if (
+      materialType === "document" &&
+      (contentType.includes("application/pdf") || url.toLowerCase().endsWith(".pdf"))
+    ) {
+      return `[PDF document available at: ${url}. Use the title and description as context since direct PDF reading is not available in this environment.]`;
+    }
+
+    if (
+      contentType.includes("application/json") ||
+      url.endsWith(".json")
+    ) {
+      const json = await response.text();
+      return json.substring(0, 8000);
+    }
+
+    if (
+      contentType.includes("text/csv") ||
+      url.endsWith(".csv")
+    ) {
+      const csv = await response.text();
+      return csv.substring(0, 8000);
+    }
+
+    return "";
+  } catch (_err) {
+    return "";
+  }
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, {
@@ -56,25 +117,34 @@ Deno.serve(async (req: Request) => {
     if (knowledgeMaterialIds && knowledgeMaterialIds.length > 0) {
       const { data: materials, error: materialsError } = await supabase
         .from("roleplay_knowledge_materials")
-        .select("title, description, content_text, category")
+        .select("title, description, content_text, file_url, material_type, category")
         .in("id", knowledgeMaterialIds)
         .eq("is_active", true);
 
       if (!materialsError && materials && materials.length > 0) {
         knowledgeContext = "\n\n## TRAINING MATERIALS TO REFERENCE:\n\n";
-        materials.forEach((material) => {
+
+        for (const material of materials) {
           knowledgeContext += `### ${material.title} (${material.category})\n`;
-          knowledgeContext += `${material.description || ""}\n\n`;
-          if (material.content_text) {
-            const contentPreview = material.content_text.substring(0, 3000);
-            knowledgeContext += `${contentPreview}${
-              material.content_text.length > 3000 ? "..." : ""
-            }\n\n`;
+          if (material.description) {
+            knowledgeContext += `Summary: ${material.description}\n\n`;
           }
-        });
+
+          if (material.content_text && material.content_text.trim().length > 0) {
+            const contentPreview = material.content_text.substring(0, 4000);
+            knowledgeContext += `Content:\n${contentPreview}${material.content_text.length > 4000 ? "...(truncated)" : ""}\n\n`;
+          } else if (material.file_url && material.file_url.trim().length > 0) {
+            const extractedText = await extractTextFromUrl(material.file_url, material.material_type || "document");
+            if (extractedText && extractedText.length > 0) {
+              knowledgeContext += `Content:\n${extractedText}\n\n`;
+            } else {
+              knowledgeContext += `[Uploaded file: ${material.file_url}. Use the title and description as context.]\n\n`;
+            }
+          }
+        }
 
         knowledgeContext +=
-          "\nYou should naturally reference these materials during conversation. Test the sales rep's knowledge by asking questions about these materials when appropriate. Make sure they understand and can apply the concepts.\n";
+          "\nYou should naturally reference these materials during conversation. Test the sales rep's knowledge by asking questions about these materials when appropriate. Make sure they understand and can apply the concepts. If they cannot answer questions about these materials, gently push back and ask for clarification.\n";
       }
     }
 
@@ -113,11 +183,11 @@ Your role:
 - Ask questions that a real prospect would ask
 - ${
         knowledgeContext
-          ? "Test the rep's knowledge of the training materials by asking relevant questions"
+          ? "Test the rep's knowledge of the training materials — ask about specific features, pricing, use cases, or concepts mentioned in the materials"
           : "Raise objections based on your pain points"
       }
-- Show interest when the rep demonstrates good knowledge
-- Be skeptical or confused when the rep lacks knowledge
+- Show genuine interest when the rep demonstrates strong product knowledge
+- Be skeptical or ask for clarification when the rep is vague or incorrect
 - Keep responses conversational and realistic (2-4 sentences)
 - Stay in character throughout
 
@@ -150,10 +220,11 @@ Your role:
 - Continue the conversation naturally based on what the sales rep just said
 - ${
         knowledgeContext
-          ? "Ask questions about the training materials to test their knowledge"
+          ? "Ask specific, probing questions about the training material content — test whether the rep truly knows the product, pricing, competitive differentiators, or concepts from the uploaded documents"
           : "Ask probing questions about their solution"
       }
-- Respond positively when they demonstrate expertise
+- If the rep gives a vague or incorrect answer about something covered in the materials, push back: ask follow-up questions or express doubt
+- Respond positively and with more trust when they demonstrate deep expertise
 - Express concerns or confusion when they're unclear or lack knowledge
 - Keep responses realistic and concise (2-4 sentences)
 - Stay in character
