@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -13,9 +13,17 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
-import { MonitorUp, Sparkles, ArrowLeft, UserPlus, X, Briefcase, Settings, Package } from 'lucide-react';
+import { MonitorUp, Sparkles, ArrowLeft, UserPlus, X, Briefcase, Settings, Package, Upload, BookOpen, Loader2, CheckCircle2, Link as LinkIcon, FileText, Plus } from 'lucide-react';
+
+const MATERIAL_CATEGORIES = [
+  'Product Knowledge', 'Sales Methodology', 'Objection Handling',
+  'Discovery Questions', 'Closing Techniques', 'Industry Knowledge',
+  'Compliance', 'Case Studies', 'General Training'
+];
 
 const ProductDemoSetup = () => {
   const navigate = useNavigate();
@@ -30,6 +38,19 @@ const ProductDemoSetup = () => {
   const [demoType, setDemoType] = useState('full_demo');
   const [targetDuration, setTargetDuration] = useState(15);
   const [keyFeatures, setKeyFeatures] = useState('');
+
+  const [knowledgeMaterials, setKnowledgeMaterials] = useState([]);
+  const [selectedMaterials, setSelectedMaterials] = useState([]);
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [uploadTab, setUploadTab] = useState('file');
+  const [isDragging, setIsDragging] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [newMaterial, setNewMaterial] = useState({
+    title: '', description: '', material_type: 'document',
+    file_url: '', content_text: '', category: 'Product Knowledge'
+  });
+  const fileInputRef = useRef(null);
 
   const [attendees, setAttendees] = useState([
     { id: 1, name: '', role: '', persona: 'business', botId: '' }
@@ -85,6 +106,7 @@ const ProductDemoSetup = () => {
       }
 
       setBots(botsData || []);
+      setCurrentUser({ ...user, company_id: profile.company_id });
 
       const { data: productsData, error: productsError } = await supabase
         .from('products')
@@ -97,6 +119,14 @@ const ProductDemoSetup = () => {
       }
 
       setProducts(productsData || []);
+
+      const { data: materialsData } = await supabase
+        .from('roleplay_knowledge_materials')
+        .select('*')
+        .eq('is_active', true)
+        .order('created_date', { ascending: false });
+
+      setKnowledgeMaterials(materialsData || []);
     } catch (error) {
       console.error('Error loading data:', error);
       toast.error('Failed to load data');
@@ -125,6 +155,47 @@ const ProductDemoSetup = () => {
     setAttendees(attendees.map(a =>
       a.id === id ? { ...a, [field]: value } : a
     ));
+  };
+
+  const toggleMaterial = (id) => setSelectedMaterials(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+
+  const handleFileUpload = async (file) => {
+    if (!file) return;
+    if (file.size > 50 * 1024 * 1024) { toast.error('File size exceeds 50MB limit'); return; }
+    setIsUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop().toLowerCase();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const filePath = `knowledge-materials/${currentUser?.company_id || 'public'}/${fileName}`;
+      const { error: uploadError } = await supabase.storage.from('documents').upload(filePath, file, { cacheControl: '3600', upsert: false });
+      if (uploadError) throw new Error(uploadError.message || 'Upload failed');
+      const { data: { publicUrl } } = supabase.storage.from('documents').getPublicUrl(filePath);
+      const titleGuess = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
+      setNewMaterial(prev => ({
+        ...prev, file_url: publicUrl, title: prev.title || titleGuess,
+        material_type: ['mp4', 'mov', 'avi'].includes(fileExt) ? 'video' : ['mp3', 'wav', 'm4a'].includes(fileExt) ? 'audio' : 'document'
+      }));
+      toast.success('File uploaded — add a title and save');
+    } catch (error) { toast.error(error.message || 'Failed to upload file'); }
+    finally { setIsUploading(false); }
+  };
+
+  const handleSaveMaterial = async () => {
+    if (!newMaterial.title.trim()) { toast.error('Please enter a title'); return; }
+    if (newMaterial.material_type === 'text' && !newMaterial.content_text.trim()) { toast.error('Please enter the text content'); return; }
+    if (newMaterial.material_type !== 'text' && !newMaterial.file_url.trim()) { toast.error('Please upload a file or enter a URL'); return; }
+    try {
+      const { data, error } = await supabase.from('roleplay_knowledge_materials').insert({
+        ...newMaterial, uploaded_by: currentUser?.email || '', company_id: currentUser?.company_id, is_active: true
+      }).select().single();
+      if (error) throw error;
+      setKnowledgeMaterials(prev => [data, ...prev]);
+      setSelectedMaterials(prev => [...prev, data.id]);
+      setNewMaterial({ title: '', description: '', material_type: 'document', file_url: '', content_text: '', category: 'Product Knowledge' });
+      setUploadTab('file');
+      setShowUploadModal(false);
+      toast.success('Material added and selected');
+    } catch (error) { toast.error('Failed to save material'); }
   };
 
   const handleStartDemo = async () => {
@@ -264,7 +335,7 @@ const ProductDemoSetup = () => {
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="attendees" className="w-full">
-              <TabsList className="grid w-full grid-cols-3 mb-6">
+              <TabsList className="grid w-full grid-cols-4 mb-6">
                 <TabsTrigger value="attendees" className="flex items-center gap-2">
                   <UserPlus className="w-4 h-4" />
                   Attendees
@@ -272,6 +343,15 @@ const ProductDemoSetup = () => {
                 <TabsTrigger value="product" className="flex items-center gap-2">
                   <Package className="w-4 h-4" />
                   Product Details
+                </TabsTrigger>
+                <TabsTrigger value="materials" className="flex items-center gap-2">
+                  <BookOpen className="w-4 h-4" />
+                  Materials
+                  {selectedMaterials.length > 0 && (
+                    <span className="ml-1 bg-blue-600 text-white text-xs rounded-full px-1.5 py-0.5 leading-none">
+                      {selectedMaterials.length}
+                    </span>
+                  )}
                 </TabsTrigger>
                 <TabsTrigger value="settings" className="flex items-center gap-2">
                   <Settings className="w-4 h-4" />
@@ -473,6 +553,62 @@ const ProductDemoSetup = () => {
                 </div>
               </TabsContent>
 
+              <TabsContent value="materials" className="space-y-4">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="text-lg font-semibold">Training Materials</h3>
+                    <p className="text-sm text-gray-600">Upload docs or content so the AI knows your product inside out</p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setNewMaterial({ title: '', description: '', material_type: 'document', file_url: '', content_text: '', category: 'Product Knowledge' });
+                      setUploadTab('file');
+                      setShowUploadModal(true);
+                    }}
+                  >
+                    <Upload className="w-4 h-4 mr-2" />
+                    Upload Material
+                  </Button>
+                </div>
+
+                {knowledgeMaterials.length > 0 ? (
+                  <div className="space-y-2 max-h-80 overflow-y-auto">
+                    {knowledgeMaterials.map(material => (
+                      <div
+                        key={material.id}
+                        className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${selectedMaterials.includes(material.id) ? 'border-blue-500 bg-blue-50' : 'hover:bg-gray-50'}`}
+                        onClick={() => toggleMaterial(material.id)}
+                      >
+                        <Checkbox checked={selectedMaterials.includes(material.id)} onCheckedChange={() => toggleMaterial(material.id)} />
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium truncate">{material.title}</div>
+                          <div className="text-sm text-muted-foreground">{material.material_type} • {material.category}</div>
+                          {material.description && <div className="text-xs text-muted-foreground mt-1 truncate">{material.description}</div>}
+                        </div>
+                        {selectedMaterials.includes(material.id) && <CheckCircle2 className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div
+                    className="border-2 border-dashed border-gray-200 rounded-xl p-10 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors"
+                    onClick={() => { setNewMaterial({ title: '', description: '', material_type: 'document', file_url: '', content_text: '', category: 'Product Knowledge' }); setUploadTab('file'); setShowUploadModal(true); }}
+                  >
+                    <Upload className="w-8 h-8 text-gray-400 mx-auto mb-3" />
+                    <p className="font-medium text-gray-700">No materials yet</p>
+                    <p className="text-sm text-muted-foreground mt-1">Upload a product spec, pitch deck, FAQ, or any content the AI should know before the demo</p>
+                    <Button type="button" variant="outline" size="sm" className="mt-4"><Upload className="w-4 h-4 mr-2" />Upload First Material</Button>
+                  </div>
+                )}
+
+                {selectedMaterials.length > 0 && (
+                  <p className="text-sm text-blue-700 font-medium">{selectedMaterials.length} material{selectedMaterials.length !== 1 ? 's' : ''} selected — AI will use these during the demo</p>
+                )}
+              </TabsContent>
+
               <TabsContent value="settings" className="space-y-4">
                 <div className="mb-4">
                   <h3 className="text-lg font-semibold">Demo Settings</h3>
@@ -560,6 +696,91 @@ const ProductDemoSetup = () => {
         </Card>
         )}
       </div>
+
+      <Dialog open={showUploadModal} onOpenChange={setShowUploadModal}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Add Training Material</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Tabs value={uploadTab} onValueChange={setUploadTab}>
+              <TabsList className="grid grid-cols-3 w-full">
+                <TabsTrigger value="file"><Upload className="w-4 h-4 mr-1.5" />File</TabsTrigger>
+                <TabsTrigger value="url"><LinkIcon className="w-4 h-4 mr-1.5" />URL</TabsTrigger>
+                <TabsTrigger value="text"><FileText className="w-4 h-4 mr-1.5" />Text</TabsTrigger>
+              </TabsList>
+              <TabsContent value="file" className="mt-3">
+                <div
+                  className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors cursor-pointer ${isDragging ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-400'}`}
+                  onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                  onDragLeave={() => setIsDragging(false)}
+                  onDrop={(e) => { e.preventDefault(); setIsDragging(false); const f = e.dataTransfer.files[0]; if (f) handleFileUpload(f); }}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  {isUploading ? (
+                    <div className="flex flex-col items-center gap-2"><Loader2 className="w-8 h-8 text-blue-600 animate-spin" /><p className="text-sm text-muted-foreground">Uploading...</p></div>
+                  ) : newMaterial.file_url && uploadTab === 'file' ? (
+                    <div className="flex flex-col items-center gap-2"><CheckCircle2 className="w-8 h-8 text-green-600" /><p className="text-sm font-medium text-green-700">Uploaded — click to replace</p></div>
+                  ) : (
+                    <>
+                      <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                      <p className="font-medium text-gray-700">Drop file here or click to browse</p>
+                      <p className="text-xs text-muted-foreground mt-1">PDF, DOC, DOCX, TXT, MP4, MP3, WAV — up to 50MB</p>
+                    </>
+                  )}
+                </div>
+                <input ref={fileInputRef} type="file" className="hidden" accept=".pdf,.doc,.docx,.txt,.mp4,.mp3,.wav,.m4a,.mov" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileUpload(f); }} />
+              </TabsContent>
+              <TabsContent value="url" className="mt-3">
+                <div className="space-y-2">
+                  <Label>Document or Video URL</Label>
+                  <Input placeholder="https://..." value={newMaterial.file_url} onChange={(e) => setNewMaterial(prev => ({ ...prev, file_url: e.target.value }))} />
+                </div>
+              </TabsContent>
+              <TabsContent value="text" className="mt-3">
+                <div className="space-y-2">
+                  <Label>Content</Label>
+                  <Textarea placeholder="Paste product info, FAQs, pitch notes, scripts..." rows={5} value={newMaterial.content_text} onChange={(e) => setNewMaterial(prev => ({ ...prev, content_text: e.target.value, material_type: 'text' }))} />
+                </div>
+              </TabsContent>
+            </Tabs>
+            <div className="space-y-3 pt-2 border-t">
+              <div>
+                <Label>Title *</Label>
+                <Input placeholder="e.g., Product Overview Q2" value={newMaterial.title} onChange={(e) => setNewMaterial(prev => ({ ...prev, title: e.target.value }))} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Category</Label>
+                  <Select value={newMaterial.category} onValueChange={(v) => setNewMaterial(prev => ({ ...prev, category: v }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>{MATERIAL_CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Type</Label>
+                  <Select value={newMaterial.material_type} onValueChange={(v) => setNewMaterial(prev => ({ ...prev, material_type: v }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="document">Document</SelectItem>
+                      <SelectItem value="video">Video</SelectItem>
+                      <SelectItem value="audio">Audio</SelectItem>
+                      <SelectItem value="text">Text</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button type="button" variant="outline" onClick={() => setShowUploadModal(false)}>Cancel</Button>
+              <Button type="button" onClick={handleSaveMaterial} disabled={isUploading}>
+                {isUploading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
+                Save & Add to Demo
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

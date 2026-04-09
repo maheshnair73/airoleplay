@@ -26,6 +26,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/lib/supabase';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+
+const MATERIAL_CATEGORIES = [
+    'Product Knowledge', 'Sales Methodology', 'Objection Handling',
+    'Discovery Questions', 'Closing Techniques', 'Industry Knowledge',
+    'Compliance', 'Case Studies', 'General Training'
+];
 
 // New Sidebar component for live call assistance
 const CallAssistantSidebar = ({ prospect }) => {
@@ -835,6 +843,17 @@ export default function AIRoleplay() {
     const [knowledgeMaterials, setKnowledgeMaterials] = useState([]);
     const [selectedMaterials, setSelectedMaterials] = useState([]);
 
+    const [showUploadModal, setShowUploadModal] = useState(false);
+    const [uploadTab, setUploadTab] = useState('file');
+    const [isDragging, setIsDragging] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
+    const [currentUser, setCurrentUser] = useState(null);
+    const [newMaterial, setNewMaterial] = useState({
+        title: '', description: '', material_type: 'document',
+        file_url: '', content_text: '', category: 'General Training'
+    });
+    const fileInputRef = useRef(null);
+
     // Enhanced lead-specific roleplay state
     const [isLeadSpecific, setIsLeadSpecific] = useState(false);
     const [leadRoleplayBot, setLeadRoleplayBot] = useState(null);
@@ -890,8 +909,16 @@ export default function AIRoleplay() {
             }
         };
 
+        const fetchCurrentUser = async () => {
+            try {
+                const user = await User.me();
+                setCurrentUser(user);
+            } catch (e) {}
+        };
+
         fetchBots();
         fetchKnowledgeMaterials();
+        fetchCurrentUser();
     }, []);
 
     const handleStartCall = useCallback((bot) => {
@@ -1109,6 +1136,45 @@ export default function AIRoleplay() {
                 ? prev.filter(id => id !== materialId)
                 : [...prev, materialId]
         );
+    };
+
+    const handleFileUpload = async (file) => {
+        if (!file) return;
+        if (file.size > 50 * 1024 * 1024) { toast.error('File size exceeds 50MB limit'); return; }
+        setIsUploading(true);
+        try {
+            const fileExt = file.name.split('.').pop().toLowerCase();
+            const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+            const filePath = `knowledge-materials/${currentUser?.company_id || 'public'}/${fileName}`;
+            const { error: uploadError } = await supabase.storage.from('documents').upload(filePath, file, { cacheControl: '3600', upsert: false });
+            if (uploadError) throw new Error(uploadError.message || 'Upload failed');
+            const { data: { publicUrl } } = supabase.storage.from('documents').getPublicUrl(filePath);
+            const titleGuess = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
+            setNewMaterial(prev => ({
+                ...prev, file_url: publicUrl, title: prev.title || titleGuess,
+                material_type: ['mp4', 'mov', 'avi'].includes(fileExt) ? 'video' : ['mp3', 'wav', 'm4a'].includes(fileExt) ? 'audio' : 'document'
+            }));
+            toast.success('File uploaded — add a title and save');
+        } catch (error) { toast.error(error.message || 'Failed to upload file'); }
+        finally { setIsUploading(false); }
+    };
+
+    const handleSaveMaterial = async () => {
+        if (!newMaterial.title.trim()) { toast.error('Please enter a title'); return; }
+        if (newMaterial.material_type === 'text' && !newMaterial.content_text.trim()) { toast.error('Please enter the text content'); return; }
+        if (newMaterial.material_type !== 'text' && !newMaterial.file_url.trim()) { toast.error('Please upload a file or enter a URL'); return; }
+        try {
+            const { data, error } = await supabase.from('roleplay_knowledge_materials').insert({
+                ...newMaterial, uploaded_by: currentUser?.email || '', company_id: currentUser?.company_id, is_active: true
+            }).select().single();
+            if (error) throw error;
+            setKnowledgeMaterials(prev => [data, ...prev]);
+            setSelectedMaterials(prev => [...prev, data.id]);
+            setNewMaterial({ title: '', description: '', material_type: 'document', file_url: '', content_text: '', category: 'General Training' });
+            setUploadTab('file');
+            setShowUploadModal(false);
+            toast.success('Material added and selected');
+        } catch (error) { toast.error('Failed to save material'); }
     };
 
     const handleAnalysisComplete = (session) => {
@@ -1334,33 +1400,45 @@ export default function AIRoleplay() {
                             </DialogDescription>
                         </DialogHeader>
 
-                        {knowledgeMaterials.length > 0 && (
-                            <div className="py-4 space-y-3">
-                                <div className="flex items-center gap-2 mb-2">
+                        <div className="py-4 space-y-3">
+                            <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-2">
                                     <BookOpen className="w-5 h-5 text-blue-600" />
                                     <h4 className="font-semibold text-sm">Training Materials (Optional)</h4>
                                 </div>
-                                <p className="text-sm text-slate-600 mb-3">
-                                    Select training materials for the AI coach to reference during the roleplay.
-                                    The AI will test your knowledge and ask questions based on these materials.
-                                </p>
-                                <div className="space-y-2 max-h-64 overflow-y-auto border rounded-lg p-3 bg-slate-50">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                        setNewMaterial({ title: '', description: '', material_type: 'document', file_url: '', content_text: '', category: 'General Training' });
+                                        setUploadTab('file');
+                                        setShowUploadModal(true);
+                                    }}
+                                >
+                                    <Plus className="w-3.5 h-3.5 mr-1" />
+                                    Upload
+                                </Button>
+                            </div>
+                            <p className="text-sm text-slate-600 mb-3">
+                                Upload or select materials for the AI to reference. The AI will ask questions and test your knowledge based on these.
+                            </p>
+                            {knowledgeMaterials.length > 0 ? (
+                                <div className="space-y-2 max-h-48 overflow-y-auto border rounded-lg p-3 bg-slate-50">
                                     {knowledgeMaterials.map((material) => (
                                         <div
                                             key={material.id}
-                                            className="flex items-start gap-3 p-2 hover:bg-white rounded transition-colors"
+                                            className={`flex items-start gap-3 p-2 rounded transition-colors cursor-pointer ${selectedMaterials.includes(material.id) ? 'bg-blue-50 border border-blue-200' : 'hover:bg-white'}`}
+                                            onClick={() => toggleMaterial(material.id)}
                                         >
                                             <Checkbox
                                                 id={material.id}
                                                 checked={selectedMaterials.includes(material.id)}
                                                 onCheckedChange={() => toggleMaterial(material.id)}
                                             />
-                                            <label
-                                                htmlFor={material.id}
-                                                className="flex-1 cursor-pointer"
-                                            >
+                                            <label htmlFor={material.id} className="flex-1 cursor-pointer">
                                                 <p className="font-medium text-sm text-slate-900">{material.title}</p>
-                                                <p className="text-xs text-slate-500">{material.category}</p>
+                                                <p className="text-xs text-slate-500">{material.category} • {material.material_type}</p>
                                                 {material.description && (
                                                     <p className="text-xs text-slate-600 mt-1">{material.description}</p>
                                                 )}
@@ -1368,13 +1446,25 @@ export default function AIRoleplay() {
                                         </div>
                                     ))}
                                 </div>
-                                {selectedMaterials.length > 0 && (
-                                    <p className="text-sm text-blue-600">
-                                        {selectedMaterials.length} material{selectedMaterials.length > 1 ? 's' : ''} selected
-                                    </p>
-                                )}
-                            </div>
-                        )}
+                            ) : (
+                                <div
+                                    className="border-2 border-dashed border-gray-200 rounded-lg p-6 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors"
+                                    onClick={() => {
+                                        setNewMaterial({ title: '', description: '', material_type: 'document', file_url: '', content_text: '', category: 'General Training' });
+                                        setUploadTab('file');
+                                        setShowUploadModal(true);
+                                    }}
+                                >
+                                    <BookOpen className="w-6 h-6 text-gray-400 mx-auto mb-2" />
+                                    <p className="text-sm text-gray-600">No materials yet — click to upload a doc, paste text, or add a URL</p>
+                                </div>
+                            )}
+                            {selectedMaterials.length > 0 && (
+                                <p className="text-sm text-blue-600 font-medium">
+                                    {selectedMaterials.length} material{selectedMaterials.length > 1 ? 's' : ''} selected
+                                </p>
+                            )}
+                        </div>
 
                         <DialogFooter>
                             <Button variant="outline" onClick={() => setShowConfirmationModal(false)}>Cancel</Button>
@@ -1382,6 +1472,95 @@ export default function AIRoleplay() {
                                 {isLeadSpecific ? 'Start Pitch Practice' : 'I understand, start call'}
                             </Button>
                         </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+            )}
+
+            {showUploadModal && (
+                <Dialog open={showUploadModal} onOpenChange={setShowUploadModal}>
+                    <DialogContent className="max-w-lg">
+                        <DialogHeader>
+                            <DialogTitle>Add Training Material</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                            <Tabs value={uploadTab} onValueChange={setUploadTab}>
+                                <TabsList className="grid grid-cols-3 w-full">
+                                    <TabsTrigger value="file">File</TabsTrigger>
+                                    <TabsTrigger value="url">URL</TabsTrigger>
+                                    <TabsTrigger value="text">Text</TabsTrigger>
+                                </TabsList>
+                                <TabsContent value="file" className="mt-3">
+                                    <div
+                                        className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors cursor-pointer ${isDragging ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-400'}`}
+                                        onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                                        onDragLeave={() => setIsDragging(false)}
+                                        onDrop={(e) => { e.preventDefault(); setIsDragging(false); const f = e.dataTransfer.files[0]; if (f) handleFileUpload(f); }}
+                                        onClick={() => fileInputRef.current?.click()}
+                                    >
+                                        {isUploading ? (
+                                            <div className="flex flex-col items-center gap-2"><Loader2 className="w-8 h-8 text-blue-600 animate-spin" /><p className="text-sm text-muted-foreground">Uploading...</p></div>
+                                        ) : newMaterial.file_url && uploadTab === 'file' ? (
+                                            <div className="flex flex-col items-center gap-2"><CheckCircle className="w-8 h-8 text-green-600" /><p className="text-sm font-medium text-green-700">Uploaded — click to replace</p></div>
+                                        ) : (
+                                            <>
+                                                <BookOpen className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                                                <p className="font-medium text-gray-700">Drop file here or click to browse</p>
+                                                <p className="text-xs text-muted-foreground mt-1">PDF, DOC, DOCX, TXT, MP4, MP3, WAV — up to 50MB</p>
+                                            </>
+                                        )}
+                                    </div>
+                                    <input ref={fileInputRef} type="file" className="hidden" accept=".pdf,.doc,.docx,.txt,.mp4,.mp3,.wav,.m4a,.mov" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileUpload(f); }} />
+                                </TabsContent>
+                                <TabsContent value="url" className="mt-3">
+                                    <div className="space-y-2">
+                                        <Label>Document or Video URL</Label>
+                                        <Input placeholder="https://..." value={newMaterial.file_url} onChange={(e) => setNewMaterial(prev => ({ ...prev, file_url: e.target.value }))} />
+                                        <p className="text-xs text-muted-foreground">Link to a publicly accessible file</p>
+                                    </div>
+                                </TabsContent>
+                                <TabsContent value="text" className="mt-3">
+                                    <div className="space-y-2">
+                                        <Label>Content</Label>
+                                        <Textarea placeholder="Paste your training content, product info, scripts, FAQs..." rows={5} value={newMaterial.content_text} onChange={(e) => setNewMaterial(prev => ({ ...prev, content_text: e.target.value, material_type: 'text' }))} />
+                                        <p className="text-xs text-muted-foreground">The AI will use this as its knowledge base</p>
+                                    </div>
+                                </TabsContent>
+                            </Tabs>
+                            <div className="space-y-3 pt-2 border-t">
+                                <div>
+                                    <Label>Title *</Label>
+                                    <Input placeholder="e.g., Product Overview Q2" value={newMaterial.title} onChange={(e) => setNewMaterial(prev => ({ ...prev, title: e.target.value }))} />
+                                </div>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <Label>Category</Label>
+                                        <Select value={newMaterial.category} onValueChange={(v) => setNewMaterial(prev => ({ ...prev, category: v }))}>
+                                            <SelectTrigger><SelectValue /></SelectTrigger>
+                                            <SelectContent>{MATERIAL_CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div>
+                                        <Label>Type</Label>
+                                        <Select value={newMaterial.material_type} onValueChange={(v) => setNewMaterial(prev => ({ ...prev, material_type: v }))}>
+                                            <SelectTrigger><SelectValue /></SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="document">Document</SelectItem>
+                                                <SelectItem value="video">Video</SelectItem>
+                                                <SelectItem value="audio">Audio</SelectItem>
+                                                <SelectItem value="text">Text</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="flex justify-end gap-2 pt-2">
+                                <Button type="button" variant="outline" onClick={() => setShowUploadModal(false)}>Cancel</Button>
+                                <Button type="button" onClick={handleSaveMaterial} disabled={isUploading}>
+                                    {isUploading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
+                                    Save & Select
+                                </Button>
+                            </div>
+                        </div>
                     </DialogContent>
                 </Dialog>
             )}
