@@ -269,6 +269,7 @@ import ChallengeHub from "./ChallengeHub";
 import UnifiedHubAnalytics from "./UnifiedHubAnalytics";
 import CertificationTest from "./CertificationTest";
 import CertificationResults from "./CertificationResults";
+import SkillCoach from "./SkillCoach";
 
 import { BrowserRouter as Router, Route, Routes, Navigate, useLocation } from 'react-router-dom';
 
@@ -540,6 +541,7 @@ const PAGES = {
     UnifiedHubAnalytics: UnifiedHubAnalytics,
     CertificationTest: CertificationTest,
     CertificationResults: CertificationResults,
+    SkillCoach: SkillCoach,
 
 }
 
@@ -847,6 +849,8 @@ function PagesContent() {
                 <Route path="/certification-test/:id" element={<CertificationTest />} />
 
                 <Route path="/certification-results/:attemptId" element={<CertificationResults />} />
+
+                <Route path="/SkillCoach" element={<SkillCoach />} />
 
             </Routes>
         </Layout>

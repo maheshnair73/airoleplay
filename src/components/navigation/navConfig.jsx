@@ -29,7 +29,8 @@ import {
     TrendingUp,
     Dumbbell,
     ClipboardList,
-    PhoneCall
+    PhoneCall,
+    Sparkles
 } from 'lucide-react';
 
 export const navSections = [
@@ -64,6 +65,7 @@ export const navSections = [
                     { page: 'ProductDemoSetup', title: 'Product Demo', icon: MonitorUp, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] }
                 ]
             },
+            { page: 'SkillCoach', title: 'SkillCoach AI', icon: Sparkles, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
             { page: 'CoachingHub', title: 'Coaching Tasks', icon: ClipboardList, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
             { page: 'PracticeAnalytics', title: 'Practice Analytics', icon: BarChart3, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
         ]

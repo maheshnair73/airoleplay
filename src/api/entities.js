@@ -147,6 +147,10 @@ export const PracticeEvaluation = createEntity('practice_evaluations');
 export const PracticeRecording = createEntity('practice_recordings');
 export const PracticeMaterial = createEntity('practice_materials_junction');
 
+export const SkillCoachBot = createEntity('skill_coach_bots');
+export const SkillCoachSession = createEntity('skill_coach_sessions');
+export const SkillCoachTask = createEntity('skill_coach_tasks');
+
 export const User = {
   async me() {
     const { data: { user }, error } = await supabase.auth.getUser();
