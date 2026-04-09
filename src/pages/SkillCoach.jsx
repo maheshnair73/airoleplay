@@ -5,12 +5,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import {
     Send, Bot, ChevronRight, CheckSquare, BookOpen, Mic, MonitorPlay,
     ClipboardList, TrendingUp, Star, Clock, Play, RotateCcw, X,
     Sparkles, Target, Zap, AlertCircle, CheckCircle2, Plus, MessageSquare,
-    BarChart2
+    BarChart2, Users, Brain, UserCheck, ArrowLeft, ChevronDown, ChevronUp,
+    Award, Calendar, Loader2
 } from 'lucide-react';
 import { createPageUrl } from '@/utils';
 
@@ -28,21 +31,16 @@ const SESSION_TYPES = [
     { id: 'free_chat', label: 'Open Coaching', icon: MessageSquare, color: 'text-slate-600', bg: 'bg-slate-50', desc: 'Ask anything — your coach is here to help' },
 ];
 
-const TASK_TYPE_ICONS = {
-    quiz: CheckSquare,
-    roleplay: Mic,
-    demo_recording: MonitorPlay,
-    reading: BookOpen,
-    custom: ClipboardList,
-};
+const TASK_TYPES = [
+    { id: 'quiz', label: 'Quiz', icon: CheckSquare, color: 'bg-rose-100 text-rose-700' },
+    { id: 'roleplay', label: 'Roleplay', icon: Mic, color: 'bg-blue-100 text-blue-700' },
+    { id: 'demo_recording', label: 'Demo Recording', icon: MonitorPlay, color: 'bg-teal-100 text-teal-700' },
+    { id: 'reading', label: 'Reading', icon: BookOpen, color: 'bg-green-100 text-green-700' },
+    { id: 'custom', label: 'Custom', icon: ClipboardList, color: 'bg-slate-100 text-slate-700' },
+];
 
-const TASK_TYPE_COLORS = {
-    quiz: 'bg-rose-100 text-rose-700',
-    roleplay: 'bg-blue-100 text-blue-700',
-    demo_recording: 'bg-teal-100 text-teal-700',
-    reading: 'bg-green-100 text-green-700',
-    custom: 'bg-slate-100 text-slate-700',
-};
+const TASK_TYPE_ICONS = Object.fromEntries(TASK_TYPES.map(t => [t.id, t.icon]));
+const TASK_TYPE_COLORS = Object.fromEntries(TASK_TYPES.map(t => [t.id, t.color]));
 
 function buildSystemPrompt(bot, sessionType, performanceSnapshot) {
     const perf = performanceSnapshot || {};
@@ -51,15 +49,15 @@ function buildSystemPrompt(bot, sessionType, performanceSnapshot) {
         : '';
 
     const sessionContext = {
-        performance_review: 'You are conducting a performance review session. Analyze the rep\'s metrics, highlight strengths, identify gaps, and give specific actionable advice. Be direct and data-driven.',
-        product_training: 'You are running a product training session. Teach the rep about features, pricing, use cases, and competitive positioning. Use questions to check understanding. Assign quiz tasks when appropriate.',
-        skill_drill: 'You are running a sales skill drill. Pick a specific skill (cold calling, discovery questions, objection handling, closing) and coach the rep through practice scenarios. Give real-time feedback.',
-        quiz: 'You are running a knowledge quiz session. Ask one question at a time, wait for the answer, give feedback, then move to the next question. Track score as you go. Make it engaging.',
-        demo_review: 'You are coaching the rep on product demos. Discuss demo structure, storytelling, handling questions, and screen-sharing best practices. Assign a demo recording task when ready.',
-        free_chat: 'You are an open coaching session. Answer any questions, give advice on sales strategy, help with deal-specific situations, or just have a motivating conversation.',
+        performance_review: 'You are conducting a performance review. Analyze metrics, highlight strengths, identify gaps, give specific actionable advice. Be direct and data-driven.',
+        product_training: 'You are running a product training session. Teach features, pricing, use cases, and competitive positioning. Use questions to check understanding. Assign quiz tasks when appropriate.',
+        skill_drill: 'You are running a sales skill drill. Pick a specific skill (cold calling, discovery, objection handling, closing) and coach through practice scenarios. Give real-time feedback.',
+        quiz: 'You are running a knowledge quiz. Ask one question at a time, wait for the answer, give feedback, then move to the next. Track score. Make it engaging.',
+        demo_review: 'You are coaching on product demos. Discuss demo structure, storytelling, handling questions. Assign a demo recording task when ready.',
+        free_chat: 'You are in an open coaching session. Answer any questions, give advice on sales strategy, help with deal situations, or have a motivating conversation.',
     };
 
-    return `You are ${bot.name}, an AI sales coach with the following characteristics:
+    return `You are ${bot.name}, an AI sales coach.
 Personality: ${bot.personality}
 Focus Area: ${bot.focus_area}
 ${bot.system_prompt_extra ? `Additional context: ${bot.system_prompt_extra}` : ''}
@@ -72,12 +70,35 @@ COACHING GUIDELINES:
 - Be conversational, specific, and actionable
 - Reference the rep's actual performance data when available
 - Proactively suggest tasks (quizzes, roleplay sessions, demo recordings, reading)
-- When suggesting a task, clearly say: "TASK: [task_type] | [title] | [brief description]" on its own line so it can be extracted
+- When suggesting a task, clearly say: "TASK: [task_type] | [title] | [brief description]" on its own line
   - task_type must be one of: quiz, roleplay, demo_recording, reading, custom
-  - Example: TASK: quiz | Product Pricing Quiz | Test your knowledge of our pricing tiers and packaging options
+  - Example: TASK: quiz | Product Pricing Quiz | Test your knowledge of our pricing tiers
 - Keep responses focused (3-5 sentences max unless doing a quiz or detailed explanation)
-- Be encouraging but honest — growth requires honest feedback
-- Always end with a question or next step to keep momentum going`;
+- Be encouraging but honest
+- Always end with a question or next step`;
+}
+
+function buildAnalysisSystemPrompt(bot, employees) {
+    const employeeList = employees.map(e =>
+        `- ${e.full_name || e.email}: role=${e.role || 'rep'}, pending tasks=${e.pendingCount || 0}, recent sessions=${e.sessionCount || 0}`
+    ).join('\n');
+
+    return `You are ${bot.name}, an AI sales coach manager assistant.
+Personality: ${bot.personality}
+Focus Area: ${bot.focus_area}
+
+Your job is to analyze the sales team and identify who needs coaching and what specific tasks would help them most.
+
+TEAM OVERVIEW:
+${employeeList}
+
+Provide a brief analysis (2-3 sentences per person) and suggest 1-2 specific tasks for each employee who needs coaching.
+When suggesting a task use this exact format on its own line:
+TASK_FOR:[employee_email] | [task_type] | [title] | [description]
+- task_type must be one of: quiz, roleplay, demo_recording, reading, custom
+- Example: TASK_FOR:john@co.com | roleplay | Cold Call Practice | Practice cold call openers with objection handling
+
+Be direct and data-driven. Focus on employees with low activity or no recent sessions.`;
 }
 
 function extractTasksFromMessage(text) {
@@ -94,12 +115,49 @@ function extractTasksFromMessage(text) {
     return tasks;
 }
 
+function extractTeamTasksFromMessage(text, employees) {
+    const taskRegex = /TASK_FOR:([^\s|]+)\s*\|\s*(\w+)\s*\|\s*([^|]+)\s*\|\s*(.+)/gi;
+    const tasks = [];
+    let match;
+    while ((match = taskRegex.exec(text)) !== null) {
+        const email = match[1].trim().toLowerCase();
+        const employee = employees.find(e => (e.email || '').toLowerCase() === email);
+        if (employee) {
+            tasks.push({
+                employee_id: employee.id,
+                employee_email: email,
+                employee_name: employee.full_name || email,
+                task_type: match[2].toLowerCase().trim(),
+                title: match[3].trim(),
+                description: match[4].trim(),
+            });
+        }
+    }
+    return tasks;
+}
+
 function cleanMessageText(text) {
-    return text.replace(/TASK:\s*\w+\s*\|[^\n]+/gi, '').trim();
+    return text
+        .replace(/TASK:\s*\w+\s*\|[^\n]+/gi, '')
+        .replace(/TASK_FOR:[^\n]+/gi, '')
+        .trim();
+}
+
+function getSessionOpener(bot, type) {
+    const openers = {
+        performance_review: "Let me pull up your recent activity and walk you through what I'm seeing. First — how are you feeling about your performance lately?",
+        product_training: "Great choice! Strong product knowledge is the foundation of great selling. What area would you like to cover — features, pricing, competitive positioning, or a specific use case?",
+        skill_drill: "Let's sharpen a specific skill. What's felt hardest lately — cold call openers, discovery questions, handling objections, or closing?",
+        quiz: "Time to test what you know! I'll ask one question at a time. Don't worry if you get some wrong — that's how we find the gaps. Ready? Here's your first question:\n\nWhat are the three most important questions you should answer in a discovery call?",
+        demo_review: "Demos are where deals are won or lost. Let's make sure yours is bulletproof. Tell me — when did you last do a demo, and how did it go?",
+        free_chat: "What's on your mind? Ask me anything about sales, your deals, product, or skills.",
+    };
+    return openers[type] || "How can I help you today?";
 }
 
 export default function SkillCoach() {
     const [currentUser, setCurrentUser] = useState(null);
+    const [isManager, setIsManager] = useState(false);
     const [bots, setBots] = useState([]);
     const [selectedBot, setSelectedBot] = useState(null);
     const [activeSession, setActiveSession] = useState(null);
@@ -110,7 +168,17 @@ export default function SkillCoach() {
     const [completedTasks, setCompletedTasks] = useState([]);
     const [sessionType, setSessionType] = useState(null);
     const [view, setView] = useState('bots');
-    const [openaiKey, setOpenaiKey] = useState('');
+
+    // Manager states
+    const [teamMembers, setTeamMembers] = useState([]);
+    const [teamTasks, setTeamTasks] = useState([]);
+    const [selectedEmployee, setSelectedEmployee] = useState('');
+    const [managerTaskForm, setManagerTaskForm] = useState({ task_type: 'custom', title: '', description: '', notes: '' });
+    const [isAssigning, setIsAssigning] = useState(false);
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const [analysisResult, setAnalysisResult] = useState(null);
+    const [pendingTeamTasks, setPendingTeamTasks] = useState([]);
+
     const messagesEndRef = useRef(null);
 
     useEffect(() => {
@@ -130,7 +198,14 @@ export default function SkillCoach() {
                 .select('*')
                 .eq('id', user.id)
                 .maybeSingle();
+            const managerRoles = ['admin', 'company_admin', 'sales_manager', 'saas_admin', 'super_admin'];
+            const isMan = managerRoles.includes(profile?.role);
             setCurrentUser({ ...user, profile });
+            setIsManager(isMan);
+            await loadTasks(user.id);
+            if (isMan) {
+                await loadTeamMembers();
+            }
         }
     };
 
@@ -162,12 +237,45 @@ export default function SkillCoach() {
         if (done) setCompletedTasks(done);
     };
 
+    const loadTeamMembers = async () => {
+        const { data } = await supabase
+            .from('user_profiles')
+            .select('id, full_name, email, role')
+            .in('role', ['sales_rep', 'sales_manager', 'agent'])
+            .order('full_name');
+        if (data) {
+            const enriched = await Promise.all(data.map(async (member) => {
+                const { count: pendingCount } = await supabase
+                    .from('skill_coach_tasks')
+                    .select('id', { count: 'exact', head: true })
+                    .eq('assigned_to', member.id)
+                    .in('status', ['pending', 'in_progress']);
+
+                const { count: sessionCount } = await supabase
+                    .from('skill_coach_sessions')
+                    .select('id', { count: 'exact', head: true })
+                    .eq('user_id', member.id);
+
+                return { ...member, pendingCount: pendingCount || 0, sessionCount: sessionCount || 0 };
+            }));
+            setTeamMembers(enriched);
+        }
+
+        const { data: tasks } = await supabase
+            .from('skill_coach_tasks')
+            .select('*')
+            .eq('assigned_by_type', 'manager')
+            .order('created_at', { ascending: false })
+            .limit(20);
+        if (tasks) setTeamTasks(tasks);
+    };
+
     const startSession = async (bot, type) => {
         setSelectedBot(bot);
         setSessionType(type);
 
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
+        if (!user) { toast.error('Please sign in to start a session'); return; }
 
         const { data: session, error } = await supabase
             .from('skill_coach_sessions')
@@ -181,36 +289,22 @@ export default function SkillCoach() {
             .select()
             .single();
 
-        if (error) { toast.error('Failed to start session'); return; }
+        if (error) { toast.error('Failed to start session'); console.error(error); return; }
         setActiveSession(session);
         await loadTasks(user.id);
 
+        const sessionTypeMeta = SESSION_TYPES.find(s => s.id === type);
         const welcomeMsg = {
             role: 'assistant',
-            content: bot.welcome_message || `Hi! I'm ${bot.name}, your ${bot.focus_area} coach. Let's get started!`,
+            content: type === 'free_chat'
+                ? (bot.welcome_message || `Hi! I'm ${bot.name}, your ${bot.focus_area} coach. Let's get started!`)
+                : `${bot.welcome_message || `Hi! I'm ${bot.name}.`}\n\nI see you want to work on **${sessionTypeMeta?.label}**. ${getSessionOpener(bot, type)}`,
             timestamp: new Date().toISOString(),
         };
-
-        if (type !== 'free_chat') {
-            const sessionTypeMeta = SESSION_TYPES.find(s => s.id === type);
-            welcomeMsg.content = `${bot.welcome_message || `Hi! I'm ${bot.name}.`}\n\nI see you want to work on **${sessionTypeMeta?.label}**. ${getSessionOpener(bot, type)}`;
-        }
 
         setMessages([welcomeMsg]);
         setView('chat');
         await saveMessages(session.id, [welcomeMsg]);
-    };
-
-    const getSessionOpener = (bot, type) => {
-        const openers = {
-            performance_review: "Let me pull up your recent activity and walk you through what I'm seeing. First — how are you feeling about your performance lately?",
-            product_training: "Great choice! Strong product knowledge is the foundation of great selling. What area would you like to cover — features, pricing, competitive positioning, or a specific use case?",
-            skill_drill: "Let's sharpen a specific skill. What's felt hardest lately — cold call openers, discovery questions, handling objections, or closing?",
-            quiz: "Time to test what you know! I'll ask one question at a time. Don't worry if you get some wrong — that's how we find the gaps. Ready? Here's your first question:\n\nWhat are the three most important questions you should answer in a discovery call?",
-            demo_review: "Demos are where deals are won or lost. Let's make sure yours is bulletproof. Tell me — when did you last do a demo, and how did it go?",
-            free_chat: "What's on your mind? Ask me anything about sales, your deals, product, or skills.",
-        };
-        return openers[type] || "How can I help you today?";
     };
 
     const saveMessages = async (sessionId, msgs) => {
@@ -233,9 +327,7 @@ export default function SkillCoach() {
         try {
             const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
             const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
             const systemPrompt = buildSystemPrompt(selectedBot, sessionType, {});
-
             const openaiMessages = [
                 { role: 'system', content: systemPrompt },
                 ...updatedMessages.slice(-10).map(m => ({ role: m.role, content: m.content })),
@@ -251,7 +343,6 @@ export default function SkillCoach() {
             });
 
             let replyText = "I'm here to help! Could you tell me more about what you'd like to work on?";
-
             if (response.ok) {
                 const data = await response.json();
                 replyText = data.text || replyText;
@@ -280,6 +371,7 @@ export default function SkillCoach() {
                         session_id: activeSession.id,
                         bot_id: selectedBot.id,
                         assigned_to: user.id,
+                        assigned_by_type: 'bot',
                         task_type: taskType,
                         title: task.title,
                         description: task.description,
@@ -333,6 +425,105 @@ export default function SkillCoach() {
         return null;
     };
 
+    const assignManagerTask = async () => {
+        if (!selectedEmployee || !managerTaskForm.title.trim()) {
+            toast.error('Please select an employee and enter a task title');
+            return;
+        }
+        setIsAssigning(true);
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            const { error } = await supabase.from('skill_coach_tasks').insert({
+                assigned_to: selectedEmployee,
+                assigned_by: user.id,
+                assigned_by_type: 'manager',
+                task_type: managerTaskForm.task_type,
+                title: managerTaskForm.title,
+                description: managerTaskForm.description,
+                notes: managerTaskForm.notes,
+                status: 'pending',
+            });
+            if (error) throw error;
+            toast.success('Task assigned successfully!');
+            setManagerTaskForm({ task_type: 'custom', title: '', description: '', notes: '' });
+            setSelectedEmployee('');
+            await loadTeamMembers();
+        } catch (err) {
+            toast.error('Failed to assign task');
+            console.error(err);
+        } finally {
+            setIsAssigning(false);
+        }
+    };
+
+    const runBotAnalysis = async () => {
+        if (teamMembers.length === 0) {
+            toast.error('No team members found to analyze');
+            return;
+        }
+        const bot = bots.find(b => b.is_default) || bots[0];
+        if (!bot) { toast.error('No coach bot available'); return; }
+
+        setIsAnalyzing(true);
+        setAnalysisResult(null);
+        setPendingTeamTasks([]);
+
+        try {
+            const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+            const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+            const systemPrompt = buildAnalysisSystemPrompt(bot, teamMembers);
+
+            const response = await fetch(`${supabaseUrl}/functions/v1/skill-coach-chat`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${supabaseAnonKey}`,
+                },
+                body: JSON.stringify({
+                    messages: [
+                        { role: 'system', content: systemPrompt },
+                        { role: 'user', content: 'Analyze the team and identify who needs the most coaching. Suggest specific tasks for each person who needs attention.' },
+                    ],
+                }),
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                const text = data.text || '';
+                const extracted = extractTeamTasksFromMessage(text, teamMembers);
+                setAnalysisResult(cleanMessageText(text));
+                setPendingTeamTasks(extracted);
+            } else {
+                toast.error('Analysis failed — please try again');
+            }
+        } catch (err) {
+            toast.error('Analysis failed');
+            console.error(err);
+        } finally {
+            setIsAnalyzing(false);
+        }
+    };
+
+    const approveBotTask = async (task) => {
+        const { data: { user } } = await supabase.auth.getUser();
+        const { error } = await supabase.from('skill_coach_tasks').insert({
+            assigned_to: task.employee_id,
+            assigned_by: user.id,
+            assigned_by_type: 'bot',
+            task_type: task.task_type,
+            title: task.title,
+            description: task.description,
+            status: 'pending',
+        });
+        if (error) { toast.error('Failed to assign task'); return; }
+        setPendingTeamTasks(prev => prev.filter(t => t !== task));
+        toast.success(`Task assigned to ${task.employee_name}`);
+    };
+
+    const dismissBotTask = (task) => {
+        setPendingTeamTasks(prev => prev.filter(t => t !== task));
+    };
+
     if (view === 'chat' && selectedBot) {
         return (
             <div className="flex h-screen bg-slate-50 overflow-hidden">
@@ -359,7 +550,7 @@ export default function SkillCoach() {
                                         {selectedBot.avatar_emoji}
                                     </div>
                                 )}
-                                <div className={`max-w-[75%] space-y-2`}>
+                                <div className="max-w-[75%] space-y-2">
                                     <div className={`px-4 py-3 rounded-2xl text-sm leading-relaxed ${
                                         msg.role === 'user'
                                             ? 'bg-blue-600 text-white rounded-tr-sm'
@@ -453,9 +644,15 @@ export default function SkillCoach() {
                                                 <TaskIcon className="w-3 h-3" />
                                                 {task.task_type}
                                             </span>
+                                            {task.assigned_by_type === 'manager' && (
+                                                <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
+                                                    From Manager
+                                                </span>
+                                            )}
                                         </div>
                                         <p className="text-sm font-medium text-slate-800">{task.title}</p>
                                         {task.description && <p className="text-xs text-slate-500">{task.description}</p>}
+                                        {task.notes && <p className="text-xs text-orange-600 italic">{task.notes}</p>}
                                         <div className="flex gap-2">
                                             {link && (
                                                 <Link to={link}>
@@ -513,12 +710,6 @@ export default function SkillCoach() {
                                 Record a Demo
                             </Button>
                         </Link>
-                        <Link to={createPageUrl('AgentTrainingProfile')}>
-                            <Button variant="outline" size="sm" className="w-full justify-start text-xs">
-                                <TrendingUp className="w-3.5 h-3.5 mr-2 text-orange-500" />
-                                My Training Profile
-                            </Button>
-                        </Link>
                     </div>
                 </div>
             </div>
@@ -530,7 +721,7 @@ export default function SkillCoach() {
             <div className="min-h-screen bg-slate-50 p-6 md:p-10">
                 <div className="max-w-3xl mx-auto">
                     <button onClick={() => { setView('bots'); setSelectedBot(null); }} className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-800 mb-8 transition-colors">
-                        <RotateCcw className="w-4 h-4" />
+                        <ArrowLeft className="w-4 h-4" />
                         Choose a different coach
                     </button>
 
@@ -574,8 +765,8 @@ export default function SkillCoach() {
 
     return (
         <div className="min-h-screen bg-slate-50 p-6 md:p-10">
-            <div className="max-w-5xl mx-auto">
-                <div className="mb-10">
+            <div className="max-w-6xl mx-auto">
+                <div className="mb-8">
                     <div className="flex items-center gap-3 mb-2">
                         <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center">
                             <Bot className="w-5 h-5 text-white" />
@@ -590,119 +781,360 @@ export default function SkillCoach() {
                     <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-center gap-4">
                         <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0" />
                         <div className="flex-1">
-                            <p className="text-sm font-semibold text-amber-800">You have {pendingTasks.length} pending task{pendingTasks.length > 1 ? 's' : ''} from your coach</p>
-                            <p className="text-xs text-amber-600 mt-0.5">Start a session to review and complete them</p>
+                            <p className="text-sm font-semibold text-amber-800">You have {pendingTasks.length} pending task{pendingTasks.length > 1 ? 's' : ''}</p>
+                            <p className="text-xs text-amber-600 mt-0.5">
+                                {pendingTasks.filter(t => t.assigned_by_type === 'manager').length > 0
+                                    ? `Includes tasks assigned by your manager`
+                                    : 'Start a session to review and complete them'
+                                }
+                            </p>
                         </div>
                     </div>
                 )}
 
-                <div className="mb-8">
-                    <h2 className="text-lg font-semibold text-slate-800 mb-1">Choose Your Coach</h2>
-                    <p className="text-sm text-slate-500 mb-5">Each coach specializes in a different area. Pick the one that matches what you need today.</p>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="lg:col-span-2 space-y-6">
+                        <div>
+                            <h2 className="text-lg font-semibold text-slate-800 mb-1">Choose Your Coach</h2>
+                            <p className="text-sm text-slate-500 mb-4">Each coach specializes in a different area.</p>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                {bots.map(bot => (
+                                    <button
+                                        key={bot.id}
+                                        onClick={() => { setSelectedBot(bot); setView('select-type'); }}
+                                        className="group flex flex-col p-5 bg-white rounded-2xl border-2 border-slate-200 hover:border-blue-400 hover:shadow-lg transition-all text-left"
+                                    >
+                                        <div className="flex items-center gap-3 mb-3">
+                                            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-xl shadow-md group-hover:scale-105 transition-transform">
+                                                {bot.avatar_emoji}
+                                            </div>
+                                            <div>
+                                                <p className="font-bold text-slate-900">{bot.name}</p>
+                                                {bot.is_default && (
+                                                    <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">Recommended</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-1">{bot.focus_area}</p>
+                                        <p className="text-xs text-slate-500 flex-1">{bot.description}</p>
+                                        <div className="flex items-center justify-end mt-3 pt-3 border-t border-slate-100">
+                                            <div className="flex items-center gap-1 text-blue-600 text-sm font-medium group-hover:gap-2 transition-all">
+                                                Start session
+                                                <ChevronRight className="w-4 h-4" />
+                                            </div>
+                                        </div>
+                                    </button>
+                                ))}
+                                {bots.length === 0 && (
+                                    <div className="col-span-3 text-center py-16 text-slate-400">
+                                        <Bot className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                                        <p>No coaches available yet</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                        {bots.map(bot => (
-                            <button
-                                key={bot.id}
-                                onClick={() => { setSelectedBot(bot); setView('select-type'); }}
-                                className="group flex flex-col p-6 bg-white rounded-2xl border-2 border-slate-200 hover:border-blue-400 hover:shadow-lg transition-all text-left"
-                            >
-                                <div className="flex items-center gap-3 mb-4">
-                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-2xl shadow-md group-hover:scale-105 transition-transform">
-                                        {bot.avatar_emoji}
-                                    </div>
-                                    <div>
-                                        <p className="font-bold text-slate-900 text-lg">{bot.name}</p>
-                                        {bot.is_default && (
-                                            <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">Recommended</span>
-                                        )}
-                                    </div>
+                        {isManager && (
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-2 border-t border-slate-200 pt-6">
+                                    <Users className="w-5 h-5 text-slate-600" />
+                                    <h2 className="text-lg font-semibold text-slate-800">Manager Tools</h2>
+                                    <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs font-semibold rounded-full">Manager Only</span>
                                 </div>
-                                <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-2">{bot.focus_area}</p>
-                                <p className="text-sm text-slate-600 flex-1">{bot.description}</p>
-                                <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-100">
-                                    <span className="text-xs text-slate-400">{bot.personality}</span>
-                                    <div className="flex items-center gap-1 text-blue-600 text-sm font-medium group-hover:gap-2 transition-all">
-                                        Start session
-                                        <ChevronRight className="w-4 h-4" />
-                                    </div>
-                                </div>
-                            </button>
-                        ))}
 
-                        {bots.length === 0 && (
-                            <div className="col-span-3 text-center py-16 text-slate-400">
-                                <Bot className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                                <p>No coaches available yet</p>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <Card className="rounded-2xl border-slate-200">
+                                        <CardHeader className="pb-3">
+                                            <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                                                <UserCheck className="w-4 h-4 text-orange-500" />
+                                                Assign Task to Employee
+                                            </CardTitle>
+                                        </CardHeader>
+                                        <CardContent className="space-y-3">
+                                            <Select value={selectedEmployee} onValueChange={setSelectedEmployee}>
+                                                <SelectTrigger className="h-9 text-sm">
+                                                    <SelectValue placeholder="Select employee..." />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {teamMembers.map(m => (
+                                                        <SelectItem key={m.id} value={m.id}>
+                                                            {m.full_name || m.email}
+                                                            {m.pendingCount > 0 && ` (${m.pendingCount} pending)`}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+
+                                            <Select value={managerTaskForm.task_type} onValueChange={(v) => setManagerTaskForm(f => ({ ...f, task_type: v }))}>
+                                                <SelectTrigger className="h-9 text-sm">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {TASK_TYPES.map(t => (
+                                                        <SelectItem key={t.id} value={t.id}>{t.label}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+
+                                            <Input
+                                                placeholder="Task title"
+                                                value={managerTaskForm.title}
+                                                onChange={(e) => setManagerTaskForm(f => ({ ...f, title: e.target.value }))}
+                                                className="h-9 text-sm"
+                                            />
+                                            <Textarea
+                                                placeholder="Description (optional)"
+                                                value={managerTaskForm.description}
+                                                onChange={(e) => setManagerTaskForm(f => ({ ...f, description: e.target.value }))}
+                                                className="text-sm min-h-[60px] resize-none"
+                                            />
+                                            <Input
+                                                placeholder="Note to employee (optional)"
+                                                value={managerTaskForm.notes}
+                                                onChange={(e) => setManagerTaskForm(f => ({ ...f, notes: e.target.value }))}
+                                                className="h-9 text-sm"
+                                            />
+                                            <Button
+                                                onClick={assignManagerTask}
+                                                disabled={isAssigning || !selectedEmployee || !managerTaskForm.title}
+                                                className="w-full bg-orange-500 hover:bg-orange-600 text-white"
+                                                size="sm"
+                                            >
+                                                {isAssigning ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
+                                                Assign Task
+                                            </Button>
+                                        </CardContent>
+                                    </Card>
+
+                                    <Card className="rounded-2xl border-slate-200">
+                                        <CardHeader className="pb-3">
+                                            <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                                                <Brain className="w-4 h-4 text-blue-500" />
+                                                AI Team Analysis
+                                            </CardTitle>
+                                        </CardHeader>
+                                        <CardContent className="space-y-3">
+                                            <p className="text-xs text-slate-500">Let the AI coach analyze your team's activity and automatically suggest tasks for employees who need coaching.</p>
+
+                                            <div className="space-y-2">
+                                                {teamMembers.slice(0, 4).map(m => (
+                                                    <div key={m.id} className="flex items-center gap-2 py-1.5 px-3 bg-slate-50 rounded-lg">
+                                                        <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-600">
+                                                            {(m.full_name || m.email || 'U')[0].toUpperCase()}
+                                                        </div>
+                                                        <span className="text-xs text-slate-700 flex-1 truncate">{m.full_name || m.email}</span>
+                                                        <span className={`text-xs px-1.5 py-0.5 rounded-full ${m.sessionCount === 0 ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'}`}>
+                                                            {m.sessionCount} sessions
+                                                        </span>
+                                                    </div>
+                                                ))}
+                                                {teamMembers.length > 4 && (
+                                                    <p className="text-xs text-slate-400 text-center">+{teamMembers.length - 4} more</p>
+                                                )}
+                                                {teamMembers.length === 0 && (
+                                                    <p className="text-xs text-slate-400 text-center py-3">No team members found</p>
+                                                )}
+                                            </div>
+
+                                            <Button
+                                                onClick={runBotAnalysis}
+                                                disabled={isAnalyzing || teamMembers.length === 0}
+                                                className="w-full bg-blue-600 hover:bg-blue-700"
+                                                size="sm"
+                                            >
+                                                {isAnalyzing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Sparkles className="w-4 h-4 mr-2" />}
+                                                {isAnalyzing ? 'Analyzing Team...' : 'Run AI Analysis'}
+                                            </Button>
+                                        </CardContent>
+                                    </Card>
+                                </div>
+
+                                {analysisResult && (
+                                    <Card className="rounded-2xl border-blue-200 bg-blue-50">
+                                        <CardHeader className="pb-3">
+                                            <CardTitle className="text-sm font-semibold flex items-center gap-2 text-blue-900">
+                                                <Brain className="w-4 h-4 text-blue-600" />
+                                                AI Analysis Results
+                                            </CardTitle>
+                                        </CardHeader>
+                                        <CardContent className="space-y-4">
+                                            <p className="text-sm text-blue-800 whitespace-pre-wrap leading-relaxed">{analysisResult}</p>
+
+                                            {pendingTeamTasks.length > 0 && (
+                                                <div>
+                                                    <p className="text-xs font-semibold text-blue-900 mb-2 uppercase tracking-wide">Suggested Tasks — Review & Approve</p>
+                                                    <div className="space-y-2">
+                                                        {pendingTeamTasks.map((task, idx) => {
+                                                            const TaskIcon = TASK_TYPE_ICONS[task.task_type] || ClipboardList;
+                                                            return (
+                                                                <div key={idx} className="flex items-start gap-3 p-3 bg-white rounded-xl border border-blue-200">
+                                                                    <TaskIcon className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <p className="text-xs font-semibold text-slate-800">{task.employee_name}</p>
+                                                                        <p className="text-xs text-slate-700 mt-0.5">{task.title}</p>
+                                                                        <p className="text-xs text-slate-500">{task.description}</p>
+                                                                    </div>
+                                                                    <div className="flex gap-1 flex-shrink-0">
+                                                                        <Button
+                                                                            size="sm"
+                                                                            className="h-7 px-2 text-xs bg-green-500 hover:bg-green-600"
+                                                                            onClick={() => approveBotTask(task)}
+                                                                        >
+                                                                            <CheckCircle2 className="w-3 h-3 mr-1" />
+                                                                            Assign
+                                                                        </Button>
+                                                                        <Button
+                                                                            size="sm"
+                                                                            variant="ghost"
+                                                                            className="h-7 px-2 text-xs text-slate-400 hover:text-red-500"
+                                                                            onClick={() => dismissBotTask(task)}
+                                                                        >
+                                                                            <X className="w-3 h-3" />
+                                                                        </Button>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </CardContent>
+                                    </Card>
+                                )}
+
+                                {teamTasks.length > 0 && (
+                                    <Card className="rounded-2xl border-slate-200">
+                                        <CardHeader className="pb-3">
+                                            <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                                                <ClipboardList className="w-4 h-4 text-slate-500" />
+                                                Recently Assigned by You
+                                            </CardTitle>
+                                        </CardHeader>
+                                        <CardContent className="space-y-2">
+                                            {teamTasks.slice(0, 5).map(task => (
+                                                <div key={task.id} className="flex items-center gap-3 py-2 px-3 bg-slate-50 rounded-xl">
+                                                    <span className={`w-2 h-2 rounded-full flex-shrink-0 ${task.status === 'completed' ? 'bg-green-400' : 'bg-amber-400'}`} />
+                                                    <p className="text-sm text-slate-700 flex-1 truncate">{task.title}</p>
+                                                    <span className="text-xs text-slate-400">{task.task_type}</span>
+                                                    <span className={`text-xs px-2 py-0.5 rounded-full ${task.status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+                                                        {task.status}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </CardContent>
+                                    </Card>
+                                )}
                             </div>
                         )}
                     </div>
-                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <Card className="rounded-2xl border-slate-200">
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-base font-semibold flex items-center gap-2">
-                                <ClipboardList className="w-4 h-4 text-blue-600" />
-                                Pending Tasks
-                                {pendingTasks.length > 0 && <span className="ml-auto text-xs bg-blue-100 text-blue-700 rounded-full px-2 py-0.5">{pendingTasks.length}</span>}
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-2">
-                            {pendingTasks.length === 0 ? (
-                                <p className="text-sm text-slate-400 text-center py-4">No pending tasks — start a coaching session!</p>
-                            ) : (
-                                pendingTasks.slice(0, 4).map(task => {
-                                    const TaskIcon = TASK_TYPE_ICONS[task.task_type] || ClipboardList;
-                                    const link = getTaskLink(task);
+                    <div className="space-y-4">
+                        <Card className="rounded-2xl border-slate-200">
+                            <CardHeader className="pb-3">
+                                <CardTitle className="text-base font-semibold flex items-center gap-2">
+                                    <Zap className="w-4 h-4 text-orange-500" />
+                                    Quick Start
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="grid grid-cols-2 gap-2">
+                                {SESSION_TYPES.slice(0, 4).map(type => {
+                                    const Icon = type.icon;
+                                    const defaultBot = bots.find(b => b.is_default) || bots[0];
                                     return (
-                                        <div key={task.id} className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
-                                            <TaskIcon className="w-4 h-4 text-slate-500 flex-shrink-0" />
-                                            <p className="text-sm text-slate-700 flex-1 truncate">{task.title}</p>
-                                            <div className="flex gap-1">
-                                                {link && (
-                                                    <Link to={link}>
-                                                        <Button size="sm" variant="outline" className="h-7 text-xs px-2">
-                                                            <Play className="w-3 h-3" />
-                                                        </Button>
-                                                    </Link>
-                                                )}
-                                                <Button size="sm" variant="ghost" className="h-7 text-xs px-2 text-green-600" onClick={() => completeTask(task.id)}>
-                                                    <CheckCircle2 className="w-3 h-3" />
-                                                </Button>
-                                            </div>
-                                        </div>
+                                        <button
+                                            key={type.id}
+                                            disabled={!defaultBot}
+                                            onClick={() => {
+                                                if (defaultBot) startSession(defaultBot, type.id);
+                                            }}
+                                            className={`flex flex-col items-center gap-2 p-3 rounded-xl border transition-all text-center ${type.bg} border-transparent hover:border-slate-300 hover:shadow-sm disabled:opacity-40 disabled:cursor-not-allowed`}
+                                        >
+                                            <Icon className={`w-5 h-5 ${type.color}`} />
+                                            <p className="text-xs font-medium text-slate-700 leading-tight">{type.label}</p>
+                                        </button>
                                     );
-                                })
-                            )}
-                        </CardContent>
-                    </Card>
+                                })}
+                            </CardContent>
+                        </Card>
 
-                    <Card className="rounded-2xl border-slate-200">
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-base font-semibold flex items-center gap-2">
-                                <Zap className="w-4 h-4 text-orange-500" />
-                                Quick Start
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="grid grid-cols-2 gap-3">
-                            {SESSION_TYPES.slice(0, 4).map(type => {
-                                const Icon = type.icon;
-                                const defaultBot = bots.find(b => b.is_default) || bots[0];
-                                return (
-                                    <button
-                                        key={type.id}
-                                        disabled={!defaultBot}
-                                        onClick={() => { if (defaultBot) { setSelectedBot(defaultBot); startSession(defaultBot, type.id); } }}
-                                        className={`flex flex-col items-center gap-2 p-3 rounded-xl border transition-all text-center ${type.bg} border-transparent hover:border-current hover:shadow-sm disabled:opacity-40`}
-                                    >
-                                        <Icon className={`w-5 h-5 ${type.color}`} />
-                                        <p className="text-xs font-medium text-slate-700">{type.label}</p>
-                                    </button>
-                                );
-                            })}
-                        </CardContent>
-                    </Card>
+                        <Card className="rounded-2xl border-slate-200">
+                            <CardHeader className="pb-3">
+                                <CardTitle className="text-base font-semibold flex items-center gap-2">
+                                    <ClipboardList className="w-4 h-4 text-blue-600" />
+                                    Pending Tasks
+                                    {pendingTasks.length > 0 && <span className="ml-auto text-xs bg-blue-100 text-blue-700 rounded-full px-2 py-0.5">{pendingTasks.length}</span>}
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-2">
+                                {pendingTasks.length === 0 ? (
+                                    <p className="text-sm text-slate-400 text-center py-4">No pending tasks — start a coaching session!</p>
+                                ) : (
+                                    pendingTasks.slice(0, 5).map(task => {
+                                        const TaskIcon = TASK_TYPE_ICONS[task.task_type] || ClipboardList;
+                                        const link = getTaskLink(task);
+                                        return (
+                                            <div key={task.id} className="flex items-center gap-3 p-2.5 bg-slate-50 rounded-xl">
+                                                <TaskIcon className="w-4 h-4 text-slate-500 flex-shrink-0" />
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-xs font-medium text-slate-700 truncate">{task.title}</p>
+                                                    {task.assigned_by_type === 'manager' && (
+                                                        <p className="text-xs text-orange-500">From Manager</p>
+                                                    )}
+                                                </div>
+                                                <div className="flex gap-1">
+                                                    {link && (
+                                                        <Link to={link}>
+                                                            <Button size="sm" variant="outline" className="h-6 text-xs px-2">
+                                                                <Play className="w-3 h-3" />
+                                                            </Button>
+                                                        </Link>
+                                                    )}
+                                                    <Button size="sm" variant="ghost" className="h-6 text-xs px-2 text-green-600" onClick={() => completeTask(task.id)}>
+                                                        <CheckCircle2 className="w-3 h-3" />
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        );
+                                    })
+                                )}
+                            </CardContent>
+                        </Card>
+
+                        <Card className="rounded-2xl border-slate-200">
+                            <CardHeader className="pb-3">
+                                <CardTitle className="text-base font-semibold flex items-center gap-2">
+                                    <TrendingUp className="w-4 h-4 text-green-500" />
+                                    Quick Links
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-2">
+                                <Link to={createPageUrl('AIRoleplay')}>
+                                    <Button variant="outline" size="sm" className="w-full justify-start text-xs">
+                                        <Mic className="w-3.5 h-3.5 mr-2 text-blue-500" />
+                                        Start a Roleplay Session
+                                    </Button>
+                                </Link>
+                                <Link to={createPageUrl('TrainingLibrary')}>
+                                    <Button variant="outline" size="sm" className="w-full justify-start text-xs">
+                                        <BookOpen className="w-3.5 h-3.5 mr-2 text-green-500" />
+                                        Browse Training Library
+                                    </Button>
+                                </Link>
+                                <Link to={createPageUrl('ProductDemoSetup')}>
+                                    <Button variant="outline" size="sm" className="w-full justify-start text-xs">
+                                        <MonitorPlay className="w-3.5 h-3.5 mr-2 text-teal-500" />
+                                        Record a Demo
+                                    </Button>
+                                </Link>
+                                <Link to={createPageUrl('AgentTrainingProfile')}>
+                                    <Button variant="outline" size="sm" className="w-full justify-start text-xs">
+                                        <TrendingUp className="w-3.5 h-3.5 mr-2 text-orange-500" />
+                                        My Training Profile
+                                    </Button>
+                                </Link>
+                            </CardContent>
+                        </Card>
+                    </div>
                 </div>
             </div>
         </div>
