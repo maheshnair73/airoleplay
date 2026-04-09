@@ -9,7 +9,8 @@ import { Progress } from '@/components/ui/progress';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   Plus, Users, Calendar, Trophy, BookOpen, Video, Mic, Monitor,
-  Clock, Target, TrendingUp, AlertCircle, CheckCircle, Play, Filter
+  Clock, Target, TrendingUp, AlertCircle, CheckCircle, Play, Filter,
+  Zap, ArrowRight, MonitorPlay, UserCheck
 } from 'lucide-react';
 import { createPageUrl } from '@/utils';
 import { toast } from 'sonner';
@@ -304,9 +305,9 @@ export default function PracticeHub() {
     <div className="p-8">
       <header className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold">Practice Hub</h1>
+          <h1 className="text-3xl font-bold">Practice & Coaching</h1>
           <p className="text-muted-foreground">
-            Master your skills with AI-powered practice sessions
+            Master your sales skills with AI roleplay, coaching tasks, and tracked practice sessions
           </p>
         </div>
         <div className="flex gap-2">
@@ -356,6 +357,76 @@ export default function PracticeHub() {
           icon={Calendar}
           description="Upcoming sessions"
         />
+      </div>
+
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-slate-800">Quick Start</h2>
+          <p className="text-sm text-muted-foreground">Jump straight into a live practice session</p>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Link to={createPageUrl('AIRoleplay')} className="group">
+            <Card className="border-2 hover:border-blue-500 hover:shadow-md transition-all cursor-pointer h-full">
+              <CardContent className="p-5 flex flex-col items-start gap-3">
+                <div className="p-2.5 bg-blue-50 rounded-xl group-hover:bg-blue-100 transition-colors">
+                  <Mic className="w-6 h-6 text-blue-600" />
+                </div>
+                <div>
+                  <p className="font-semibold text-sm">AI Prospect Call</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Practice with a single AI buyer</p>
+                </div>
+                <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-blue-600 group-hover:translate-x-1 transition-all mt-auto" />
+              </CardContent>
+            </Card>
+          </Link>
+          <Link to={createPageUrl('MultiPartyRoleplay')} className="group">
+            <Card className="border-2 hover:border-orange-500 hover:shadow-md transition-all cursor-pointer h-full">
+              <CardContent className="p-5 flex flex-col items-start gap-3">
+                <div className="p-2.5 bg-orange-50 rounded-xl group-hover:bg-orange-100 transition-colors">
+                  <Users className="w-6 h-6 text-orange-600" />
+                </div>
+                <div>
+                  <p className="font-semibold text-sm">Multi-Stakeholder</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">CEO, CFO, CTO panel scenarios</p>
+                </div>
+                <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-orange-600 group-hover:translate-x-1 transition-all mt-auto" />
+              </CardContent>
+            </Card>
+          </Link>
+          <Link to={createPageUrl('ProductDemoSetup')} className="group">
+            <Card className="border-2 hover:border-green-500 hover:shadow-md transition-all cursor-pointer h-full">
+              <CardContent className="p-5 flex flex-col items-start gap-3">
+                <div className="p-2.5 bg-green-50 rounded-xl group-hover:bg-green-100 transition-colors">
+                  <MonitorPlay className="w-6 h-6 text-green-600" />
+                </div>
+                <div>
+                  <p className="font-semibold text-sm">Product Demo</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Practice your live product pitch</p>
+                </div>
+                <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-green-600 group-hover:translate-x-1 transition-all mt-auto" />
+              </CardContent>
+            </Card>
+          </Link>
+          <Link to={createPageUrl('HumanRoleplay')} className="group">
+            <Card className="border-2 hover:border-slate-500 hover:shadow-md transition-all cursor-pointer h-full">
+              <CardContent className="p-5 flex flex-col items-start gap-3">
+                <div className="p-2.5 bg-slate-50 rounded-xl group-hover:bg-slate-100 transition-colors">
+                  <UserCheck className="w-6 h-6 text-slate-600" />
+                </div>
+                <div>
+                  <p className="font-semibold text-sm">Human-to-Human</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Practice with a real colleague</p>
+                </div>
+                <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-slate-600 group-hover:translate-x-1 transition-all mt-auto" />
+              </CardContent>
+            </Card>
+          </Link>
+        </div>
+      </div>
+
+      <div className="mb-3">
+        <h2 className="text-lg font-semibold text-slate-800">My Practice Sessions</h2>
+        <p className="text-sm text-muted-foreground">Scheduled and tracked sessions with notes, participants, and evaluations</p>
       </div>
 
       <div className="mb-6 flex items-center justify-between">

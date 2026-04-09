@@ -14,9 +14,7 @@ import Users from "./Users";
 
 import CoachingHub from "./CoachingHub";
 
-import SalesCoaching from "./SalesCoaching";
 
-import TrainingCenter from "./TrainingCenter";
 
 import CreateCoachingTask from "./CreateCoachingTask";
 
@@ -272,7 +270,7 @@ import UnifiedHubAnalytics from "./UnifiedHubAnalytics";
 import CertificationTest from "./CertificationTest";
 import CertificationResults from "./CertificationResults";
 
-import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate, useLocation } from 'react-router-dom';
 
 const PAGES = {
     
@@ -289,10 +287,6 @@ const PAGES = {
     Users: Users,
     
     CoachingHub: CoachingHub,
-    
-    SalesCoaching: SalesCoaching,
-    
-    TrainingCenter: TrainingCenter,
     
     CreateCoachingTask: CreateCoachingTask,
     
@@ -588,9 +582,9 @@ function PagesContent() {
                 
                 <Route path="/CoachingHub" element={<CoachingHub />} />
                 
-                <Route path="/SalesCoaching" element={<SalesCoaching />} />
-                
-                <Route path="/TrainingCenter" element={<TrainingCenter />} />
+                <Route path="/SalesCoaching" element={<Navigate to="/CoachingHub" replace />} />
+
+                <Route path="/TrainingCenter" element={<Navigate to="/TrainingLibrary" replace />} />
                 
                 <Route path="/CreateCoachingTask" element={<CreateCoachingTask />} />
                 

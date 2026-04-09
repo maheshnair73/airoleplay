@@ -26,7 +26,10 @@ import {
     Zap,
     BookOpen,
     Brain,
-    TrendingUp
+    TrendingUp,
+    Dumbbell,
+    ClipboardList,
+    PhoneCall
 } from 'lucide-react';
 
 export const navSections = [
@@ -45,34 +48,34 @@ export const navSections = [
         ]
     },
     {
-        title: 'Practice Hub',
+        title: 'Practice & Coaching',
         items: [
             { page: 'PracticeHub', title: 'My Practice Sessions', icon: Target, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
-            { page: 'CreatePracticeSession', title: 'Create Practice', icon: Mic, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
+            { page: 'CreatePracticeSession', title: 'New Practice Session', icon: Dumbbell, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
+            {
+                page: 'AIRoleplay',
+                title: 'AI Roleplay',
+                icon: Mic,
+                roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'],
+                submenu: [
+                    { page: 'AIRoleplay', title: 'Single AI Prospect', icon: Mic, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
+                    { page: 'MultiPartyRoleplay', title: 'Multi-Stakeholder', icon: Users, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
+                    { page: 'HumanRoleplay', title: 'Human-to-Human', icon: Video, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
+                    { page: 'ProductDemoSetup', title: 'Product Demo', icon: MonitorUp, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] }
+                ]
+            },
+            { page: 'CoachingHub', title: 'Coaching Tasks', icon: ClipboardList, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
             { page: 'PracticeAnalytics', title: 'Practice Analytics', icon: BarChart3, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
         ]
     },
     {
-        title: 'AI Sales Coach',
+        title: 'Call Intelligence',
         items: [
-            {
-                page: 'AIRoleplay',
-                title: 'AI Roleplay (Legacy)',
-                icon: Mic,
-                roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'],
-                submenu: [
-                    { page: 'AIRoleplay', title: 'Single AI Roleplay', icon: Mic, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
-                    { page: 'MultiPartyRoleplay', title: 'Multi-Party AI', icon: Users, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
-                    { page: 'HumanRoleplay', title: 'Human-to-Human', icon: Video, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
-                    { page: 'ProductDemoSetup', title: 'Product Demo Practice', icon: MonitorUp, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] }
-                ]
-            },
-            { page: 'CoachingHub', title: 'Coaching Hub (Legacy)', icon: GraduationCap, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
-            { page: 'LiveMeetings', title: 'effyMeeting Assistant', icon: Video, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
+            { page: 'LiveMeetings', title: 'Meeting Assistant', icon: Video, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
             { page: 'CallInsights', title: 'Call Recordings', icon: HardDrive, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
             {
                 page: 'AIRoleplayHistory',
-                title: 'Reports',
+                title: 'Performance Reports',
                 icon: BarChart3,
                 roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'],
                 submenu: [
