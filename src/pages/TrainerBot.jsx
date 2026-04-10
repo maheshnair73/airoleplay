@@ -29,6 +29,9 @@ export default function TrainerBot() {
   const navigate = useNavigate();
   const docId = searchParams.get('docId');
   const assignmentId = searchParams.get('assignmentId');
+  const isDemo = searchParams.get('demo') === 'true';
+  const demoCategory = searchParams.get('category') || 'Product Knowledge';
+  const demoTitle = searchParams.get('title') || 'Training Session';
 
   const [currentUser, setCurrentUser] = useState(null);
   const [document, setDocument] = useState(null);
@@ -46,11 +49,26 @@ export default function TrainerBot() {
 
   useEffect(() => {
     loadTrainingData();
-  }, [docId]);
+  }, [docId, isDemo]);
 
   const loadTrainingData = async () => {
     setIsLoading(true);
     try {
+      if (isDemo) {
+        const demoDoc = {
+          id: `demo-${demoCategory}`,
+          title: demoTitle,
+          category: demoCategory,
+          passing_score: 75,
+          document_type: 'course'
+        };
+        setDocument(demoDoc);
+        setQuestions(generateMockQuestions(demoDoc));
+        setStartTime(Date.now());
+        setIsLoading(false);
+        return;
+      }
+
       const [user, doc, attempts] = await Promise.all([
         User.me(),
         TrainingDocument.get(docId),
@@ -231,6 +249,12 @@ export default function TrainerBot() {
 
     setScore(finalScore);
     setIsComplete(true);
+
+    if (isDemo) {
+      if (passed) toast.success('Great work! You passed this demo training.');
+      else toast.error(`Score: ${Math.round(finalScore)}%. You need ${document.passing_score}% to pass.`);
+      return;
+    }
 
     try {
       await AgentTrainingAttempt.create({

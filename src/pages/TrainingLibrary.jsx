@@ -401,8 +401,11 @@ export default function TrainingLibrary() {
   };
 
   const handleStartCourse = (course) => {
-    if (course.id?.startsWith('dummy-')) { toast.info('Upload your own courses to get started!'); return; }
-    navigate(createPageUrl(`CertificationTest?id=${course.id}`));
+    if (course.id?.startsWith('dummy-')) {
+      navigate(createPageUrl(`TrainerBot?demo=true&category=${encodeURIComponent(course.category)}&title=${encodeURIComponent(course.title)}`));
+      return;
+    }
+    navigate(createPageUrl(`TrainerBot?docId=${course.id}`));
   };
 
   const allCourses = [
