@@ -39,11 +39,13 @@ export default function TrainerBot() {
   const [assignment, setAssignment] = useState(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [userAnswers, setUserAnswers] = useState({});
-  const [showExplanation, setShowExplanation] = useState(false);
+  const [showResult, setShowResult] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
   const [score, setScore] = useState(0);
   const [attemptNumber, setAttemptNumber] = useState(1);
   const [startTime, setStartTime] = useState(Date.now());
+  const [questionStartTime, setQuestionStartTime] = useState(Date.now());
+  const [questionTimes, setQuestionTimes] = useState({});
   const [mode, setMode] = useState('study');
   const [isLoading, setIsLoading] = useState(true);
 
@@ -199,29 +201,29 @@ export default function TrainerBot() {
   };
 
   const handleAnswerSelect = (answer) => {
+    if (showResult) return;
     setUserAnswers({
       ...userAnswers,
       [currentQuestionIndex]: answer
     });
-    setShowExplanation(false);
   };
 
   const handleCheckAnswer = () => {
-    const currentQuestion = questions[currentQuestionIndex];
     const userAnswer = userAnswers[currentQuestionIndex];
-
     if (!userAnswer) {
       toast.error('Please select an answer');
       return;
     }
-
-    setShowExplanation(true);
+    const elapsed = Math.round((Date.now() - questionStartTime) / 1000);
+    setQuestionTimes(prev => ({ ...prev, [currentQuestionIndex]: elapsed }));
+    setShowResult(true);
   };
 
   const handleNext = () => {
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
-      setShowExplanation(false);
+      setShowResult(false);
+      setQuestionStartTime(Date.now());
     } else {
       completeTraining();
     }
@@ -230,8 +232,19 @@ export default function TrainerBot() {
   const handlePrevious = () => {
     if (currentQuestionIndex > 0) {
       setCurrentQuestionIndex(currentQuestionIndex - 1);
-      setShowExplanation(false);
+      setShowResult(false);
+      setQuestionStartTime(Date.now());
     }
+  };
+
+  const resolveCorrectAnswerText = (question) => {
+    if (!question) return '';
+    const ca = question.correct_answer;
+    if (ca && ca.length === 1 && ca >= 'A' && ca <= 'D') {
+      const idx = ca.charCodeAt(0) - 65;
+      return question.options?.[idx] ?? ca;
+    }
+    return ca;
   };
 
   const completeTraining = async () => {
@@ -239,7 +252,9 @@ export default function TrainerBot() {
     let correctAnswers = 0;
 
     questions.forEach((question, index) => {
-      if (userAnswers[index] === question.correct_answer) {
+      const correctText = resolveCorrectAnswerText(question);
+      const ans = userAnswers[index];
+      if (ans === correctText || ans === question.correct_answer) {
         correctAnswers++;
       }
     });
@@ -311,11 +326,13 @@ export default function TrainerBot() {
   const handleRetake = () => {
     setCurrentQuestionIndex(0);
     setUserAnswers({});
-    setShowExplanation(false);
+    setShowResult(false);
     setIsComplete(false);
     setScore(0);
     setAttemptNumber(attemptNumber + 1);
     setStartTime(Date.now());
+    setQuestionStartTime(Date.now());
+    setQuestionTimes({});
   };
 
   if (isLoading) {
@@ -399,7 +416,7 @@ export default function TrainerBot() {
               Back to Library
             </Button>
             <Button
-              onClick={() => setMode('quiz')}
+              onClick={() => { setMode('quiz'); setQuestionStartTime(Date.now()); }}
               className="bg-blue-600 hover:bg-blue-700"
             >
               Start Quiz
@@ -439,18 +456,28 @@ export default function TrainerBot() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="grid grid-cols-3 gap-4">
-                <div className="p-4 bg-slate-50 rounded-lg">
-                  <p className="text-sm text-slate-600">Your Score</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-4 bg-slate-50 rounded-xl text-center">
+                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Your Score</p>
                   <p className="text-3xl font-bold text-slate-900">{Math.round(score)}%</p>
                 </div>
-                <div className="p-4 bg-slate-50 rounded-lg">
-                  <p className="text-sm text-slate-600">Passing Score</p>
+                <div className="p-4 bg-slate-50 rounded-xl text-center">
+                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Passing Score</p>
                   <p className="text-3xl font-bold text-slate-900">{document.passing_score}%</p>
                 </div>
-                <div className="p-4 bg-slate-50 rounded-lg">
-                  <p className="text-sm text-slate-600">Questions</p>
+                <div className="p-4 bg-slate-50 rounded-xl text-center">
+                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Questions</p>
                   <p className="text-3xl font-bold text-slate-900">{questions.length}</p>
+                </div>
+                <div className="p-4 bg-slate-50 rounded-xl text-center">
+                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Time Taken</p>
+                  <p className="text-3xl font-bold text-slate-900">
+                    {(() => {
+                      const total = Object.values(questionTimes).reduce((a, b) => a + b, 0);
+                      if (total < 60) return `${total}s`;
+                      return `${Math.floor(total / 60)}m ${total % 60}s`;
+                    })()}
+                  </p>
                 </div>
               </div>
 
@@ -503,21 +530,15 @@ export default function TrainerBot() {
   const currentQuestion = questions[currentQuestionIndex];
   const userAnswer = userAnswers[currentQuestionIndex];
   const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
-
-  const resolveCorrectAnswerText = (question) => {
-    if (!question) return '';
-    const ca = question.correct_answer;
-    if (ca && ca.length === 1 && ca >= 'A' && ca <= 'D') {
-      const idx = ca.charCodeAt(0) - 65;
-      return question.options?.[idx] ?? ca;
-    }
-    return ca;
-  };
-
   const correctAnswerText = resolveCorrectAnswerText(currentQuestion);
   const isCorrect = userAnswer === correctAnswerText || userAnswer === currentQuestion?.correct_answer;
-
+  const questionTimeTaken = questionTimes[currentQuestionIndex];
   const LETTERS = ['A', 'B', 'C', 'D', 'E'];
+
+  const formatTime = (secs) => {
+    if (secs < 60) return `${secs}s`;
+    return `${Math.floor(secs / 60)}m ${secs % 60}s`;
+  };
 
   return (
     <div className="p-6 bg-slate-50 min-h-screen">
@@ -527,128 +548,116 @@ export default function TrainerBot() {
             <span className="text-sm font-medium text-slate-700">
               Question {currentQuestionIndex + 1} of {questions.length}
             </span>
-            <span className="text-sm text-slate-600">
+            <span className="text-sm text-slate-500">
               Attempt #{attemptNumber}
             </span>
           </div>
           <Progress value={progress} className="h-2" />
         </div>
 
-        <Card className="overflow-hidden">
-          <CardHeader className="pb-4">
-            <div className="flex items-start gap-3">
-              <div className="p-2 bg-blue-100 rounded-lg flex-shrink-0">
-                <Brain className="w-5 h-5 text-blue-600" />
-              </div>
-              <div className="flex-1">
-                <CardTitle className="text-xl leading-snug">{currentQuestion?.question_text}</CardTitle>
-                <Badge className="mt-2 capitalize">{currentQuestion?.difficulty}</Badge>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <RadioGroup value={userAnswer} onValueChange={handleAnswerSelect}>
-              <div className="space-y-3">
-                {currentQuestion?.options?.map((option, index) => {
-                  const isSelected = userAnswer === option;
-                  const isCorrectOption = option === correctAnswerText || option === currentQuestion.correct_answer;
-                  const showResult = showExplanation;
-                  const letter = LETTERS[index] || String(index + 1);
-
-                  let wrapClass = 'border-2 rounded-xl cursor-pointer transition-all duration-200';
-                  let letterClass = 'w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 transition-colors duration-200';
-                  let textClass = 'text-sm font-medium';
-
-                  if (showResult) {
-                    if (isCorrectOption) {
-                      wrapClass += ' border-green-500 bg-green-50 shadow-sm shadow-green-100';
-                      letterClass += ' bg-green-500 text-white';
-                      textClass += ' text-green-900';
-                    } else if (isSelected && !isCorrect) {
-                      wrapClass += ' border-red-400 bg-red-50';
-                      letterClass += ' bg-red-400 text-white';
-                      textClass += ' text-red-900';
-                    } else {
-                      wrapClass += ' border-slate-200 bg-slate-50 opacity-50';
-                      letterClass += ' bg-slate-200 text-slate-500';
-                      textClass += ' text-slate-500';
-                    }
-                  } else if (isSelected) {
-                    wrapClass += ' border-blue-500 bg-blue-50 shadow-sm shadow-blue-100';
-                    letterClass += ' bg-blue-500 text-white';
-                    textClass += ' text-blue-900';
-                  } else {
-                    wrapClass += ' border-slate-200 bg-white hover:border-blue-300 hover:bg-blue-50/40';
-                    letterClass += ' bg-slate-100 text-slate-600';
-                    textClass += ' text-slate-800';
-                  }
-
-                  return (
-                    <div key={index} className={wrapClass}>
-                      <label htmlFor={`option-${index}`} className="flex items-center gap-3 p-4 cursor-pointer w-full">
-                        <RadioGroupItem value={option} id={`option-${index}`} disabled={showExplanation} className="sr-only" />
-                        <span className={letterClass}>{letter}</span>
-                        <span className={`flex-1 ${textClass}`}>{option}</span>
-                        {showResult && isCorrectOption && (
-                          <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
-                        )}
-                        {showResult && isSelected && !isCorrect && (
-                          <XCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
-                        )}
-                      </label>
-                    </div>
-                  );
-                })}
-              </div>
-            </RadioGroup>
-
-            {showExplanation && (
-              <div className={`rounded-xl border-2 overflow-hidden transition-all duration-300 ${isCorrect ? 'border-green-300' : 'border-red-300'}`}>
-                <div className={`flex items-center gap-3 px-5 py-4 ${isCorrect ? 'bg-green-500' : 'bg-red-500'}`}>
-                  {isCorrect ? (
-                    <CheckCircle className="w-6 h-6 text-white flex-shrink-0" />
-                  ) : (
-                    <XCircle className="w-6 h-6 text-white flex-shrink-0" />
-                  )}
-                  <p className="text-white font-bold text-lg">
-                    {isCorrect ? 'Correct!' : 'Incorrect'}
-                  </p>
+        {!showResult ? (
+          <Card className="overflow-hidden">
+            <CardHeader className="pb-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-blue-100 rounded-lg flex-shrink-0">
+                  <Brain className="w-5 h-5 text-blue-600" />
                 </div>
-                <div className={`px-5 py-4 space-y-3 ${isCorrect ? 'bg-green-50' : 'bg-red-50'}`}>
-                  {!isCorrect && (
-                    <div className="flex items-start gap-2">
-                      <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
-                      <p className="text-sm font-semibold text-slate-800">
-                        Correct answer: <span className="text-green-700">{correctAnswerText}</span>
-                      </p>
-                    </div>
-                  )}
-                  {currentQuestion.explanation && (
-                    <div className="flex items-start gap-2">
-                      <MessageSquare className={`w-4 h-4 mt-0.5 flex-shrink-0 ${isCorrect ? 'text-green-600' : 'text-slate-500'}`} />
-                      <p className="text-sm text-slate-700">{currentQuestion.explanation}</p>
-                    </div>
-                  )}
+                <div className="flex-1">
+                  <CardTitle className="text-xl leading-snug">{currentQuestion?.question_text}</CardTitle>
+                  <Badge className="mt-2 capitalize">{currentQuestion?.difficulty}</Badge>
                 </div>
               </div>
-            )}
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <RadioGroup value={userAnswer} onValueChange={handleAnswerSelect}>
+                <div className="space-y-3">
+                  {currentQuestion?.options?.map((option, index) => {
+                    const isSelected = userAnswer === option;
+                    const letter = LETTERS[index] || String(index + 1);
+                    return (
+                      <div
+                        key={index}
+                        className={`border-2 rounded-xl transition-all duration-200 ${
+                          isSelected
+                            ? 'border-blue-500 bg-blue-50 shadow-sm'
+                            : 'border-slate-200 bg-white hover:border-blue-300 hover:bg-blue-50/30 cursor-pointer'
+                        }`}
+                      >
+                        <label htmlFor={`option-${index}`} className="flex items-center gap-3 p-4 cursor-pointer w-full">
+                          <RadioGroupItem value={option} id={`option-${index}`} className="sr-only" />
+                          <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 transition-colors duration-200 ${
+                            isSelected ? 'bg-blue-500 text-white' : 'bg-slate-100 text-slate-600'
+                          }`}>{letter}</span>
+                          <span className={`flex-1 text-sm font-medium ${isSelected ? 'text-blue-900' : 'text-slate-800'}`}>{option}</span>
+                        </label>
+                      </div>
+                    );
+                  })}
+                </div>
+              </RadioGroup>
 
-            <div className="flex items-center justify-between pt-2">
-              <Button
-                variant="outline"
-                onClick={handlePrevious}
-                disabled={currentQuestionIndex === 0}
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Previous
-              </Button>
-
-              {!showExplanation ? (
-                <Button onClick={handleCheckAnswer} className="bg-blue-600 hover:bg-blue-700 px-6">
+              <div className="flex items-center justify-between pt-2">
+                <Button
+                  variant="outline"
+                  onClick={handlePrevious}
+                  disabled={currentQuestionIndex === 0}
+                >
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Previous
+                </Button>
+                <Button onClick={handleCheckAnswer} className="bg-blue-600 hover:bg-blue-700 px-8">
                   Check Answer
                 </Button>
-              ) : (
-                <Button onClick={handleNext} className={`px-6 ${isCorrect ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'}`}>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="overflow-hidden">
+            <div className={`px-6 py-5 flex items-center justify-between ${isCorrect ? 'bg-green-500' : 'bg-red-500'}`}>
+              <div className="flex items-center gap-3">
+                {isCorrect ? (
+                  <CheckCircle className="w-7 h-7 text-white" />
+                ) : (
+                  <XCircle className="w-7 h-7 text-white" />
+                )}
+                <p className="text-white font-bold text-xl">
+                  {isCorrect ? 'Correct!' : 'Incorrect'}
+                </p>
+              </div>
+              {questionTimeTaken !== undefined && (
+                <div className="flex items-center gap-1.5 bg-white/20 rounded-full px-3 py-1">
+                  <Clock className="w-3.5 h-3.5 text-white" />
+                  <span className="text-white text-xs font-medium">{formatTime(questionTimeTaken)}</span>
+                </div>
+              )}
+            </div>
+
+            <CardContent className="p-6 space-y-5">
+              {!isCorrect && (
+                <div className="flex items-start gap-3 p-4 bg-green-50 border border-green-200 rounded-xl">
+                  <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-xs font-semibold text-green-700 uppercase tracking-wide mb-1">Correct Answer</p>
+                    <p className="text-sm font-semibold text-green-900">{correctAnswerText}</p>
+                  </div>
+                </div>
+              )}
+
+              {currentQuestion?.explanation && (
+                <div className="flex items-start gap-3 p-4 bg-slate-50 border border-slate-200 rounded-xl">
+                  <MessageSquare className="w-5 h-5 text-slate-500 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Explanation</p>
+                    <p className="text-sm text-slate-700">{currentQuestion.explanation}</p>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex justify-end pt-1">
+                <Button
+                  onClick={handleNext}
+                  className={`px-8 ${isCorrect ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'}`}
+                >
                   {currentQuestionIndex < questions.length - 1 ? (
                     <>
                       Next Question
@@ -661,10 +670,10 @@ export default function TrainerBot() {
                     </>
                   )}
                 </Button>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );
