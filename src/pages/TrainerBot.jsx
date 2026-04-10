@@ -502,8 +502,22 @@ export default function TrainerBot() {
 
   const currentQuestion = questions[currentQuestionIndex];
   const userAnswer = userAnswers[currentQuestionIndex];
-  const isCorrect = userAnswer === currentQuestion?.correct_answer;
   const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
+
+  const resolveCorrectAnswerText = (question) => {
+    if (!question) return '';
+    const ca = question.correct_answer;
+    if (ca && ca.length === 1 && ca >= 'A' && ca <= 'D') {
+      const idx = ca.charCodeAt(0) - 65;
+      return question.options?.[idx] ?? ca;
+    }
+    return ca;
+  };
+
+  const correctAnswerText = resolveCorrectAnswerText(currentQuestion);
+  const isCorrect = userAnswer === correctAnswerText || userAnswer === currentQuestion?.correct_answer;
+
+  const LETTERS = ['A', 'B', 'C', 'D', 'E'];
 
   return (
     <div className="p-6 bg-slate-50 min-h-screen">
@@ -520,56 +534,68 @@ export default function TrainerBot() {
           <Progress value={progress} className="h-2" />
         </div>
 
-        <Card>
-          <CardHeader>
+        <Card className="overflow-hidden">
+          <CardHeader className="pb-4">
             <div className="flex items-start gap-3">
-              <div className="p-2 bg-blue-100 rounded-lg">
+              <div className="p-2 bg-blue-100 rounded-lg flex-shrink-0">
                 <Brain className="w-5 h-5 text-blue-600" />
               </div>
               <div className="flex-1">
-                <CardTitle className="text-xl">{currentQuestion?.question_text}</CardTitle>
-                <Badge className="mt-2">{currentQuestion?.difficulty}</Badge>
+                <CardTitle className="text-xl leading-snug">{currentQuestion?.question_text}</CardTitle>
+                <Badge className="mt-2 capitalize">{currentQuestion?.difficulty}</Badge>
               </div>
             </div>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-4">
             <RadioGroup value={userAnswer} onValueChange={handleAnswerSelect}>
               <div className="space-y-3">
                 {currentQuestion?.options?.map((option, index) => {
                   const isSelected = userAnswer === option;
-                  const isCorrectOption = option === currentQuestion.correct_answer;
+                  const isCorrectOption = option === correctAnswerText || option === currentQuestion.correct_answer;
                   const showResult = showExplanation;
+                  const letter = LETTERS[index] || String(index + 1);
 
-                  let optionClass = 'border-2 p-4 rounded-lg cursor-pointer transition-all hover:border-blue-300';
+                  let wrapClass = 'border-2 rounded-xl cursor-pointer transition-all duration-200';
+                  let letterClass = 'w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 transition-colors duration-200';
+                  let textClass = 'text-sm font-medium';
 
                   if (showResult) {
                     if (isCorrectOption) {
-                      optionClass = 'border-2 border-green-500 bg-green-50 p-4 rounded-lg';
+                      wrapClass += ' border-green-500 bg-green-50 shadow-sm shadow-green-100';
+                      letterClass += ' bg-green-500 text-white';
+                      textClass += ' text-green-900';
                     } else if (isSelected && !isCorrect) {
-                      optionClass = 'border-2 border-red-500 bg-red-50 p-4 rounded-lg';
+                      wrapClass += ' border-red-400 bg-red-50';
+                      letterClass += ' bg-red-400 text-white';
+                      textClass += ' text-red-900';
                     } else {
-                      optionClass = 'border-2 border-slate-200 p-4 rounded-lg opacity-60';
+                      wrapClass += ' border-slate-200 bg-slate-50 opacity-50';
+                      letterClass += ' bg-slate-200 text-slate-500';
+                      textClass += ' text-slate-500';
                     }
                   } else if (isSelected) {
-                    optionClass = 'border-2 border-blue-500 bg-blue-50 p-4 rounded-lg cursor-pointer';
+                    wrapClass += ' border-blue-500 bg-blue-50 shadow-sm shadow-blue-100';
+                    letterClass += ' bg-blue-500 text-white';
+                    textClass += ' text-blue-900';
+                  } else {
+                    wrapClass += ' border-slate-200 bg-white hover:border-blue-300 hover:bg-blue-50/40';
+                    letterClass += ' bg-slate-100 text-slate-600';
+                    textClass += ' text-slate-800';
                   }
 
                   return (
-                    <div key={index} className={optionClass}>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3 flex-1">
-                          <RadioGroupItem value={option} id={`option-${index}`} disabled={showExplanation} />
-                          <Label htmlFor={`option-${index}`} className="flex-1 cursor-pointer">
-                            {option}
-                          </Label>
-                        </div>
+                    <div key={index} className={wrapClass}>
+                      <label htmlFor={`option-${index}`} className="flex items-center gap-3 p-4 cursor-pointer w-full">
+                        <RadioGroupItem value={option} id={`option-${index}`} disabled={showExplanation} className="sr-only" />
+                        <span className={letterClass}>{letter}</span>
+                        <span className={`flex-1 ${textClass}`}>{option}</span>
                         {showResult && isCorrectOption && (
-                          <CheckCircle className="w-5 h-5 text-green-600" />
+                          <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
                         )}
                         {showResult && isSelected && !isCorrect && (
-                          <XCircle className="w-5 h-5 text-red-600" />
+                          <XCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
                         )}
-                      </div>
+                      </label>
                     </div>
                   );
                 })}
@@ -577,28 +603,37 @@ export default function TrainerBot() {
             </RadioGroup>
 
             {showExplanation && (
-              <Card className={isCorrect ? 'border-green-200 bg-green-50' : 'border-orange-200 bg-orange-50'}>
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-3">
-                    {isCorrect ? (
-                      <CheckCircle className="w-5 h-5 text-green-600 mt-0.5" />
-                    ) : (
-                      <MessageSquare className="w-5 h-5 text-orange-600 mt-0.5" />
-                    )}
-                    <div>
-                      <p className={`font-semibold ${isCorrect ? 'text-green-900' : 'text-orange-900'}`}>
-                        {isCorrect ? 'Correct!' : 'Not quite right'}
-                      </p>
-                      <p className={`text-sm mt-1 ${isCorrect ? 'text-green-800' : 'text-orange-800'}`}>
-                        {currentQuestion.explanation}
+              <div className={`rounded-xl border-2 overflow-hidden transition-all duration-300 ${isCorrect ? 'border-green-300' : 'border-red-300'}`}>
+                <div className={`flex items-center gap-3 px-5 py-4 ${isCorrect ? 'bg-green-500' : 'bg-red-500'}`}>
+                  {isCorrect ? (
+                    <CheckCircle className="w-6 h-6 text-white flex-shrink-0" />
+                  ) : (
+                    <XCircle className="w-6 h-6 text-white flex-shrink-0" />
+                  )}
+                  <p className="text-white font-bold text-lg">
+                    {isCorrect ? 'Correct!' : 'Incorrect'}
+                  </p>
+                </div>
+                <div className={`px-5 py-4 space-y-3 ${isCorrect ? 'bg-green-50' : 'bg-red-50'}`}>
+                  {!isCorrect && (
+                    <div className="flex items-start gap-2">
+                      <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                      <p className="text-sm font-semibold text-slate-800">
+                        Correct answer: <span className="text-green-700">{correctAnswerText}</span>
                       </p>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  )}
+                  {currentQuestion.explanation && (
+                    <div className="flex items-start gap-2">
+                      <MessageSquare className={`w-4 h-4 mt-0.5 flex-shrink-0 ${isCorrect ? 'text-green-600' : 'text-slate-500'}`} />
+                      <p className="text-sm text-slate-700">{currentQuestion.explanation}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
             )}
 
-            <div className="flex items-center justify-between pt-4">
+            <div className="flex items-center justify-between pt-2">
               <Button
                 variant="outline"
                 onClick={handlePrevious}
@@ -609,11 +644,11 @@ export default function TrainerBot() {
               </Button>
 
               {!showExplanation ? (
-                <Button onClick={handleCheckAnswer} className="bg-blue-600 hover:bg-blue-700">
+                <Button onClick={handleCheckAnswer} className="bg-blue-600 hover:bg-blue-700 px-6">
                   Check Answer
                 </Button>
               ) : (
-                <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700">
+                <Button onClick={handleNext} className={`px-6 ${isCorrect ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'}`}>
                   {currentQuestionIndex < questions.length - 1 ? (
                     <>
                       Next Question
