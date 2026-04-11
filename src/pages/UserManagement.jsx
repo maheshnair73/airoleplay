@@ -541,14 +541,14 @@ export default function UserManagement() {
                 modulesByGroup={modulesByGroup}
                 getStatus={getCompanyModuleStatus}
                 onToggle={(mod, enabled) => {
-                  if (!isSuperAdmin) { toast.error('Only super admins can change company modules'); return; }
+                  if (!isCompanyAdmin) { toast.error('Only admins can change company modules'); return; }
                   toggleCompanyModule(mod.id, mod.name, enabled);
                 }}
-                disabled={!isSuperAdmin}
-                title={`Modules for ${selectedCompany.company_name}`}
-                description={!isSuperAdmin ? 'Contact your super admin to change module access.' : 'Click modules to enable or disable them for this company.'}
+                disabled={!isCompanyAdmin}
+                title={`Modules for ${selectedCompany.company_name || selectedCompany.name}`}
+                description={!isCompanyAdmin ? 'Contact your admin to change module access.' : 'Click modules to enable or disable them for this company.'}
                 onToggleAll={async (groupMods, enable) => {
-                  if (!isSuperAdmin) { toast.error('Only super admins can change company modules'); return; }
+                  if (!isCompanyAdmin) { toast.error('Only admins can change company modules'); return; }
                   for (const mod of groupMods) {
                     const cur = getCompanyModuleStatus(mod.id);
                     if (cur !== enable) await toggleCompanyModule(mod.id, mod.name, cur);
