@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Company, CompanyModuleAssignment, UserModuleAssignment, User } from '@/api/entities';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { User } from '@/api/entities';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -10,122 +10,12 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import {
   Building2, Users, Package, Plus, Search, ChevronRight,
-  Shield, Check, UserPlus, Settings, ArrowLeft, Crown,
-  CheckSquare, Square, Layers
+  Shield, UserPlus, Settings, ArrowLeft, Crown, Layers
 } from 'lucide-react';
 import { toast } from 'sonner';
-
-const GROUP_COLORS = {
-  Core: 'blue',
-  Sales: 'emerald',
-  Coaching: 'amber',
-  'Call Intelligence': 'cyan',
-  Training: 'teal',
-  Knowledge: 'sky',
-  Gamification: 'orange',
-  Analytics: 'indigo',
-  AI: 'violet',
-  Dialer: 'rose',
-};
-
-function ModuleSelector({ modulesByGroup, getStatus, isDisabledForUser, onToggle, disabled, title, description, onToggleAll }) {
-  const totalEnabled = Object.values(modulesByGroup).flat().filter(m => getStatus(m.id)).length;
-  const totalModules = Object.values(modulesByGroup).flat().length;
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="font-semibold text-slate-900">{title}</h3>
-          <p className="text-sm text-slate-500 mt-0.5">{description}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-slate-500">{totalEnabled} / {totalModules} enabled</span>
-          <div className="w-24 h-2 rounded-full bg-slate-200 overflow-hidden">
-            <div
-              className="h-full bg-blue-500 rounded-full transition-all"
-              style={{ width: `${totalModules > 0 ? (totalEnabled / totalModules) * 100 : 0}%` }}
-            />
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {Object.entries(modulesByGroup).map(([group, mods]) => {
-          const enabledInGroup = mods.filter(m => getStatus(m.id)).length;
-          const allEnabled = enabledInGroup === mods.filter(m => !isDisabledForUser?.(m.id)).length && enabledInGroup > 0;
-          const color = GROUP_COLORS[group] || 'blue';
-
-          const colorMap = {
-            blue: { bg: 'bg-blue-50', border: 'border-blue-100', header: 'bg-blue-100/60', badge: 'bg-blue-100 text-blue-700', dot: 'bg-blue-500', chip: 'bg-blue-500 text-white border-blue-500', chipOff: 'bg-white text-slate-600 border-slate-200 hover:border-blue-300' },
-            emerald: { bg: 'bg-emerald-50', border: 'border-emerald-100', header: 'bg-emerald-100/60', badge: 'bg-emerald-100 text-emerald-700', dot: 'bg-emerald-500', chip: 'bg-emerald-500 text-white border-emerald-500', chipOff: 'bg-white text-slate-600 border-slate-200 hover:border-emerald-300' },
-            amber: { bg: 'bg-amber-50', border: 'border-amber-100', header: 'bg-amber-100/60', badge: 'bg-amber-100 text-amber-700', dot: 'bg-amber-500', chip: 'bg-amber-500 text-white border-amber-500', chipOff: 'bg-white text-slate-600 border-slate-200 hover:border-amber-300' },
-            cyan: { bg: 'bg-cyan-50', border: 'border-cyan-100', header: 'bg-cyan-100/60', badge: 'bg-cyan-100 text-cyan-700', dot: 'bg-cyan-500', chip: 'bg-cyan-500 text-white border-cyan-500', chipOff: 'bg-white text-slate-600 border-slate-200 hover:border-cyan-300' },
-            teal: { bg: 'bg-teal-50', border: 'border-teal-100', header: 'bg-teal-100/60', badge: 'bg-teal-100 text-teal-700', dot: 'bg-teal-500', chip: 'bg-teal-500 text-white border-teal-500', chipOff: 'bg-white text-slate-600 border-slate-200 hover:border-teal-300' },
-            sky: { bg: 'bg-sky-50', border: 'border-sky-100', header: 'bg-sky-100/60', badge: 'bg-sky-100 text-sky-700', dot: 'bg-sky-500', chip: 'bg-sky-500 text-white border-sky-500', chipOff: 'bg-white text-slate-600 border-slate-200 hover:border-sky-300' },
-            orange: { bg: 'bg-orange-50', border: 'border-orange-100', header: 'bg-orange-100/60', badge: 'bg-orange-100 text-orange-700', dot: 'bg-orange-500', chip: 'bg-orange-500 text-white border-orange-500', chipOff: 'bg-white text-slate-600 border-slate-200 hover:border-orange-300' },
-            indigo: { bg: 'bg-slate-50', border: 'border-slate-200', header: 'bg-slate-100/60', badge: 'bg-slate-100 text-slate-700', dot: 'bg-slate-500', chip: 'bg-slate-600 text-white border-slate-600', chipOff: 'bg-white text-slate-600 border-slate-200 hover:border-slate-400' },
-            violet: { bg: 'bg-slate-50', border: 'border-slate-200', header: 'bg-slate-100/60', badge: 'bg-slate-100 text-slate-700', dot: 'bg-slate-500', chip: 'bg-slate-700 text-white border-slate-700', chipOff: 'bg-white text-slate-600 border-slate-200 hover:border-slate-400' },
-            rose: { bg: 'bg-rose-50', border: 'border-rose-100', header: 'bg-rose-100/60', badge: 'bg-rose-100 text-rose-700', dot: 'bg-rose-500', chip: 'bg-rose-500 text-white border-rose-500', chipOff: 'bg-white text-slate-600 border-slate-200 hover:border-rose-300' },
-          };
-          const c = colorMap[color] || colorMap.blue;
-
-          return (
-            <div key={group} className={`rounded-xl border ${c.border} ${c.bg} overflow-hidden`}>
-              <div className={`flex items-center justify-between px-4 py-2.5 ${c.header}`}>
-                <div className="flex items-center gap-2">
-                  <Layers className="w-3.5 h-3.5 text-slate-500" />
-                  <span className="text-xs font-semibold text-slate-700 uppercase tracking-wide">{group}</span>
-                  <span className={`text-xs font-medium px-1.5 py-0.5 rounded-full ${c.badge}`}>
-                    {enabledInGroup}/{mods.length}
-                  </span>
-                </div>
-                {!disabled && onToggleAll && (
-                  <button
-                    onClick={() => onToggleAll(mods, !allEnabled)}
-                    className="text-xs text-slate-500 hover:text-slate-800 flex items-center gap-1 transition-colors"
-                  >
-                    {allEnabled ? <CheckSquare className="w-3.5 h-3.5" /> : <Square className="w-3.5 h-3.5" />}
-                    {allEnabled ? 'Disable all' : 'Enable all'}
-                  </button>
-                )}
-              </div>
-
-              <div className="p-3 flex flex-wrap gap-2">
-                {mods.map(mod => {
-                  const enabled = getStatus(mod.id);
-                  const lockedOut = isDisabledForUser?.(mod.id);
-                  return (
-                    <button
-                      key={mod.id}
-                      disabled={disabled || lockedOut}
-                      onClick={() => !disabled && !lockedOut && onToggle(mod, enabled)}
-                      title={lockedOut ? 'Not enabled for this company' : undefined}
-                      className={`
-                        inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border transition-all
-                        ${lockedOut ? 'opacity-35 cursor-not-allowed bg-slate-50 text-slate-400 border-slate-200' :
-                          enabled ? `${c.chip} shadow-sm` : `${c.chipOff} cursor-pointer`}
-                        ${!disabled && !lockedOut ? 'hover:scale-105 active:scale-95' : ''}
-                      `}
-                    >
-                      {enabled && !lockedOut && <Check className="w-3 h-3 flex-shrink-0" />}
-                      {mod.name}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
 
 const ALL_MODULES = [
   { id: 'Dashboard', name: 'Dashboard', group: 'Core' },
@@ -155,6 +45,186 @@ const ALL_MODULES = [
 
 const ROLES = ['sales_agent', 'sales_manager', 'company_admin'];
 
+const ROLE_LABELS = {
+  sales_agent: 'Sales Agent',
+  sales_manager: 'Sales Manager',
+  company_admin: 'Company Admin',
+};
+
+const modulesByGroup = ALL_MODULES.reduce((acc, m) => {
+  if (!acc[m.group]) acc[m.group] = [];
+  acc[m.group].push(m);
+  return acc;
+}, {});
+
+function ModuleTable({ groups, getStatus, onToggle, lockedModules = new Set(), showGroupToggle = false, onToggleGroup }) {
+  return (
+    <div className="border border-slate-200 rounded-lg overflow-hidden">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="bg-slate-50 border-b border-slate-200">
+            <th className="text-left px-4 py-2.5 font-semibold text-slate-700 w-1/2">Module</th>
+            <th className="text-center px-4 py-2.5 font-semibold text-slate-700 w-1/2">Access</th>
+          </tr>
+        </thead>
+        <tbody>
+          {Object.entries(groups).map(([group, mods]) => {
+            const enabledCount = mods.filter(m => getStatus(m.id)).length;
+            const allEnabled = enabledCount === mods.length;
+            return (
+              <React.Fragment key={group}>
+                <tr className="bg-slate-50/80 border-b border-slate-100">
+                  <td colSpan={2} className="px-4 py-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Layers className="w-3.5 h-3.5 text-slate-400" />
+                        <span className="font-semibold text-slate-600 text-xs uppercase tracking-wide">{group}</span>
+                        <span className="text-xs text-slate-400">({enabledCount}/{mods.length})</span>
+                      </div>
+                      {showGroupToggle && onToggleGroup && (
+                        <button
+                          onClick={() => onToggleGroup(mods, !allEnabled)}
+                          className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                        >
+                          {allEnabled ? 'Disable all' : 'Enable all'}
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+                {mods.map((mod, i) => {
+                  const enabled = getStatus(mod.id);
+                  const locked = lockedModules.has(mod.id);
+                  return (
+                    <tr
+                      key={mod.id}
+                      className={`border-b border-slate-100 last:border-0 ${locked ? 'opacity-40' : 'hover:bg-slate-50'} transition-colors`}
+                    >
+                      <td className="px-4 py-3 pl-8 text-slate-700">{mod.name}</td>
+                      <td className="px-4 py-3 text-center">
+                        <Switch
+                          checked={enabled && !locked}
+                          disabled={locked}
+                          onCheckedChange={() => !locked && onToggle(mod, enabled)}
+                        />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </React.Fragment>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function RoleDefaultsTab({ companyId, currentUserId, isCompanyAdmin }) {
+  const [activeRole, setActiveRole] = useState('sales_agent');
+  const [roleDefaults, setRoleDefaults] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const load = async () => {
+    setLoading(true);
+    const query = supabase
+      .from('role_module_defaults')
+      .select('*')
+      .eq('role', activeRole);
+
+    if (companyId) query.eq('company_id', companyId);
+    else query.is('company_id', null);
+
+    const { data } = await query;
+    setRoleDefaults(data || []);
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, [activeRole, companyId]);
+
+  const getStatus = (moduleId) => {
+    const r = roleDefaults.find(d => d.module_id === moduleId);
+    return r ? r.is_enabled : false;
+  };
+
+  const toggle = async (mod, currentEnabled) => {
+    const existing = roleDefaults.find(d => d.module_id === mod.id);
+    try {
+      if (existing) {
+        await supabase
+          .from('role_module_defaults')
+          .update({ is_enabled: !currentEnabled, updated_at: new Date().toISOString() })
+          .eq('id', existing.id);
+        setRoleDefaults(prev => prev.map(d => d.module_id === mod.id ? { ...d, is_enabled: !currentEnabled } : d));
+      } else {
+        const payload = {
+          role: activeRole,
+          module_id: mod.id,
+          module_name: mod.name,
+          is_enabled: true,
+          created_by: currentUserId,
+        };
+        if (companyId) payload.company_id = companyId;
+
+        const { data } = await supabase
+          .from('role_module_defaults')
+          .insert(payload)
+          .select()
+          .single();
+        setRoleDefaults(prev => [...prev, data]);
+      }
+      toast.success('Role default updated');
+    } catch (e) {
+      toast.error('Failed to update');
+    }
+  };
+
+  const toggleGroup = async (mods, enable) => {
+    for (const mod of mods) {
+      const cur = getStatus(mod.id);
+      if (cur !== enable) await toggle(mod, cur);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 p-1 bg-slate-100 rounded-lg w-fit">
+        {ROLES.map(role => (
+          <button
+            key={role}
+            onClick={() => setActiveRole(role)}
+            className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
+              activeRole === role
+                ? 'bg-white text-slate-900 shadow-sm'
+                : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            {ROLE_LABELS[role]}
+          </button>
+        ))}
+      </div>
+
+      <p className="text-sm text-slate-500">
+        Modules enabled here will be automatically assigned when a <strong>{ROLE_LABELS[activeRole]}</strong> is added.
+      </p>
+
+      {loading ? (
+        <div className="flex items-center justify-center py-10">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600" />
+        </div>
+      ) : (
+        <ModuleTable
+          groups={modulesByGroup}
+          getStatus={getStatus}
+          onToggle={toggle}
+          showGroupToggle={isCompanyAdmin}
+          onToggleGroup={toggleGroup}
+        />
+      )}
+    </div>
+  );
+}
+
 export default function UserManagement() {
   const [currentUser, setCurrentUser] = useState(null);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
@@ -176,11 +246,7 @@ export default function UserManagement() {
   const [newUser, setNewUser] = useState({ full_name: '', email: '', role: 'sales_agent', password: '' });
   const [isAddingUser, setIsAddingUser] = useState(false);
 
-  const [showCompanyModules, setShowCompanyModules] = useState(false);
-
-  useEffect(() => {
-    init();
-  }, []);
+  useEffect(() => { init(); }, []);
 
   const init = async () => {
     setIsLoading(true);
@@ -194,8 +260,8 @@ export default function UserManagement() {
       setIsCompanyAdmin(compAdmin);
 
       if (superAdmin) {
-        const { data: companiesData } = await supabase.from('companies').select('*').order('company_name');
-        setCompanies(companiesData || []);
+        const { data } = await supabase.from('companies').select('*').order('company_name');
+        setCompanies(data || []);
         setView('companies');
       } else if (compAdmin && user.company_id) {
         const { data: co } = await supabase.from('companies').select('*').eq('id', user.company_id).maybeSingle();
@@ -228,10 +294,7 @@ export default function UserManagement() {
   };
 
   const loadUserModules = async (userId) => {
-    const { data } = await supabase
-      .from('user_module_assignments')
-      .select('*')
-      .eq('user_id', userId);
+    const { data } = await supabase.from('user_module_assignments').select('*').eq('user_id', userId);
     setUserModules(data || []);
   };
 
@@ -239,98 +302,6 @@ export default function UserManagement() {
     setSelectedUser(user);
     await loadUserModules(user.id);
     setView('user-modules');
-  };
-
-  const toggleCompanyModule = async (moduleId, moduleName, currentEnabled) => {
-    if (!selectedCompany) return;
-    const existing = companyModules.find(m => m.module_id === moduleId);
-    try {
-      if (existing) {
-        await supabase.from('company_module_assignments')
-          .update({ is_enabled: !currentEnabled, updated_at: new Date().toISOString() })
-          .eq('id', existing.id);
-        setCompanyModules(prev => prev.map(m => m.module_id === moduleId ? { ...m, is_enabled: !currentEnabled } : m));
-      } else {
-        const { data } = await supabase.from('company_module_assignments').insert({
-          company_id: selectedCompany.id,
-          module_id: moduleId,
-          module_name: moduleName,
-          is_enabled: true,
-          created_by: currentUser?.id,
-        }).select().single();
-        setCompanyModules(prev => [...prev, data]);
-      }
-      toast.success('Module updated');
-    } catch (e) {
-      toast.error('Failed to update module');
-    }
-  };
-
-  const toggleUserModule = async (moduleId, moduleName, currentEnabled) => {
-    if (!selectedUser || !selectedCompany) return;
-    const companyModule = companyModules.find(m => m.module_id === moduleId && m.is_enabled);
-    if (!companyModule) {
-      toast.error('This module is not enabled for the company');
-      return;
-    }
-    const existing = userModules.find(m => m.module_id === moduleId);
-    try {
-      if (existing) {
-        await supabase.from('user_module_assignments')
-          .update({ is_enabled: !currentEnabled, updated_at: new Date().toISOString() })
-          .eq('id', existing.id);
-        setUserModules(prev => prev.map(m => m.module_id === moduleId ? { ...m, is_enabled: !currentEnabled } : m));
-      } else {
-        const { data } = await supabase.from('user_module_assignments').insert({
-          user_id: selectedUser.id,
-          company_id: selectedCompany.id,
-          module_id: moduleId,
-          module_name: moduleName,
-          is_enabled: true,
-          assigned_by: currentUser?.id,
-        }).select().single();
-        setUserModules(prev => [...prev, data]);
-      }
-      toast.success('Access updated');
-    } catch (e) {
-      toast.error('Failed to update access');
-    }
-  };
-
-  const handleAddUser = async () => {
-    if (!newUser.full_name || !newUser.email || !newUser.password) {
-      toast.error('Please fill in all required fields');
-      return;
-    }
-    setIsAddingUser(true);
-    try {
-      const { data: authData, error: authErr } = await supabase.auth.signUp({
-        email: newUser.email,
-        password: newUser.password,
-        options: {
-          data: { full_name: newUser.full_name }
-        }
-      });
-      if (authErr) throw authErr;
-
-      if (authData.user) {
-        await supabase.from('user_profiles').upsert({
-          id: authData.user.id,
-          email: newUser.email,
-          full_name: newUser.full_name,
-          role: newUser.role,
-          company_id: selectedCompany?.id,
-        });
-        toast.success('User added successfully');
-        setShowAddUser(false);
-        setNewUser({ full_name: '', email: '', role: 'sales_agent', password: '' });
-        if (selectedCompany) await loadCompanyData(selectedCompany.id);
-      }
-    } catch (e) {
-      toast.error(e.message || 'Failed to add user');
-    } finally {
-      setIsAddingUser(false);
-    }
   };
 
   const getCompanyModuleStatus = (moduleId) => {
@@ -344,11 +315,125 @@ export default function UserManagement() {
     return getCompanyModuleStatus(moduleId);
   };
 
-  const modulesByGroup = ALL_MODULES.reduce((acc, m) => {
-    if (!acc[m.group]) acc[m.group] = [];
-    acc[m.group].push(m);
-    return acc;
-  }, {});
+  const toggleCompanyModule = async (mod, currentEnabled) => {
+    if (!selectedCompany || !isCompanyAdmin) return;
+    const existing = companyModules.find(m => m.module_id === mod.id);
+    try {
+      if (existing) {
+        await supabase.from('company_module_assignments')
+          .update({ is_enabled: !currentEnabled, updated_at: new Date().toISOString() })
+          .eq('id', existing.id);
+        setCompanyModules(prev => prev.map(m => m.module_id === mod.id ? { ...m, is_enabled: !currentEnabled } : m));
+      } else {
+        const { data } = await supabase.from('company_module_assignments').insert({
+          company_id: selectedCompany.id,
+          module_id: mod.id,
+          module_name: mod.name,
+          is_enabled: true,
+          created_by: currentUser?.id,
+        }).select().single();
+        setCompanyModules(prev => [...prev, data]);
+      }
+      toast.success('Module updated');
+    } catch {
+      toast.error('Failed to update module');
+    }
+  };
+
+  const toggleUserModule = async (mod, currentEnabled) => {
+    if (!selectedUser || !selectedCompany) return;
+    if (!getCompanyModuleStatus(mod.id)) { toast.error('Not enabled for this company'); return; }
+    const existing = userModules.find(m => m.module_id === mod.id);
+    try {
+      if (existing) {
+        await supabase.from('user_module_assignments')
+          .update({ is_enabled: !currentEnabled, updated_at: new Date().toISOString() })
+          .eq('id', existing.id);
+        setUserModules(prev => prev.map(m => m.module_id === mod.id ? { ...m, is_enabled: !currentEnabled } : m));
+      } else {
+        const { data } = await supabase.from('user_module_assignments').insert({
+          user_id: selectedUser.id,
+          company_id: selectedCompany.id,
+          module_id: mod.id,
+          module_name: mod.name,
+          is_enabled: true,
+          assigned_by: currentUser?.id,
+        }).select().single();
+        setUserModules(prev => [...prev, data]);
+      }
+      toast.success('Access updated');
+    } catch {
+      toast.error('Failed to update access');
+    }
+  };
+
+  const toggleGroupCompany = async (mods, enable) => {
+    for (const mod of mods) {
+      const cur = getCompanyModuleStatus(mod.id);
+      if (cur !== enable) await toggleCompanyModule(mod, cur);
+    }
+  };
+
+  const toggleGroupUser = async (mods, enable) => {
+    for (const mod of mods) {
+      if (!getCompanyModuleStatus(mod.id)) continue;
+      const cur = getUserModuleStatus(mod.id);
+      if (cur !== enable) await toggleUserModule(mod, cur);
+    }
+  };
+
+  const handleAddUser = async () => {
+    if (!newUser.full_name || !newUser.email || !newUser.password) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+    setIsAddingUser(true);
+    try {
+      const { data: authData, error: authErr } = await supabase.auth.signUp({
+        email: newUser.email,
+        password: newUser.password,
+        options: { data: { full_name: newUser.full_name } }
+      });
+      if (authErr) throw authErr;
+
+      if (authData.user) {
+        await supabase.from('user_profiles').upsert({
+          id: authData.user.id,
+          email: newUser.email,
+          full_name: newUser.full_name,
+          role: newUser.role,
+          company_id: selectedCompany?.id,
+        });
+
+        const { data: defaults } = await supabase
+          .from('role_module_defaults')
+          .select('*')
+          .eq('role', newUser.role)
+          .eq('is_enabled', true);
+
+        if (defaults?.length) {
+          const inserts = defaults.map(d => ({
+            user_id: authData.user.id,
+            company_id: selectedCompany?.id,
+            module_id: d.module_id,
+            module_name: d.module_name,
+            is_enabled: true,
+            assigned_by: currentUser?.id,
+          }));
+          await supabase.from('user_module_assignments').upsert(inserts, { onConflict: 'user_id,module_id' });
+        }
+
+        toast.success('User added successfully');
+        setShowAddUser(false);
+        setNewUser({ full_name: '', email: '', role: 'sales_agent', password: '' });
+        if (selectedCompany) await loadCompanyData(selectedCompany.id);
+      }
+    } catch (e) {
+      toast.error(e.message || 'Failed to add user');
+    } finally {
+      setIsAddingUser(false);
+    }
+  };
 
   const filteredCompanies = companies.filter(c =>
     c.company_name?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -361,7 +446,7 @@ export default function UserManagement() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" />
       </div>
     );
   }
@@ -377,11 +462,11 @@ export default function UserManagement() {
 
   return (
     <div className="p-6 bg-slate-50 min-h-screen">
-      <div className="max-w-7xl mx-auto space-y-6">
+      <div className="max-w-5xl mx-auto space-y-6">
 
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {view !== 'companies' && isSuperAdmin && (
+            {(view !== 'companies' || !isSuperAdmin) && view !== 'companies' && (
               <Button variant="ghost" size="icon" onClick={() => {
                 if (view === 'user-modules') { setView('company-detail'); setSelectedUser(null); }
                 else { setView('companies'); setSelectedCompany(null); }
@@ -396,29 +481,17 @@ export default function UserManagement() {
                 {view === 'user-modules' && (selectedUser?.full_name || 'User')}
               </h1>
               <p className="text-sm text-slate-500">
-                {view === 'companies' && 'Manage companies and their module access'}
-                {view === 'company-detail' && 'Manage users and module assignments'}
-                {view === 'user-modules' && `Module access for ${selectedUser?.email}`}
+                {view === 'companies' && 'Select a company to manage users and modules'}
+                {view === 'company-detail' && 'Manage users, module access and role defaults'}
+                {view === 'user-modules' && selectedUser?.email}
               </p>
             </div>
           </div>
 
-          {view === 'companies' && isSuperAdmin && (
-            <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => toast.info('Use the Super Admin panel to add new companies')}>
-              <Plus className="w-4 h-4 mr-2" />Add Company
-            </Button>
-          )}
           {view === 'company-detail' && isCompanyAdmin && (
-            <div className="flex gap-2">
-              {isSuperAdmin && (
-                <Button variant="outline" onClick={() => setShowCompanyModules(true)}>
-                  <Package className="w-4 h-4 mr-2" />Company Modules
-                </Button>
-              )}
-              <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => setShowAddUser(true)}>
-                <UserPlus className="w-4 h-4 mr-2" />Add User
-              </Button>
-            </div>
+            <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => setShowAddUser(true)}>
+              <UserPlus className="w-4 h-4 mr-2" />Add User
+            </Button>
           )}
         </div>
 
@@ -426,49 +499,28 @@ export default function UserManagement() {
           <>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-              <Input
-                placeholder="Search companies..."
-                className="pl-9"
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-              />
+              <Input placeholder="Search companies..." className="pl-9" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
             </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredCompanies.map(company => {
-                const enabledModules = companyModules.filter(m => m.company_id === company.id && m.is_enabled).length;
-                return (
-                  <Card key={company.id} className="hover:shadow-md transition-all cursor-pointer" onClick={() => selectCompany(company)}>
-                    <CardContent className="p-5">
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center">
-                            <Building2 className="w-5 h-5 text-blue-600" />
-                          </div>
-                          <div>
-                            <h3 className="font-semibold text-slate-900">{company.company_name}</h3>
-                            <p className="text-xs text-slate-500">{company.industry || 'No industry set'}</p>
-                          </div>
-                        </div>
-                        <Badge className={
-                          company.subscription_status === 'active' ? 'bg-green-100 text-green-800' :
-                          company.subscription_status === 'trial' ? 'bg-blue-100 text-blue-800' :
-                          'bg-slate-100 text-slate-600'
-                        }>
-                          {company.subscription_status || 'unknown'}
-                        </Badge>
+              {filteredCompanies.map(company => (
+                <Card key={company.id} className="hover:shadow-md transition-all cursor-pointer" onClick={() => selectCompany(company)}>
+                  <CardContent className="p-5">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center">
+                        <Building2 className="w-5 h-5 text-blue-600" />
                       </div>
-                      <div className="flex items-center gap-4 text-xs text-slate-500">
-                        <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" />{company.used_license_count || 0} users</span>
-                        <span className="flex items-center gap-1"><Package className="w-3.5 h-3.5" />{enabledModules > 0 ? `${enabledModules} modules` : 'No modules set'}</span>
+                      <div>
+                        <h3 className="font-semibold text-slate-900">{company.company_name}</h3>
+                        <p className="text-xs text-slate-500">{company.industry || 'No industry set'}</p>
                       </div>
-                      <div className="flex items-center justify-end mt-3 text-blue-600 text-xs font-medium">
-                        Manage <ChevronRight className="w-3.5 h-3.5 ml-0.5" />
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-slate-500">
+                      <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" />{company.used_license_count || 0} users</span>
+                      <span className="flex items-center gap-1 text-blue-600 font-medium">Manage <ChevronRight className="w-3.5 h-3.5" /></span>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
               {filteredCompanies.length === 0 && (
                 <div className="col-span-3 text-center py-12 text-slate-500">
                   <Building2 className="w-10 h-10 mx-auto mb-2 text-slate-300" />
@@ -484,16 +536,14 @@ export default function UserManagement() {
             <TabsList>
               <TabsTrigger value="users"><Users className="w-4 h-4 mr-2" />Users</TabsTrigger>
               <TabsTrigger value="modules"><Package className="w-4 h-4 mr-2" />Module Access</TabsTrigger>
+              <TabsTrigger value="role-defaults"><Shield className="w-4 h-4 mr-2" />Role Defaults</TabsTrigger>
             </TabsList>
 
             <TabsContent value="users" className="mt-4">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-                  <Input placeholder="Search users..." className="pl-9" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
-                </div>
+              <div className="relative mb-4">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                <Input placeholder="Search users..." className="pl-9" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
               </div>
-
               <div className="space-y-2">
                 {filteredUsers.map(user => (
                   <Card key={user.id} className="hover:shadow-sm transition-all">
@@ -516,11 +566,11 @@ export default function UserManagement() {
                             user.role === 'sales_manager' ? 'bg-blue-100 text-blue-800' :
                             'bg-slate-100 text-slate-700'
                           }>
-                            {user.role === 'company_admin' ? <Crown className="w-3 h-3 mr-1 inline" /> : null}
-                            {user.role}
+                            {user.role === 'company_admin' && <Crown className="w-3 h-3 mr-1 inline" />}
+                            {ROLE_LABELS[user.role] || user.role}
                           </Badge>
                           <Button size="sm" variant="outline" onClick={() => selectUser(user)}>
-                            <Settings className="w-3.5 h-3.5 mr-1" />Modules
+                            <Settings className="w-3.5 h-3.5 mr-1.5" />Modules
                           </Button>
                         </div>
                       </div>
@@ -530,30 +580,32 @@ export default function UserManagement() {
                 {filteredUsers.length === 0 && (
                   <div className="text-center py-10 text-slate-500">
                     <Users className="w-10 h-10 mx-auto mb-2 text-slate-300" />
-                    <p>No users found. Add your first user.</p>
+                    <p>No users found.</p>
                   </div>
                 )}
               </div>
             </TabsContent>
 
             <TabsContent value="modules" className="mt-4">
-              <ModuleSelector
-                modulesByGroup={modulesByGroup}
+              <p className="text-sm text-slate-500 mb-4">
+                {isCompanyAdmin
+                  ? 'Enable or disable modules for this company. Users can only access enabled company modules.'
+                  : 'These are the modules enabled for this company.'}
+              </p>
+              <ModuleTable
+                groups={modulesByGroup}
                 getStatus={getCompanyModuleStatus}
-                onToggle={(mod, enabled) => {
-                  if (!isCompanyAdmin) { toast.error('Only admins can change company modules'); return; }
-                  toggleCompanyModule(mod.id, mod.name, enabled);
-                }}
-                disabled={!isCompanyAdmin}
-                title={`Modules for ${selectedCompany.company_name || selectedCompany.name}`}
-                description={!isCompanyAdmin ? 'Contact your admin to change module access.' : 'Click modules to enable or disable them for this company.'}
-                onToggleAll={async (groupMods, enable) => {
-                  if (!isCompanyAdmin) { toast.error('Only admins can change company modules'); return; }
-                  for (const mod of groupMods) {
-                    const cur = getCompanyModuleStatus(mod.id);
-                    if (cur !== enable) await toggleCompanyModule(mod.id, mod.name, cur);
-                  }
-                }}
+                onToggle={isCompanyAdmin ? toggleCompanyModule : () => {}}
+                showGroupToggle={isCompanyAdmin}
+                onToggleGroup={isCompanyAdmin ? toggleGroupCompany : undefined}
+              />
+            </TabsContent>
+
+            <TabsContent value="role-defaults" className="mt-4">
+              <RoleDefaultsTab
+                companyId={selectedCompany.id}
+                currentUserId={currentUser?.id}
+                isCompanyAdmin={isCompanyAdmin}
               />
             </TabsContent>
           </Tabs>
@@ -571,33 +623,28 @@ export default function UserManagement() {
                   </Avatar>
                   <div>
                     <p className="font-semibold text-slate-900">{selectedUser.full_name}</p>
-                    <p className="text-sm text-slate-500">{selectedUser.email} &middot; <span className="capitalize">{selectedUser.role}</span></p>
+                    <p className="text-sm text-slate-500">
+                      {selectedUser.email} &middot; {ROLE_LABELS[selectedUser.role] || selectedUser.role}
+                    </p>
                   </div>
                   <Badge className="ml-auto bg-blue-100 text-blue-800">
-                    {userModules.filter(m => m.is_enabled).length} modules active
+                    {ALL_MODULES.filter(m => getCompanyModuleStatus(m.id) && getUserModuleStatus(m.id)).length} modules active
                   </Badge>
                 </div>
               </CardContent>
             </Card>
 
-            <ModuleSelector
-              modulesByGroup={modulesByGroup}
-              getStatus={(modId) => {
-                const companyEnabled = getCompanyModuleStatus(modId);
-                return companyEnabled ? getUserModuleStatus(modId) : false;
-              }}
-              isDisabledForUser={(modId) => !getCompanyModuleStatus(modId)}
-              onToggle={(mod, enabled) => toggleUserModule(mod.id, mod.name, enabled)}
-              disabled={false}
-              title="Module Access"
-              description="Dimmed modules are not enabled for this company. Enable them in the Module Access tab first."
-              onToggleAll={async (groupMods, enable) => {
-                for (const mod of groupMods) {
-                  if (!getCompanyModuleStatus(mod.id)) continue;
-                  const cur = getUserModuleStatus(mod.id);
-                  if (cur !== enable) await toggleUserModule(mod.id, mod.name, cur);
-                }
-              }}
+            <p className="text-sm text-slate-500">
+              Greyed-out modules are not enabled for this company. Enable them in the Module Access tab first.
+            </p>
+
+            <ModuleTable
+              groups={modulesByGroup}
+              getStatus={(modId) => getCompanyModuleStatus(modId) ? getUserModuleStatus(modId) : false}
+              onToggle={toggleUserModule}
+              lockedModules={new Set(ALL_MODULES.filter(m => !getCompanyModuleStatus(m.id)).map(m => m.id))}
+              showGroupToggle={true}
+              onToggleGroup={toggleGroupUser}
             />
           </div>
         )}
@@ -611,43 +658,28 @@ export default function UserManagement() {
           <div className="space-y-4 py-2">
             <div>
               <Label>Full Name *</Label>
-              <Input
-                placeholder="Jane Smith"
-                value={newUser.full_name}
-                onChange={e => setNewUser(p => ({ ...p, full_name: e.target.value }))}
-              />
+              <Input placeholder="Jane Smith" value={newUser.full_name} onChange={e => setNewUser(p => ({ ...p, full_name: e.target.value }))} />
             </div>
             <div>
               <Label>Email *</Label>
-              <Input
-                type="email"
-                placeholder="jane@company.com"
-                value={newUser.email}
-                onChange={e => setNewUser(p => ({ ...p, email: e.target.value }))}
-              />
+              <Input type="email" placeholder="jane@company.com" value={newUser.email} onChange={e => setNewUser(p => ({ ...p, email: e.target.value }))} />
             </div>
             <div>
               <Label>Password *</Label>
-              <Input
-                type="password"
-                placeholder="Temporary password"
-                value={newUser.password}
-                onChange={e => setNewUser(p => ({ ...p, password: e.target.value }))}
-              />
+              <Input type="password" placeholder="Temporary password" value={newUser.password} onChange={e => setNewUser(p => ({ ...p, password: e.target.value }))} />
             </div>
             <div>
               <Label>Role</Label>
               <Select value={newUser.role} onValueChange={v => setNewUser(p => ({ ...p, role: v }))}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
+                <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {ROLES.map(r => (
-                    <SelectItem key={r} value={r}>{r}</SelectItem>
-                  ))}
+                  {ROLES.map(r => <SelectItem key={r} value={r}>{ROLE_LABELS[r]}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
+            <p className="text-xs text-slate-500">
+              Role defaults will be automatically applied to this user's module access.
+            </p>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowAddUser(false)}>Cancel</Button>
