@@ -230,9 +230,8 @@ export const mockSupabase = {
         return createChainableQuery(mockData[tableName] || []);
       },
 
-      async insert(data) {
-        await delay(300);
-        const items = Array.isArray(data) ? data : [data];
+      insert(insertData) {
+        const items = Array.isArray(insertData) ? insertData : [insertData];
         const newItems = items.map(item => ({
           ...item,
           id: item.id || `mock-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -246,63 +245,46 @@ export const mockSupabase = {
 
         const returnItem = newItems.length === 1 ? newItems[0] : newItems;
 
-        return {
-          select() {
-            return {
-              single() {
-                return {
-                  data: returnItem,
-                  error: null
-                };
-              }
-            };
-          },
-          data: returnItem,
-          error: null
-        };
+        const result = Promise.resolve({ data: returnItem, error: null });
+        result.select = () => ({
+          single: () => Promise.resolve({ data: returnItem, error: null }),
+          maybeSingle: () => Promise.resolve({ data: returnItem, error: null }),
+          then: (resolve) => { resolve({ data: returnItem, error: null }); },
+        });
+
+        return result;
       },
 
-      update(data) {
-        return {
-          async eq(column, value) {
-            await delay(300);
-            const items = mockData[tableName] || [];
-            const index = items.findIndex(item => item[column] === value);
-
-            if (index >= 0) {
-              items[index] = { ...items[index], ...data, updated_at: new Date().toISOString() };
-              return {
-                select() {
-                  return {
-                    single() {
-                      return {
-                        data: items[index],
-                        error: null
-                      };
-                    }
-                  };
-                },
-                data: items[index],
-                error: null
-              };
-            }
-
+      update(updateData) {
+        const filters = [];
+        const chain = {
+          eq(column, value) {
+            filters.push({ column, value });
+            return chain;
+          },
+          then(resolve) {
+            (async () => {
+              await delay(300);
+              const items = mockData[tableName] || [];
+              let updated = null;
+              items.forEach((item, index) => {
+                const match = filters.every(f => item[f.column] === f.value);
+                if (match) {
+                  items[index] = { ...item, ...updateData, updated_at: new Date().toISOString() };
+                  updated = items[index];
+                }
+              });
+              resolve({ data: updated, error: null });
+            })();
+          },
+          select() {
             return {
-              select() {
-                return {
-                  single() {
-                    return {
-                      data: null,
-                      error: new Error('No rows updated')
-                    };
-                  }
-                };
-              },
-              data: null,
-              error: new Error('No rows updated')
+              single: () => chain,
+              then: chain.then,
             };
           }
         };
+        return chain;
       },
 
       async upsert(data) {
