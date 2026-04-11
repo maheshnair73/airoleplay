@@ -57,6 +57,24 @@ export const mockSupabase = {
       return { data: session, error: null };
     },
 
+    async signUp({ email, password, options }) {
+      await delay(400);
+      const existing = mockData.users?.find(u => u.email === email);
+      if (existing) {
+        return { data: { user: null }, error: new Error('User already registered') };
+      }
+      const newUser = {
+        id: `mock-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        email,
+        full_name: options?.data?.full_name || '',
+        role: 'sales_agent',
+        created_at: new Date().toISOString(),
+      };
+      if (!mockData.users) mockData.users = [];
+      mockData.users.push(newUser);
+      return { data: { user: newUser }, error: null };
+    },
+
     async signOut() {
       await delay(200);
       const prevUser = currentUser;
@@ -285,6 +303,21 @@ export const mockSupabase = {
             };
           }
         };
+      },
+
+      async upsert(data) {
+        await delay(300);
+        const items = Array.isArray(data) ? data : [data];
+        if (!mockData[tableName]) mockData[tableName] = [];
+        items.forEach(item => {
+          const idx = item.id ? mockData[tableName].findIndex(r => r.id === item.id) : -1;
+          if (idx >= 0) {
+            mockData[tableName][idx] = { ...mockData[tableName][idx], ...item, updated_at: new Date().toISOString() };
+          } else {
+            mockData[tableName].push({ ...item, id: item.id || `mock-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, created_at: new Date().toISOString() });
+          }
+        });
+        return { data: items.length === 1 ? items[0] : items, error: null };
       },
 
       delete() {
