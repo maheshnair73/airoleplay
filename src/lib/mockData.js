@@ -180,11 +180,16 @@ export const mockData = {
     {
       id: 'company-001',
       name: 'EffySales Demo Company',
+      company_name: 'EffySales Demo Company',
       domain: 'effysalespro.com',
       created_at: '2024-01-01T00:00:00Z',
       subscription_status: 'active'
     }
   ],
+
+  company_module_assignments: [],
+
+  user_module_assignments: [],
 
   roleplay_sessions: [
     {

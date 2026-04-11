@@ -214,15 +214,15 @@ export const mockSupabase = {
                 };
               })();
             },
-            async then(resolve) {
-              await delay(200);
-              let data = [...(mockData[tableName] || [])];
-
-              filters.forEach(filter => {
-                data = data.filter(item => item[filter.column] === filter.value);
-              });
-
-              resolve({ data, error: null });
+            then(resolve) {
+              return (async () => {
+                await delay(200);
+                let data = [...(mockData[tableName] || [])];
+                filters.forEach(filter => {
+                  data = data.filter(item => item[filter.column] === filter.value);
+                });
+                return { data, error: null };
+              })().then(resolve);
             }
           };
         };
