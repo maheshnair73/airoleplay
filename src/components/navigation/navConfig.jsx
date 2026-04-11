@@ -131,7 +131,6 @@ export const navSections = [
 
 export const adminNavConfig = [
     { page: 'UserManagement', title: 'User & Module Management', icon: Users },
-    { page: 'ModuleManagement', title: 'Legacy Module Settings', icon: HardDrive },
     { page: 'DialerSettings', title: 'Dialer Settings', icon: Settings },
     { page: 'AISalesAgentSettings', title: 'AI Agent Settings', icon: UserCog },
     { page: 'IntegrationManagement', title: 'Integration Management', icon: Zap },
