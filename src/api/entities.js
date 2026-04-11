@@ -150,6 +150,8 @@ export const PracticeMaterial = createEntity('practice_materials_junction');
 export const SkillCoachBot = createEntity('skill_coach_bots');
 export const SkillCoachSession = createEntity('skill_coach_sessions');
 export const SkillCoachTask = createEntity('skill_coach_tasks');
+export const CompanyModuleAssignment = createEntity('company_module_assignments');
+export const UserModuleAssignment = createEntity('user_module_assignments');
 
 export const User = {
   async me() {

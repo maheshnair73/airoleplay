@@ -130,8 +130,8 @@ export const navSections = [
 ];
 
 export const adminNavConfig = [
-    { page: 'Users', title: 'User Management', icon: Users },
-    { page: 'ModuleManagement', title: 'Module Management', icon: HardDrive },
+    { page: 'UserManagement', title: 'User & Module Management', icon: Users },
+    { page: 'ModuleManagement', title: 'Legacy Module Settings', icon: HardDrive },
     { page: 'DialerSettings', title: 'Dialer Settings', icon: Settings },
     { page: 'AISalesAgentSettings', title: 'AI Agent Settings', icon: UserCog },
     { page: 'IntegrationManagement', title: 'Integration Management', icon: Zap },
@@ -147,6 +147,7 @@ export const effyAíCallsNavConfig = [
 
 export const superAdminNavConfig = [
     { page: 'CompanyManagement', title: 'Manage Companies', icon: Building },
+    { page: 'UserManagement', title: 'Users & Modules', icon: Users },
     { page: 'GlobalAnalytics', title: 'Global Analytics', icon: BarChart3 },
     { page: 'WebsiteHome', title: 'Edit Website', icon: Globe },
     { page: 'SuperAdminAIAgent', title: 'Platform AI Settings', icon: Bot }
