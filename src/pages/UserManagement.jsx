@@ -57,65 +57,84 @@ const modulesByGroup = ALL_MODULES.reduce((acc, m) => {
   return acc;
 }, {});
 
+const GROUP_COLORS = {
+  Core: 'blue',
+  Sales: 'emerald',
+  Coaching: 'amber',
+  'Call Intelligence': 'cyan',
+  Training: 'teal',
+  Knowledge: 'sky',
+  Gamification: 'orange',
+  Analytics: 'slate',
+  AI: 'slate',
+  Dialer: 'rose',
+};
+
+const COLOR_MAP = {
+  blue:    { header: 'bg-blue-50 border-blue-100',    dot: 'bg-blue-500',    on: 'bg-blue-600 text-white border-blue-600',    off: 'bg-white text-slate-500 border-slate-200 hover:border-blue-300 hover:text-slate-700' },
+  emerald: { header: 'bg-emerald-50 border-emerald-100', dot: 'bg-emerald-500', on: 'bg-emerald-600 text-white border-emerald-600', off: 'bg-white text-slate-500 border-slate-200 hover:border-emerald-300 hover:text-slate-700' },
+  amber:   { header: 'bg-amber-50 border-amber-100',  dot: 'bg-amber-500',   on: 'bg-amber-500 text-white border-amber-500',  off: 'bg-white text-slate-500 border-slate-200 hover:border-amber-300 hover:text-slate-700' },
+  cyan:    { header: 'bg-cyan-50 border-cyan-100',    dot: 'bg-cyan-500',    on: 'bg-cyan-600 text-white border-cyan-600',    off: 'bg-white text-slate-500 border-slate-200 hover:border-cyan-300 hover:text-slate-700' },
+  teal:    { header: 'bg-teal-50 border-teal-100',    dot: 'bg-teal-500',    on: 'bg-teal-600 text-white border-teal-600',    off: 'bg-white text-slate-500 border-slate-200 hover:border-teal-300 hover:text-slate-700' },
+  sky:     { header: 'bg-sky-50 border-sky-100',      dot: 'bg-sky-500',     on: 'bg-sky-600 text-white border-sky-600',      off: 'bg-white text-slate-500 border-slate-200 hover:border-sky-300 hover:text-slate-700' },
+  orange:  { header: 'bg-orange-50 border-orange-100',dot: 'bg-orange-500',  on: 'bg-orange-500 text-white border-orange-500',off: 'bg-white text-slate-500 border-slate-200 hover:border-orange-300 hover:text-slate-700' },
+  slate:   { header: 'bg-slate-50 border-slate-200',  dot: 'bg-slate-500',   on: 'bg-slate-700 text-white border-slate-700',  off: 'bg-white text-slate-500 border-slate-200 hover:border-slate-400 hover:text-slate-700' },
+  rose:    { header: 'bg-rose-50 border-rose-100',    dot: 'bg-rose-500',    on: 'bg-rose-600 text-white border-rose-600',    off: 'bg-white text-slate-500 border-slate-200 hover:border-rose-300 hover:text-slate-700' },
+};
+
 function ModuleTable({ groups, getStatus, onToggle, lockedModules = new Set(), showGroupToggle = false, onToggleGroup }) {
   return (
-    <div className="border border-slate-200 rounded-lg overflow-hidden">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="bg-slate-50 border-b border-slate-200">
-            <th className="text-left px-4 py-2.5 font-semibold text-slate-700 w-1/2">Module</th>
-            <th className="text-center px-4 py-2.5 font-semibold text-slate-700 w-1/2">Access</th>
-          </tr>
-        </thead>
-        <tbody>
-          {Object.entries(groups).map(([group, mods]) => {
-            const enabledCount = mods.filter(m => getStatus(m.id)).length;
-            const allEnabled = enabledCount === mods.length;
-            return (
-              <React.Fragment key={group}>
-                <tr className="bg-slate-50/80 border-b border-slate-100">
-                  <td colSpan={2} className="px-4 py-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Layers className="w-3.5 h-3.5 text-slate-400" />
-                        <span className="font-semibold text-slate-600 text-xs uppercase tracking-wide">{group}</span>
-                        <span className="text-xs text-slate-400">({enabledCount}/{mods.length})</span>
-                      </div>
-                      {showGroupToggle && onToggleGroup && (
-                        <button
-                          onClick={() => onToggleGroup(mods, !allEnabled)}
-                          className="text-xs text-blue-600 hover:text-blue-800 font-medium"
-                        >
-                          {allEnabled ? 'Disable all' : 'Enable all'}
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-                {mods.map((mod, i) => {
-                  const enabled = getStatus(mod.id);
-                  const locked = lockedModules.has(mod.id);
-                  return (
-                    <tr
-                      key={mod.id}
-                      className={`border-b border-slate-100 last:border-0 ${locked ? 'opacity-40' : 'hover:bg-slate-50'} transition-colors`}
-                    >
-                      <td className="px-4 py-3 pl-8 text-slate-700">{mod.name}</td>
-                      <td className="px-4 py-3 text-center">
-                        <Switch
-                          checked={enabled && !locked}
-                          disabled={locked}
-                          onCheckedChange={() => !locked && onToggle(mod, enabled)}
-                        />
-                      </td>
-                    </tr>
-                  );
-                })}
-              </React.Fragment>
-            );
-          })}
-        </tbody>
-      </table>
+    <div className="space-y-3">
+      {Object.entries(groups).map(([group, mods]) => {
+        const enabledCount = mods.filter(m => getStatus(m.id) && !lockedModules.has(m.id)).length;
+        const availableMods = mods.filter(m => !lockedModules.has(m.id));
+        const allEnabled = enabledCount === availableMods.length && availableMods.length > 0;
+        const color = GROUP_COLORS[group] || 'slate';
+        const c = COLOR_MAP[color] || COLOR_MAP.slate;
+
+        return (
+          <div key={group} className={`rounded-xl border ${c.header} overflow-hidden`}>
+            <div className="flex items-center justify-between px-4 py-2.5">
+              <div className="flex items-center gap-2">
+                <div className={`w-2 h-2 rounded-full ${c.dot}`} />
+                <span className="font-semibold text-slate-700 text-sm">{group}</span>
+                <span className="text-xs text-slate-400 font-normal">{enabledCount}/{mods.length} on</span>
+              </div>
+              {showGroupToggle && onToggleGroup && availableMods.length > 0 && (
+                <button
+                  onClick={() => onToggleGroup(mods, !allEnabled)}
+                  className="text-xs text-slate-500 hover:text-slate-800 font-medium underline underline-offset-2 transition-colors"
+                >
+                  {allEnabled ? 'Turn off all' : 'Turn on all'}
+                </button>
+              )}
+            </div>
+            <div className="px-4 pb-3 flex flex-wrap gap-2">
+              {mods.map(mod => {
+                const enabled = getStatus(mod.id);
+                const locked = lockedModules.has(mod.id);
+                return (
+                  <button
+                    key={mod.id}
+                    disabled={locked}
+                    onClick={() => !locked && onToggle(mod, enabled)}
+                    title={locked ? 'Not enabled for this company' : (enabled ? 'Click to disable' : 'Click to enable')}
+                    className={`
+                      inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border transition-all
+                      ${locked ? 'opacity-30 cursor-not-allowed bg-slate-50 text-slate-400 border-slate-200' :
+                        enabled ? `${c.on} shadow-sm` : `${c.off} cursor-pointer`}
+                      ${!locked ? 'active:scale-95' : ''}
+                    `}
+                  >
+                    <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${enabled && !locked ? 'bg-white/70' : 'bg-slate-300'}`} />
+                    {mod.name}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
