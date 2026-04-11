@@ -361,6 +361,60 @@ export default function TrainerBot() {
   }
 
   if (mode === 'study') {
+    const hasContent = document.content && document.content.trim().length > 0;
+
+    if (!hasContent) {
+      return (
+        <div className="p-6 bg-slate-50 min-h-screen flex items-center justify-center">
+          <div className="max-w-md w-full">
+            <Card className="overflow-hidden">
+              <div className="bg-blue-600 px-6 py-8 text-center">
+                <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center mx-auto mb-3">
+                  <Brain className="w-8 h-8 text-white" />
+                </div>
+                <h2 className="text-white font-bold text-2xl">{document.title}</h2>
+                {document.category && (
+                  <p className="text-blue-100 text-sm mt-1">{document.category}</p>
+                )}
+              </div>
+              <CardContent className="p-6 space-y-4">
+                <div className="flex items-center gap-3 text-sm text-slate-600">
+                  <div className="flex items-center gap-1.5">
+                    <BookOpen className="w-4 h-4" />
+                    <span>{questions.length} Questions</span>
+                  </div>
+                  <span className="text-slate-300">|</span>
+                  <div className="flex items-center gap-1.5">
+                    <Award className="w-4 h-4" />
+                    <span>Pass: {document.passing_score}%</span>
+                  </div>
+                </div>
+                {assignment && (
+                  <div className="flex items-start gap-3 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                    <Target className="w-4 h-4 text-orange-600 mt-0.5 flex-shrink-0" />
+                    <p className="text-sm text-orange-800">{assignment.reason}</p>
+                  </div>
+                )}
+                <div className="flex gap-3 pt-1">
+                  <Button variant="outline" onClick={() => navigate(createPageUrl('TrainingLibrary'))} className="flex-1">
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Back
+                  </Button>
+                  <Button
+                    onClick={() => { setMode('quiz'); setQuestionStartTime(Date.now()); }}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700"
+                  >
+                    Start Quiz
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="p-6 bg-slate-50 min-h-screen">
         <div className="max-w-4xl mx-auto">
@@ -606,7 +660,7 @@ export default function TrainerBot() {
                   Previous
                 </Button>
                 <Button onClick={handleCheckAnswer} className="bg-blue-600 hover:bg-blue-700 px-8">
-                  Check Answer
+                  Submit
                 </Button>
               </div>
             </CardContent>
