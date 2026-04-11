@@ -189,8 +189,6 @@ function RoleDefaultsTab({ companyId, currentUserId, isCompanyAdmin }) {
           groups={modulesByGroup}
           getStatus={getStatus}
           onToggle={toggle}
-          showGroupToggle={isCompanyAdmin}
-          onToggleGroup={toggleGroup}
         />
       )}
     </div>
@@ -568,8 +566,6 @@ export default function UserManagement() {
                 groups={modulesByGroup}
                 getStatus={getCompanyModuleStatus}
                 onToggle={isCompanyAdmin ? toggleCompanyModule : () => {}}
-                showGroupToggle={isCompanyAdmin}
-                onToggleGroup={isCompanyAdmin ? toggleGroupCompany : undefined}
               />
             </TabsContent>
 
@@ -615,8 +611,6 @@ export default function UserManagement() {
               getStatus={(modId) => getCompanyModuleStatus(modId) ? getUserModuleStatus(modId) : false}
               onToggle={toggleUserModule}
               lockedModules={new Set(ALL_MODULES.filter(m => !getCompanyModuleStatus(m.id)).map(m => m.id))}
-              showGroupToggle={true}
-              onToggleGroup={toggleGroupUser}
             />
           </div>
         )}
