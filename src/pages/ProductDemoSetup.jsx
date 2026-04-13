@@ -17,7 +17,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
-import { MonitorUp, Sparkles, ArrowLeft, UserPlus, X, Briefcase, Settings, Package, Upload, BookOpen, Loader2, CheckCircle2, Link as LinkIcon, FileText, Plus } from 'lucide-react';
+import { MonitorUp, Sparkles, ArrowLeft, UserPlus, X, Briefcase, Settings, Package, Upload, BookOpen, Loader2, CheckCircle2, Link as LinkIcon, FileText, Plus, Check, Circle } from 'lucide-react';
 
 const MATERIAL_CATEGORIES = [
   'Product Knowledge', 'Sales Methodology', 'Objection Handling',
@@ -360,52 +360,112 @@ const ProductDemoSetup = () => {
           </CardHeader>
           <CardContent>
             <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-4 mb-6">
-                <TabsTrigger value="attendees" className="flex items-center gap-2">
-                  <UserPlus className="w-4 h-4" />
-                  Attendees
-                </TabsTrigger>
-                <TabsTrigger value="product" className="flex items-center gap-2">
-                  <Package className="w-4 h-4" />
-                  Product Details
-                </TabsTrigger>
-                <TabsTrigger value="materials" className="flex items-center gap-2">
-                  <BookOpen className="w-4 h-4" />
-                  Materials
-                  {selectedMaterials.length > 0 && (
-                    <span className="ml-1 bg-blue-600 text-white text-xs rounded-full px-1.5 py-0.5 leading-none">
-                      {selectedMaterials.length}
-                    </span>
-                  )}
-                </TabsTrigger>
-                <TabsTrigger value="settings" className="flex items-center gap-2">
-                  <Settings className="w-4 h-4" />
-                  Demo Settings
-                </TabsTrigger>
-              </TabsList>
+              <div className="mb-8">
+                <div className="flex items-center justify-between mb-4">
+                  {[
+                    { value: 'attendees', label: 'Attendees', icon: UserPlus, step: 1 },
+                    { value: 'product', label: 'Product', icon: Package, step: 2 },
+                    { value: 'materials', label: 'Materials', icon: BookOpen, step: 3 },
+                    { value: 'settings', label: 'Settings', icon: Settings, step: 4 }
+                  ].map((tab, index) => {
+                    const isActive = currentTab === tab.value;
+                    const isComplete =
+                      (tab.value === 'attendees' && canProceedFromAttendees()) ||
+                      (tab.value === 'product' && canProceedFromProduct()) ||
+                      (tab.value === 'materials') ||
+                      (tab.value === 'settings' && index < 3);
+
+                    return (
+                      <div key={tab.value} className="flex-1">
+                        <div className="flex items-center">
+                          <button
+                            onClick={() => setCurrentTab(tab.value)}
+                            className={`flex flex-col items-center gap-2 flex-1 transition-all ${
+                              isActive ? 'opacity-100' : 'opacity-70 hover:opacity-100'
+                            }`}
+                          >
+                            <div
+                              className={`w-12 h-12 rounded-full flex items-center justify-center font-semibold transition-all ${
+                                isActive
+                                  ? 'bg-blue-600 text-white shadow-lg scale-110'
+                                  : isComplete
+                                  ? 'bg-green-100 text-green-700'
+                                  : 'bg-gray-200 text-gray-600'
+                              }`}
+                            >
+                              {isComplete && !isActive ? (
+                                <Check className="w-5 h-5" />
+                              ) : (
+                                tab.step
+                              )}
+                            </div>
+                            <span className={`text-xs font-medium text-center ${
+                              isActive ? 'text-gray-900' : 'text-gray-600'
+                            }`}>
+                              {tab.label}
+                            </span>
+                          </button>
+                          {index < 3 && (
+                            <div className={`h-1 flex-1 mx-2 rounded transition-all ${
+                              isComplete ? 'bg-green-600' : 'bg-gray-300'
+                            }`} />
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
 
               <TabsContent value="attendees" className="space-y-4">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h3 className="text-lg font-semibold">Demo Attendees</h3>
-                    <p className="text-sm text-gray-600">Add the people who will be in this demo</p>
+                <div className="mb-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <div>
+                      <h3 className="text-xl font-bold text-gray-900">Demo Attendees</h3>
+                      <p className="text-sm text-gray-600 mt-1">Add the people who will participate in this demo</p>
+                    </div>
                   </div>
-                  <Button onClick={addAttendee} variant="outline" size="sm">
-                    <UserPlus className="w-4 h-4 mr-2" />
+                  <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-sm text-blue-900">
+                      Add at least one attendee with an assigned AI client to proceed. You can add multiple attendees to simulate different buyer personas.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex justify-end mb-4">
+                  <Button onClick={addAttendee} className="gap-2">
+                    <Plus className="w-4 h-4" />
                     Add Attendee
                   </Button>
                 </div>
 
-                <div className="space-y-4">
-                {attendees.map((attendee, index) => (
-                  <Card key={attendee.id} className="p-4">
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between mb-2">
-                        <Label className="text-sm font-semibold">Attendee {index + 1}</Label>
+                <div className="space-y-3">
+                {attendees.map((attendee, index) => {
+                  const isValid = attendee.name && attendee.botId;
+                  return (
+                  <Card key={attendee.id} className={`p-5 border-2 transition-all ${
+                    isValid ? 'border-green-200 bg-green-50' : 'border-gray-200 hover:border-gray-300'
+                  }`}>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-semibold">
+                            {index + 1}
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-gray-900">Attendee {index + 1}</p>
+                            {isValid && (
+                              <p className="text-xs text-green-700 flex items-center gap-1">
+                                <Check className="w-3 h-3" /> Complete
+                              </p>
+                            )}
+                          </div>
+                        </div>
                         {attendees.length > 1 && (
                           <Button
                             variant="ghost"
                             size="sm"
+                            className="text-gray-400 hover:text-red-600 hover:bg-red-50"
                             onClick={() => removeAttendee(attendee.id)}
                           >
                             <X className="w-4 h-4" />
@@ -475,21 +535,28 @@ const ProductDemoSetup = () => {
                       </div>
                     </div>
                   </Card>
-                ))}
+                  );
+                })}
                 </div>
               </TabsContent>
 
-              <TabsContent value="product" className="space-y-4">
-                <div className="mb-4">
-                  <h3 className="text-lg font-semibold">Product & Inquiry Details</h3>
-                  <p className="text-sm text-gray-600">Configure the product and buyer context</p>
+              <TabsContent value="product" className="space-y-6">
+                <div className="mb-6">
+                  <h3 className="text-xl font-bold text-gray-900">Product & Buyer Context</h3>
+                  <p className="text-sm text-gray-600 mt-1">Configure which product you'll demo and set the buyer's context</p>
+                  <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-sm text-blue-900">
+                      Fill in the product and at least one buyer detail to proceed. This helps the AI understand the sales context.
+                    </p>
+                  </div>
                 </div>
 
-                <div className="space-y-4">
-                <div>
-                  <Label htmlFor="product">Product Inquiring About</Label>
+                <div className="space-y-5">
+                <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                  <Label htmlFor="product" className="text-base font-semibold">Product</Label>
+                  <p className="text-xs text-gray-600 mb-3">Select which product you'll be demonstrating</p>
               <Select value={selectedProduct} onValueChange={setSelectedProduct}>
-                <SelectTrigger id="product">
+                <SelectTrigger id="product" className="bg-white">
                   <SelectValue placeholder="Select a product" />
                 </SelectTrigger>
                 <SelectContent>
@@ -502,206 +569,264 @@ const ProductDemoSetup = () => {
               </Select>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="companySize">Company Size</Label>
-                    <Select
-                      value={productInquiry.companySize}
-                      onValueChange={(value) => setProductInquiry({ ...productInquiry, companySize: value })}
-                    >
-                      <SelectTrigger id="companySize">
-                        <SelectValue placeholder="Select size" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="1-10">1-10 employees</SelectItem>
-                        <SelectItem value="11-50">11-50 employees</SelectItem>
-                        <SelectItem value="51-200">51-200 employees</SelectItem>
-                        <SelectItem value="201-500">201-500 employees</SelectItem>
-                        <SelectItem value="501-1000">501-1000 employees</SelectItem>
-                        <SelectItem value="1000+">1000+ employees</SelectItem>
-                      </SelectContent>
-                    </Select>
+                <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg space-y-4">
+                  <h4 className="font-semibold text-gray-900">Buyer Context</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="companySize" className="text-sm">Company Size</Label>
+                      <Select
+                        value={productInquiry.companySize}
+                        onValueChange={(value) => setProductInquiry({ ...productInquiry, companySize: value })}
+                      >
+                        <SelectTrigger id="companySize">
+                          <SelectValue placeholder="Select size" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="1-10">1-10 employees</SelectItem>
+                          <SelectItem value="11-50">11-50 employees</SelectItem>
+                          <SelectItem value="51-200">51-200 employees</SelectItem>
+                          <SelectItem value="201-500">201-500 employees</SelectItem>
+                          <SelectItem value="501-1000">501-1000 employees</SelectItem>
+                          <SelectItem value="1000+">1000+ employees</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="industry" className="text-sm">Industry</Label>
+                      <Input
+                        id="industry"
+                        placeholder="e.g., SaaS, Healthcare"
+                        value={productInquiry.industry}
+                        onChange={(e) => setProductInquiry({ ...productInquiry, industry: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="budget" className="text-sm">Budget Range</Label>
+                      <Input
+                        id="budget"
+                        placeholder="e.g., $10k-$50k"
+                        value={productInquiry.budget}
+                        onChange={(e) => setProductInquiry({ ...productInquiry, budget: e.target.value })}
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="timeline" className="text-sm">Timeline</Label>
+                      <Select
+                        value={productInquiry.timeline}
+                        onValueChange={(value) => setProductInquiry({ ...productInquiry, timeline: value })}
+                      >
+                        <SelectTrigger id="timeline">
+                          <SelectValue placeholder="Select timeline" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="immediate">Immediate (1 month)</SelectItem>
+                          <SelectItem value="short">Short term (1-3 months)</SelectItem>
+                          <SelectItem value="medium">Medium (3-6 months)</SelectItem>
+                          <SelectItem value="long">Long term (6+ months)</SelectItem>
+                          <SelectItem value="exploring">Just exploring</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
 
                   <div>
-                    <Label htmlFor="industry">Industry</Label>
-                    <Input
-                      id="industry"
-                      placeholder="e.g., SaaS, Healthcare, Finance"
-                      value={productInquiry.industry}
-                      onChange={(e) => setProductInquiry({ ...productInquiry, industry: e.target.value })}
+                    <Label htmlFor="specificNeeds" className="text-sm">Specific Needs</Label>
+                    <Textarea
+                      id="specificNeeds"
+                      placeholder="What problems are they solving? What features interest them?"
+                      value={productInquiry.specificNeeds}
+                      onChange={(e) => setProductInquiry({ ...productInquiry, specificNeeds: e.target.value })}
+                      rows={3}
+                      className="resize-none"
                     />
                   </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="budget">Budget Range</Label>
-                    <Input
-                      id="budget"
-                      placeholder="e.g., $10k-$50k annually"
-                      value={productInquiry.budget}
-                      onChange={(e) => setProductInquiry({ ...productInquiry, budget: e.target.value })}
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="timeline">Implementation Timeline</Label>
-                    <Select
-                      value={productInquiry.timeline}
-                      onValueChange={(value) => setProductInquiry({ ...productInquiry, timeline: value })}
-                    >
-                      <SelectTrigger id="timeline">
-                        <SelectValue placeholder="Select timeline" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="immediate">Immediate (within 1 month)</SelectItem>
-                        <SelectItem value="short">Short term (1-3 months)</SelectItem>
-                        <SelectItem value="medium">Medium term (3-6 months)</SelectItem>
-                        <SelectItem value="long">Long term (6+ months)</SelectItem>
-                        <SelectItem value="exploring">Just exploring</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="specificNeeds">Specific Needs or Pain Points</Label>
-                  <Textarea
-                    id="specificNeeds"
-                    placeholder="What problems are they trying to solve? What features are they most interested in?"
-                    value={productInquiry.specificNeeds}
-                    onChange={(e) => setProductInquiry({ ...productInquiry, specificNeeds: e.target.value })}
-                    rows={3}
-                  />
                 </div>
                 </div>
               </TabsContent>
 
-              <TabsContent value="materials" className="space-y-4">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h3 className="text-lg font-semibold">Training Materials</h3>
-                    <p className="text-sm text-gray-600">Upload docs or content so the AI knows your product inside out</p>
+              <TabsContent value="materials" className="space-y-6">
+                <div className="mb-6">
+                  <h3 className="text-xl font-bold text-gray-900">Training Materials</h3>
+                  <p className="text-sm text-gray-600 mt-1">Help the AI understand your product by uploading documentation and resources</p>
+                  <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-sm text-blue-900">
+                      Materials are optional but highly recommended. They help the AI provide more accurate product information during the demo. Upload product specs, pitch decks, FAQs, or case studies.
+                    </p>
                   </div>
+                </div>
+
+                <div className="flex justify-end">
                   <Button
                     type="button"
-                    variant="outline"
-                    size="sm"
+                    className="gap-2"
                     onClick={() => {
                       setNewMaterial({ title: '', description: '', material_type: 'document', file_url: '', content_text: '', category: 'Product Knowledge' });
                       setUploadTab('file');
                       setShowUploadModal(true);
                     }}
                   >
-                    <Upload className="w-4 h-4 mr-2" />
+                    <Upload className="w-4 h-4" />
                     Upload Material
                   </Button>
                 </div>
 
                 {knowledgeMaterials.length > 0 ? (
-                  <div className="space-y-2 max-h-80 overflow-y-auto">
-                    {knowledgeMaterials.map(material => (
-                      <div
-                        key={material.id}
-                        className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${selectedMaterials.includes(material.id) ? 'border-blue-500 bg-blue-50' : 'hover:bg-gray-50'}`}
-                        onClick={() => toggleMaterial(material.id)}
-                      >
-                        <Checkbox checked={selectedMaterials.includes(material.id)} onCheckedChange={() => toggleMaterial(material.id)} />
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium truncate">{material.title}</div>
-                          <div className="text-sm text-muted-foreground">{material.material_type} • {material.category}</div>
-                          {material.description && <div className="text-xs text-muted-foreground mt-1 truncate">{material.description}</div>}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-sm font-medium text-gray-700">{knowledgeMaterials.length} material{knowledgeMaterials.length !== 1 ? 's' : ''} available</p>
+                      {selectedMaterials.length > 0 && (
+                        <span className="text-sm font-semibold text-green-700 flex items-center gap-1">
+                          <Check className="w-4 h-4" /> {selectedMaterials.length} selected
+                        </span>
+                      )}
+                    </div>
+                    <div className="max-h-96 overflow-y-auto space-y-2">
+                      {knowledgeMaterials.map(material => (
+                        <div
+                          key={material.id}
+                          className={`flex items-start gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                            selectedMaterials.includes(material.id)
+                              ? 'border-green-500 bg-green-50'
+                              : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                          }`}
+                          onClick={() => toggleMaterial(material.id)}
+                        >
+                          <Checkbox
+                            checked={selectedMaterials.includes(material.id)}
+                            onCheckedChange={() => toggleMaterial(material.id)}
+                            className="mt-1"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-gray-900">{material.title}</div>
+                            <div className="text-xs text-gray-600 mt-1">{material.material_type} • {material.category}</div>
+                            {material.description && (
+                              <div className="text-sm text-gray-700 mt-2">{material.description}</div>
+                            )}
+                          </div>
+                          {selectedMaterials.includes(material.id) && (
+                            <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                          )}
                         </div>
-                        {selectedMaterials.includes(material.id) && <CheckCircle2 className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />}
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
                 ) : (
                   <div
-                    className="border-2 border-dashed border-gray-200 rounded-xl p-10 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors"
-                    onClick={() => { setNewMaterial({ title: '', description: '', material_type: 'document', file_url: '', content_text: '', category: 'Product Knowledge' }); setUploadTab('file'); setShowUploadModal(true); }}
+                    className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors"
+                    onClick={() => {
+                      setNewMaterial({ title: '', description: '', material_type: 'document', file_url: '', content_text: '', category: 'Product Knowledge' });
+                      setUploadTab('file');
+                      setShowUploadModal(true);
+                    }}
                   >
-                    <Upload className="w-8 h-8 text-gray-400 mx-auto mb-3" />
-                    <p className="font-medium text-gray-700">No materials yet</p>
-                    <p className="text-sm text-muted-foreground mt-1">Upload a product spec, pitch deck, FAQ, or any content the AI should know before the demo</p>
-                    <Button type="button" variant="outline" size="sm" className="mt-4"><Upload className="w-4 h-4 mr-2" />Upload First Material</Button>
+                    <Upload className="w-10 h-10 text-gray-400 mx-auto mb-3" />
+                    <p className="font-semibold text-gray-700">No materials uploaded</p>
+                    <p className="text-sm text-gray-600 mt-2">Upload product specs, pitch decks, case studies, or FAQs</p>
+                    <Button type="button" className="mt-4 gap-2">
+                      <Upload className="w-4 h-4" />
+                      Upload First Material
+                    </Button>
                   </div>
-                )}
-
-                {selectedMaterials.length > 0 && (
-                  <p className="text-sm text-blue-700 font-medium">{selectedMaterials.length} material{selectedMaterials.length !== 1 ? 's' : ''} selected — AI will use these during the demo</p>
                 )}
               </TabsContent>
 
-              <TabsContent value="settings" className="space-y-4">
-                <div className="mb-4">
-                  <h3 className="text-lg font-semibold">Demo Settings</h3>
-                  <p className="text-sm text-gray-600">Configure demo type, duration, and features</p>
+              <TabsContent value="settings" className="space-y-6">
+                <div className="mb-6">
+                  <h3 className="text-xl font-bold text-gray-900">Demo Settings</h3>
+                  <p className="text-sm text-gray-600 mt-1">Configure the demo experience and what to focus on</p>
+                  <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-sm text-blue-900">
+                      All fields are optional. They help tailor the demo to your specific selling scenario and get more targeted feedback.
+                    </p>
+                  </div>
                 </div>
 
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="demoType">Demo Type</Label>
-              <Select value={demoType} onValueChange={setDemoType}>
-                <SelectTrigger id="demoType">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="full_demo">Full Product Demo</SelectItem>
-                  <SelectItem value="feature_focus">Feature Focus</SelectItem>
-                  <SelectItem value="objection_handling">Objection Handling</SelectItem>
-                  <SelectItem value="technical_deep_dive">Technical Deep Dive</SelectItem>
-                </SelectContent>
-              </Select>
+                <div className="space-y-5">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                      <Label htmlFor="demoType" className="text-base font-semibold">Demo Type</Label>
+                      <p className="text-xs text-gray-600 mb-3">Choose the focus of your demo</p>
+                      <Select value={demoType} onValueChange={setDemoType}>
+                        <SelectTrigger id="demoType" className="bg-white">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="full_demo">Full Product Demo</SelectItem>
+                          <SelectItem value="feature_focus">Feature Focus</SelectItem>
+                          <SelectItem value="objection_handling">Objection Handling</SelectItem>
+                          <SelectItem value="technical_deep_dive">Technical Deep Dive</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                      <Label htmlFor="duration" className="text-base font-semibold">Duration</Label>
+                      <p className="text-xs text-gray-600 mb-3">Target demo length in minutes</p>
+                      <Input
+                        id="duration"
+                        type="number"
+                        value={targetDuration}
+                        onChange={(e) => setTargetDuration(parseInt(e.target.value))}
+                        min={5}
+                        max={60}
+                        className="bg-white"
+                      />
+                    </div>
                   </div>
 
-                  <div>
-                    <Label htmlFor="duration">Target Duration (minutes)</Label>
-              <Input
-                id="duration"
-                type="number"
-                value={targetDuration}
-                onChange={(e) => setTargetDuration(parseInt(e.target.value))}
-                min={5}
-                max={60}
+                  <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                    <Label htmlFor="features" className="text-base font-semibold">Key Features</Label>
+                    <p className="text-xs text-gray-600 mb-3">Features you want to highlight (comma-separated)</p>
+                    <Textarea
+                      id="features"
+                      value={keyFeatures}
+                      onChange={(e) => setKeyFeatures(e.target.value)}
+                      placeholder="e.g., Dashboard, Reporting, Salesforce Integration"
+                      rows={3}
+                      className="resize-none bg-white"
                     />
                   </div>
 
-                  <div>
-                    <Label htmlFor="features">Key Features to Cover (comma-separated)</Label>
-              <Textarea
-                id="features"
-                value={keyFeatures}
-                onChange={(e) => setKeyFeatures(e.target.value)}
-                placeholder="e.g., Dashboard, Reporting, Integration with Salesforce"
-                rows={3}
-              />
-                    <p className="text-xs text-gray-500 mt-1">
-                      Optional: List specific features you want to practice demonstrating
-                    </p>
-                  </div>
-
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <h3 className="font-semibold text-blue-900 mb-2">What to expect:</h3>
-                    <ul className="space-y-1 text-sm text-blue-800">
-                      <li>• Multiple AI attendees based on your configuration</li>
-                      <li>• Live AI validation of your product knowledge</li>
-                      <li>• Real-time coaching assistance during the demo</li>
-                      <li>• Screen sharing capability to show your product</li>
-                      <li>• Post-session analysis with detailed feedback</li>
-                      <li>• Coverage tracking for all key product features</li>
+                  <div className="bg-gradient-to-br from-blue-50 to-cyan-50 border border-blue-200 rounded-lg p-5">
+                    <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                      <Sparkles className="w-5 h-5 text-blue-600" />
+                      What you'll experience
+                    </h3>
+                    <ul className="space-y-2 text-sm text-gray-700">
+                      <li className="flex items-start gap-2">
+                        <Check className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                        <span>Multiple AI attendees simulating real buyer personas</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <Check className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                        <span>Live AI validation of your product knowledge</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <Check className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                        <span>Real-time coaching and objection handling</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <Check className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                        <span>Detailed post-session analysis and feedback</span>
+                      </li>
                     </ul>
                   </div>
                 </div>
               </TabsContent>
             </Tabs>
 
-            <div className="mt-6 pt-6 border-t flex gap-3 justify-between">
+            <div className="mt-8 pt-6 border-t flex gap-4 justify-between">
               <Button
                 onClick={goToPreviousTab}
                 variant="outline"
                 disabled={currentTab === 'attendees'}
+                size="lg"
+                className="min-w-32"
               >
                 Previous
               </Button>
@@ -710,12 +835,12 @@ const ProductDemoSetup = () => {
                 <Button
                   onClick={handleStartDemo}
                   disabled={loading || !canProceedFromAttendees() || !canProceedFromProduct()}
-                  className="flex-1"
+                  className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl transition-all"
                   size="lg"
                 >
                   {loading ? (
                     <>
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2" />
+                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent mr-2" />
                       Creating Session...
                     </>
                   ) : (
@@ -732,10 +857,11 @@ const ProductDemoSetup = () => {
                     (currentTab === 'attendees' && !canProceedFromAttendees()) ||
                     (currentTab === 'product' && !canProceedFromProduct())
                   }
-                  className="flex-1"
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 shadow-md hover:shadow-lg transition-all"
                   size="lg"
                 >
-                  Next
+                  Continue
+                  <ArrowLeft className="w-5 h-5 ml-2 rotate-180" />
                 </Button>
               )}
             </div>
