@@ -22,6 +22,8 @@ import {
     Upload, BookOpen, CheckCircle2, Link as LinkIcon, FileText
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { ParticipantsSection } from '@/components/scenario/ParticipantsSection';
+import { ConversationDynamicsSection } from '@/components/scenario/ConversationDynamicsSection';
 
 const MATERIAL_CATEGORIES = [
     'Product Knowledge', 'Sales Methodology', 'Objection Handling',
@@ -37,6 +39,7 @@ export default function CreateMultiPartyScenario() {
 
     const [isLoading, setIsLoading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    const [personaGroupName, setPersonaGroupName] = useState('Sales Team');
     const [scenarioData, setScenarioData] = useState({
         scenario_name: '',
         scenario_description: '',
@@ -488,305 +491,33 @@ export default function CreateMultiPartyScenario() {
                     </TabsContent>
 
                     <TabsContent value="participants">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Scenario Participants *</CardTitle>
-                                <CardDescription>Add buyer personas (prospects/clients) and seller personas (your sales team)</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                        <Tabs defaultValue="buyers" className="w-full">
-                            <TabsList className="grid w-full grid-cols-2 mb-6">
-                                <TabsTrigger value="buyers">
-                                    Buyer Personas ({scenarioData.buyer_personas?.length || 0})
-                                </TabsTrigger>
-                                <TabsTrigger value="sellers">
-                                    Sales Team ({scenarioData.seller_personas?.length || 0})
-                                </TabsTrigger>
-                            </TabsList>
-
-                            <TabsContent value="buyers">
-                                {scenarioData.buyer_personas?.length > 0 && (
-                                    <div className="space-y-3 mb-6">
-                                        {scenarioData.buyer_personas.map((persona) => (
-                                            <div key={persona.persona_id} className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="p-2 bg-blue-100 rounded">
-                                                        {getBuyerRoleIcon(persona.role_in_scenario)}
-                                                    </div>
-                                                    <div>
-                                                        <div className="flex items-center gap-2">
-                                                            <p className="font-semibold">{persona.name}</p>
-                                                            <Badge variant="outline" className="text-xs">
-                                                                {persona.is_ai ? 'AI' : 'Human'}
-                                                            </Badge>
-                                                        </div>
-                                                        <p className="text-sm text-slate-600">{persona.title} | {persona.personality}</p>
-                                                    </div>
-                                                </div>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={() => removeBuyerPersona(persona.persona_id)}
-                                                >
-                                                    <X className="w-4 h-4" />
-                                                </Button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-
-                                <div className="border-t pt-6 space-y-4">
-                                    <h4 className="font-semibold text-slate-700">Add Buyer Persona</h4>
-                                    
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <Label>Name *</Label>
-                                            <Input
-                                                value={newBuyerPersona.name}
-                                                onChange={(e) => setNewBuyerPersona(prev => ({ ...prev, name: e.target.value }))}
-                                                placeholder="e.g., Sarah Chen"
-                                            />
-                                        </div>
-
-                                        <div>
-                                            <Label>Title *</Label>
-                                            <Input
-                                                value={newBuyerPersona.title}
-                                                onChange={(e) => setNewBuyerPersona(prev => ({ ...prev, title: e.target.value }))}
-                                                placeholder="e.g., Chief Financial Officer"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-3 gap-4">
-                                        <div>
-                                            <Label>Role in Scenario</Label>
-                                            <Select
-                                                value={newBuyerPersona.role_in_scenario}
-                                                onValueChange={(value) => setNewBuyerPersona(prev => ({ ...prev, role_in_scenario: value }))}
-                                            >
-                                                <SelectTrigger>
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="primary_decision_maker">Primary Decision Maker</SelectItem>
-                                                    <SelectItem value="technical_evaluator">Technical Evaluator</SelectItem>
-                                                    <SelectItem value="financial_approver">Financial Approver</SelectItem>
-                                                    <SelectItem value="end_user">End User</SelectItem>
-                                                    <SelectItem value="influencer">Influencer</SelectItem>
-                                                    <SelectItem value="blocker">Blocker</SelectItem>
-                                                    <SelectItem value="champion">Champion</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-
-                                        <div>
-                                            <Label>Personality</Label>
-                                            <Select
-                                                value={newBuyerPersona.personality}
-                                                onValueChange={(value) => setNewBuyerPersona(prev => ({ ...prev, personality: value }))}
-                                            >
-                                                <SelectTrigger>
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="Nice">Nice</SelectItem>
-                                                    <SelectItem value="Rude">Rude</SelectItem>
-                                                    <SelectItem value="Analytical">Analytical</SelectItem>
-                                                    <SelectItem value="Formal">Formal</SelectItem>
-                                                    <SelectItem value="Chatty">Chatty</SelectItem>
-                                                    <SelectItem value="Skeptical">Skeptical</SelectItem>
-                                                    <SelectItem value="Enthusiastic">Enthusiastic</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-
-                                        <div>
-                                            <Label>Gender</Label>
-                                            <Select
-                                                value={newBuyerPersona.gender}
-                                                onValueChange={(value) => setNewBuyerPersona(prev => ({ ...prev, gender: value }))}
-                                            >
-                                                <SelectTrigger>
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="Female">Female</SelectItem>
-                                                    <SelectItem value="Male">Male</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <Label>Agenda / What They Care About</Label>
-                                        <Textarea
-                                            value={newBuyerPersona.agenda}
-                                            onChange={(e) => setNewBuyerPersona(prev => ({ ...prev, agenda: e.target.value }))}
-                                            placeholder="e.g., Ensure the solution fits within Q3 budget and shows clear ROI within 6 months"
-                                            rows={2}
-                                        />
-                                    </div>
-
-                                    <div className="flex items-center gap-2">
-                                        <Switch
-                                            checked={newBuyerPersona.is_ai}
-                                            onCheckedChange={(checked) => setNewBuyerPersona(prev => ({ ...prev, is_ai: checked }))}
-                                        />
-                                        <Label>AI-controlled (uncheck if human participant will play this role)</Label>
-                                    </div>
-
-                                    <Button onClick={addBuyerPersona} className="w-full bg-blue-600 hover:bg-blue-700">
-                                        <Plus className="w-4 h-4 mr-2" />
-                                        Add Buyer Persona
-                                    </Button>
-                                </div>
-                            </TabsContent>
-
-                            <TabsContent value="sellers">
-                                {scenarioData.seller_personas?.length > 0 && (
-                                    <div className="space-y-3 mb-6">
-                                        {scenarioData.seller_personas.map((persona) => (
-                                            <div key={persona.persona_id} className="flex items-center justify-between p-4 bg-green-50 rounded-lg border border-green-200">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="p-2 bg-green-100 rounded">
-                                                        {getSellerRoleIcon(persona.sales_role)}
-                                                    </div>
-                                                    <div>
-                                                        <div className="flex items-center gap-2">
-                                                            <p className="font-semibold">{persona.name}</p>
-                                                            <Badge variant="outline" className="text-xs">
-                                                                {persona.is_ai ? 'AI' : 'Human'}
-                                                            </Badge>
-                                                        </div>
-                                                        <p className="text-sm text-slate-600">
-                                                            {persona.sales_role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())} | {persona.personality}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={() => removeSellerPersona(persona.persona_id)}
-                                                >
-                                                    <X className="w-4 h-4" />
-                                                </Button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-
-                                <div className="border-t pt-6 space-y-4">
-                                    <h4 className="font-semibold text-slate-700">Add Sales Team Member</h4>
-                                    
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <Label>Name *</Label>
-                                            <Input
-                                                value={newSellerPersona.name}
-                                                onChange={(e) => setNewSellerPersona(prev => ({ ...prev, name: e.target.value }))}
-                                                placeholder="e.g., Mike Johnson"
-                                            />
-                                        </div>
-
-                                        <div>
-                                            <Label>Title</Label>
-                                            <Input
-                                                value={newSellerPersona.title}
-                                                onChange={(e) => setNewSellerPersona(prev => ({ ...prev, title: e.target.value }))}
-                                                placeholder="e.g., Senior Account Executive"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-3 gap-4">
-                                        <div>
-                                            <Label>Sales Role</Label>
-                                            <Select
-                                                value={newSellerPersona.sales_role}
-                                                onValueChange={(value) => setNewSellerPersona(prev => ({ ...prev, sales_role: value }))}
-                                            >
-                                                <SelectTrigger>
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="account_executive">Account Executive</SelectItem>
-                                                    <SelectItem value="sales_engineer">Sales Engineer</SelectItem>
-                                                    <SelectItem value="solutions_consultant">Solutions Consultant</SelectItem>
-                                                    <SelectItem value="sales_manager">Sales Manager</SelectItem>
-                                                    <SelectItem value="sdr">SDR</SelectItem>
-                                                    <SelectItem value="customer_success">Customer Success</SelectItem>
-                                                    <SelectItem value="presales_specialist">Presales Specialist</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-
-                                        <div>
-                                            <Label>Style</Label>
-                                            <Select
-                                                value={newSellerPersona.personality}
-                                                onValueChange={(value) => setNewSellerPersona(prev => ({ ...prev, personality: value }))}
-                                            >
-                                                <SelectTrigger>
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="Consultative">Consultative</SelectItem>
-                                                    <SelectItem value="Aggressive">Aggressive</SelectItem>
-                                                    <SelectItem value="Technical">Technical</SelectItem>
-                                                    <SelectItem value="Relationship-focused">Relationship-focused</SelectItem>
-                                                    <SelectItem value="Data-driven">Data-driven</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-
-                                        <div>
-                                            <Label>Gender</Label>
-                                            <Select
-                                                value={newSellerPersona.gender}
-                                                onValueChange={(value) => setNewSellerPersona(prev => ({ ...prev, gender: value }))}
-                                            >
-                                                <SelectTrigger>
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="Male">Male</SelectItem>
-                                                    <SelectItem value="Female">Female</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <Label>Responsibilities in This Meeting</Label>
-                                        <Textarea
-                                            value={newSellerPersona.responsibilities}
-                                            onChange={(e) => setNewSellerPersona(prev => ({ ...prev, responsibilities: e.target.value }))}
-                                            placeholder="e.g., Lead the discovery phase, then hand off to Sales Engineer for technical questions"
-                                            rows={2}
-                                        />
-                                    </div>
-
-                                    <div className="flex items-center gap-2">
-                                        <Switch
-                                            checked={newSellerPersona.is_ai}
-                                            onCheckedChange={(checked) => setNewSellerPersona(prev => ({ ...prev, is_ai: checked }))}
-                                        />
-                                        <Label>AI teammate (uncheck if human participant will play this role)</Label>
-                                    </div>
-
-                                    <Button onClick={addSellerPersona} className="w-full bg-green-600 hover:bg-green-700">
-                                        <Plus className="w-4 h-4 mr-2" />
-                                        Add Sales Team Member
-                                    </Button>
-                                </div>
-                            </TabsContent>
-                        </Tabs>
-                            </CardContent>
-                        </Card>
+                        <ParticipantsSection
+                            buyerPersonas={scenarioData.buyer_personas}
+                            sellerPersonas={scenarioData.seller_personas}
+                            groupName={personaGroupName}
+                            onGroupNameChange={setPersonaGroupName}
+                            onAddBuyer={(persona) => {
+                                setScenarioData(prev => ({
+                                    ...prev,
+                                    buyer_personas: [...prev.buyer_personas, { ...persona, persona_id: Date.now().toString() }]
+                                }));
+                            }}
+                            onAddSeller={(persona) => {
+                                setScenarioData(prev => ({
+                                    ...prev,
+                                    seller_personas: [...prev.seller_personas, { ...persona, persona_id: Date.now().toString() }]
+                                }));
+                            }}
+                            onRemoveBuyer={removeBuyerPersona}
+                            onRemoveSeller={removeSellerPersona}
+                        />
+                    <TabsContent value="dynamics">
+                        <ConversationDynamicsSection
+                            dynamics={scenarioData.conversation_dynamics}
+                            onChange={(dynamics) => setScenarioData(prev => ({ ...prev, conversation_dynamics: dynamics }))}
+                        />
                     </TabsContent>
 
-                    <TabsContent value="dynamics">
                         <Card>
                             <CardHeader>
                                 <CardTitle>Conversation Dynamics</CardTitle>
