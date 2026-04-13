@@ -1,24 +1,149 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Loader2, Plus, Users, Search as SearchIcon, Sparkles, ArrowRight } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Loader2, Plus, Sparkles, ArrowRight, Mic, Users as UsersIcon, Search as SearchIcon, BookOpen, Trophy, Play } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 import { User } from '@/api/entities';
 import { createPageUrl } from '@/utils';
-import CustomBotForm from '@/components/roleplay/CustomBotForm';
-import BotCard from '@/components/roleplay/BotCard';
-import BotSelectionModal from '@/components/roleplay/BotSelectionModal';
+
+const DUMMY_BOTS = [
+  {
+    id: 'dummy_cold_call_tech',
+    name: 'Cold Call - Tech Decision Maker',
+    description: 'Practice cold calling a CTO at a SaaS company who hasn\'t heard of your product',
+    industry: 'Technology',
+    difficulty_level: 'intermediate',
+    company: 'TechCorp Inc',
+    is_public: true,
+    personas_config: [
+      { name: 'Sarah Johnson', title: 'CTO', traits: ['Technical', 'Skeptical', 'Busy'], buyingStage: 'Problem Unaware', details: 'Recently promoted, responsible for infrastructure' }
+    ]
+  },
+  {
+    id: 'dummy_discovery_finance',
+    name: 'Discovery Call - Finance Director',
+    description: 'Discover pain points with a Finance Director facing budget constraints',
+    industry: 'Financial Services',
+    difficulty_level: 'beginner',
+    company: 'GlobalFinance Solutions',
+    is_public: true,
+    personas_config: [
+      { name: 'Michael Chen', title: 'Finance Director', traits: ['Cost-Conscious', 'Collaborative', 'Detail-Oriented'], buyingStage: 'Problem Aware', details: 'Cost reduction is key priority this year' }
+    ]
+  },
+  {
+    id: 'dummy_warm_call_ecommerce',
+    name: 'Warm Call - E-commerce Manager',
+    description: 'Follow up with an e-commerce manager who attended your webinar',
+    industry: 'Retail/E-commerce',
+    difficulty_level: 'beginner',
+    company: 'ShopHub Co',
+    is_public: true,
+    personas_config: [
+      { name: 'Rachel Martinez', title: 'E-commerce Manager', traits: ['Growth-Focused', 'Enthusiastic', 'Early Adopter'], buyingStage: 'Problem Aware', details: 'Very interested in automation solutions' }
+    ]
+  },
+  {
+    id: 'dummy_objection_healthcare',
+    name: 'Objection Handling - Healthcare IT',
+    description: 'Handle common objections from a healthcare organization evaluating your solution',
+    industry: 'Healthcare',
+    difficulty_level: 'advanced',
+    company: 'MediTech Solutions',
+    is_public: true,
+    personas_config: [
+      { name: 'Dr. James Wilson', title: 'IT Director', traits: ['Cautious', 'Assertive', 'Formal'], buyingStage: 'Solution Aware', details: 'Compliance requirements are critical' }
+    ]
+  },
+  {
+    id: 'dummy_renewal_call_mfg',
+    name: 'Renewal Call - Manufacturing VP',
+    description: 'Renew relationship with a VP of Operations at a manufacturing plant',
+    industry: 'Manufacturing',
+    difficulty_level: 'intermediate',
+    company: 'Industrial Solutions Inc',
+    is_public: true,
+    personas_config: [
+      { name: 'David Kumar', title: 'VP Operations', traits: ['Direct', 'Practical', 'Risk-Averse'], buyingStage: 'Product Aware', details: 'Looking to expand implementation' }
+    ]
+  },
+  {
+    id: 'dummy_negotiation_enterprise',
+    name: 'Negotiation - Enterprise Account',
+    description: 'Negotiate terms and pricing with an enterprise buyer',
+    industry: 'Enterprise Software',
+    difficulty_level: 'advanced',
+    company: 'Fortune500 Corp',
+    is_public: true,
+    personas_config: [
+      { name: 'Patricia Adams', title: 'VP Procurement', traits: ['Assertive', 'Direct', 'Budget Holder'], buyingStage: 'Ready to Buy', details: 'Has multiple competing bids' }
+    ]
+  },
+  {
+    id: 'dummy_multistakeholder_deal',
+    name: 'Multi-Stakeholder Sales Call',
+    description: 'Navigate a call with multiple decision-makers with different priorities',
+    industry: 'Technology',
+    difficulty_level: 'advanced',
+    company: 'BigTech Solutions',
+    is_public: true,
+    personas_config: [
+      { name: 'Lisa Thompson', title: 'Head of IT', traits: ['Technical', 'Cautious'], buyingStage: 'Problem Aware' },
+      { name: 'Mark Sullivan', title: 'CFO', traits: ['Cost-Conscious', 'Formal'], buyingStage: 'Solution Aware' },
+      { name: 'Emma Davis', title: 'Business Owner', traits: ['Growth-Focused', 'Collaborative'], buyingStage: 'Ready to Buy' }
+    ]
+  },
+  {
+    id: 'dummy_executive_brief',
+    name: 'Executive Briefing',
+    description: 'Present to C-level executives with limited time and high expectations',
+    industry: 'Consulting',
+    difficulty_level: 'advanced',
+    company: 'McKinsey Advisory',
+    is_public: true,
+    personas_config: [
+      { name: 'Richard Blackwell', title: 'CEO', traits: ['Assertive', 'Direct', 'Busy'], buyingStage: 'Solution Aware', details: 'Only has 15 minutes to meet' }
+    ]
+  },
+  {
+    id: 'dummy_value_based_selling',
+    name: 'Value-Based Selling',
+    description: 'Focus on business outcomes rather than features',
+    industry: 'Professional Services',
+    difficulty_level: 'intermediate',
+    company: 'Accenture Services',
+    is_public: true,
+    personas_config: [
+      { name: 'Angela Foster', title: 'Operations Director', traits: ['Detail-Oriented', 'Practical'], buyingStage: 'Problem Aware', details: 'Focused on ROI and business metrics' }
+    ]
+  },
+  {
+    id: 'dummy_complex_sale',
+    name: 'Complex Enterprise Sale',
+    description: 'Navigate a complex deal with competing priorities and long sales cycle',
+    industry: 'Financial Services',
+    difficulty_level: 'advanced',
+    company: 'Goldman Sachs',
+    is_public: true,
+    personas_config: [
+      { name: 'Jennifer Park', title: 'Chief Risk Officer', traits: ['Cautious', 'Formal', 'Risk-Averse'], buyingStage: 'Problem Aware', details: 'Compliance is non-negotiable' }
+    ]
+  }
+];
 
 export default function LetsPractice() {
+  const navigate = useNavigate();
   const [bots, setBots] = useState([]);
+  const [myBots, setMyBots] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [showBotModal, setShowBotModal] = useState(false);
-  const [showCustomBotForm, setShowCustomBotForm] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [scenarioBots, setScenarioBots] = useState([]);
+  const [activeTab, setActiveTab] = useState('discover');
 
   useEffect(() => {
     loadData();
@@ -29,10 +154,7 @@ export default function LetsPractice() {
     try {
       const user = await User.me();
       setCurrentUser(user);
-      await Promise.all([
-        loadBots(user.id),
-        loadScenarioBots()
-      ]);
+      await loadBots(user.id);
     } catch (error) {
       console.error('Error loading data:', error);
       toast.error('Failed to load data');
@@ -46,36 +168,23 @@ export default function LetsPractice() {
       const { data, error } = await supabase
         .from('ai_clients')
         .select('*')
-        .or(`created_by.eq.${userId},is_public.eq.true`)
+        .eq('is_scenario_template', false)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setBots(data || []);
+
+      const userBots = data?.filter(b => b.created_by === userId) || [];
+      const publicBots = data?.filter(b => b.is_public && b.created_by !== userId) || [];
+
+      setMyBots(userBots);
+      setBots([...DUMMY_BOTS, ...publicBots]);
     } catch (error) {
       console.error('Error loading bots:', error);
+      setBots(DUMMY_BOTS);
     }
   };
 
-  const loadScenarioBots = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('ai_clients')
-        .select('*')
-        .eq('is_scenario_template', true)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setScenarioBots(data || []);
-    } catch (error) {
-      console.error('Error loading scenario bots:', error);
-    }
-  };
-
-  const handleStartPractice = (bot) => {
-    window.location.href = createPageUrl('AIRoleplay', { botId: bot.id });
-  };
-
-  const handleSelectBot = async (bot) => {
+  const handleStartPractice = async (bot) => {
     try {
       await supabase
         .from('user_bot_sessions')
@@ -85,161 +194,201 @@ export default function LetsPractice() {
           started_at: new Date().toISOString()
         }]);
 
-      handleStartPractice(bot);
+      navigate(createPageUrl('AIRoleplay', { botId: bot.id }));
     } catch (error) {
-      console.error('Error selecting bot:', error);
+      console.error('Error starting practice:', error);
+      toast.error('Failed to start practice session');
     }
   };
 
-  const handleBotCreated = () => {
-    setShowCustomBotForm(false);
-    loadBots(currentUser.id);
+  const handleCreateNew = () => {
+    navigate(createPageUrl('CreateRoleplay'));
   };
 
   const filteredBots = bots.filter(bot =>
     bot.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    bot.company?.toLowerCase().includes(searchQuery.toLowerCase())
+    bot.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    bot.industry?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const filteredMyBots = myBots.filter(bot =>
+    bot.name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
+      <div className="flex items-center justify-center h-screen bg-gradient-to-br from-slate-50 to-blue-50">
         <div className="text-center space-y-4">
-          <Loader2 className="w-12 h-12 animate-spin text-blue-500 mx-auto" />
-          <p className="text-slate-400 font-medium">Loading your practice hub...</p>
+          <Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto" />
+          <p className="text-slate-600 font-medium">Loading practice scenarios...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       {/* Hero Section */}
-      <div className="relative overflow-hidden py-16 border-b border-slate-800">
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-transparent to-transparent" />
-        <div className="max-w-7xl mx-auto px-6 relative z-10">
-          <div className="space-y-6">
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <div className="inline-flex items-center gap-2 bg-blue-500/10 border border-blue-500/20 rounded-full px-3 py-1">
-                  <Sparkles className="w-4 h-4 text-blue-400" />
-                  <span className="text-sm text-blue-300 font-medium">AI-Powered Training</span>
-                </div>
-              </div>
-              <h1 className="text-6xl font-bold text-white mb-3 tracking-tight">
-                Let's Practice
-              </h1>
-              <p className="text-xl text-slate-400 max-w-2xl">
-                Master your sales skills with realistic AI-powered roleplay scenarios. Practice discovery questions, objection handling, and closing techniques.
-              </p>
-            </div>
-
-            <div className="flex gap-3 pt-4">
-              <Button
-                onClick={() => setShowCustomBotForm(true)}
-                size="lg"
-                className="bg-blue-600 hover:bg-blue-700 text-white gap-2 font-semibold"
-              >
-                <Plus className="w-5 h-5" />
-                Create Custom Bot
-              </Button>
-              <Button
-                onClick={() => setShowBotModal(true)}
-                size="lg"
-                variant="outline"
-                className="border-slate-600 text-slate-100 hover:bg-slate-800/50 gap-2 font-semibold"
-              >
-                <Users className="w-5 h-5" />
-                Browse All Bots
-              </Button>
-            </div>
+      <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white py-12 px-8">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex items-center gap-3 mb-4">
+            <Sparkles className="w-8 h-8" />
+            <span className="text-sm font-semibold bg-white/20 px-3 py-1 rounded-full">AI-Powered Training</span>
           </div>
+          <h1 className="text-4xl font-bold mb-4">Let's Practice</h1>
+          <p className="text-blue-100 text-lg mb-6">Master sales conversations with AI roleplay partners. Practice different scenarios, industries, and objection handling.</p>
+          <Button
+            onClick={handleCreateNew}
+            size="lg"
+            className="bg-white text-blue-600 hover:bg-blue-50 gap-2 font-semibold"
+          >
+            <Plus className="w-5 h-5" />
+            Create Your Own Scenario
+          </Button>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-6 py-12">
-        {/* Search Bar */}
-        {filteredBots.length > 0 && (
-          <div className="mb-8">
-            <div className="relative max-w-md">
-              <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+      <div className="max-w-6xl mx-auto px-8 py-12">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          {/* Tabs Header */}
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+            <TabsList className="grid w-fit grid-cols-2">
+              <TabsTrigger value="discover">Discover Scenarios</TabsTrigger>
+              <TabsTrigger value="my-bots">
+                My Scenarios
+                {myBots.length > 0 && (
+                  <Badge variant="secondary" className="ml-2">{myBots.length}</Badge>
+                )}
+              </TabsTrigger>
+            </TabsList>
+
+            <div className="relative">
+              <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <Input
-                placeholder="Search your bots..."
+                placeholder="Search scenarios..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-12 bg-slate-800 border-slate-700 text-white placeholder:text-slate-500 focus:border-blue-500/50 focus:ring-blue-500/20"
+                className="pl-10 w-full md:w-64 bg-white border-slate-300"
               />
             </div>
           </div>
-        )}
 
-        {/* Empty State */}
-        {filteredBots.length === 0 ? (
-          <div className="py-20">
-            <div className="text-center space-y-6 max-w-xl mx-auto">
-              <div className="inline-flex items-center justify-center w-20 h-20 bg-slate-800/50 border border-slate-700 rounded-full">
-                <Users className="w-10 h-10 text-slate-600" />
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold text-white mb-2">No bots yet</h2>
-                <p className="text-slate-400">
-                  Start by creating a custom bot from an existing scenario template, or browse all available practice bots.
-                </p>
-              </div>
-              <div className="flex gap-3 justify-center pt-4">
-                <Button
-                  onClick={() => setShowCustomBotForm(true)}
-                  className="bg-blue-600 hover:bg-blue-700 gap-2"
-                >
-                  <Plus className="w-4 h-4" />
-                  Create Bot
-                </Button>
-                <Button
-                  onClick={() => setShowBotModal(true)}
-                  variant="outline"
-                  className="border-slate-600"
-                >
-                  Browse Bots
-                </Button>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold text-white">Your Practice Bots</h2>
-                <p className="text-slate-400 text-sm mt-1">{filteredBots.length} bot{filteredBots.length !== 1 ? 's' : ''} available</p>
-              </div>
-            </div>
+          {/* Discover Tab */}
+          <TabsContent value="discover" className="space-y-6">
+            {filteredBots.length === 0 ? (
+              <Card className="border-dashed">
+                <CardContent className="flex flex-col items-center justify-center py-12">
+                  <Mic className="w-12 h-12 text-slate-400 mb-4" />
+                  <h3 className="text-lg font-semibold text-slate-900 mb-2">No scenarios found</h3>
+                  <p className="text-slate-600">Try adjusting your search filters</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredBots.map(bot => (
+                  <Card key={bot.id} className="hover:shadow-lg transition-all overflow-hidden group">
+                    <div className="h-2 bg-gradient-to-r from-blue-500 to-blue-600"></div>
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between mb-2">
+                        <CardTitle className="text-lg line-clamp-2">{bot.name}</CardTitle>
+                      </div>
+                      <CardDescription className="line-clamp-2">{bot.description}</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="flex flex-wrap gap-2">
+                        {bot.industry && (
+                          <Badge variant="secondary" className="text-xs">{bot.industry}</Badge>
+                        )}
+                        <Badge
+                          variant="outline"
+                          className={`text-xs ${
+                            bot.difficulty_level === 'beginner' ? 'bg-green-50 text-green-700 border-green-200' :
+                            bot.difficulty_level === 'intermediate' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                            'bg-red-50 text-red-700 border-red-200'
+                          }`}
+                        >
+                          {bot.difficulty_level?.charAt(0).toUpperCase() + bot.difficulty_level?.slice(1)}
+                        </Badge>
+                      </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredBots.map((bot) => (
-                <BotCard
-                  key={bot.id}
-                  bot={bot}
-                  onSelect={() => handleSelectBot(bot)}
-                />
-              ))}
-            </div>
-          </div>
-        )}
+                      {bot.personas_config && bot.personas_config.length > 0 && (
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2 text-sm text-slate-600">
+                            <UsersIcon className="w-4 h-4" />
+                            <span>{bot.personas_config.length} {bot.personas_config.length === 1 ? 'persona' : 'personas'}</span>
+                          </div>
+                          <div className="space-y-1">
+                            {bot.personas_config.map((persona, idx) => (
+                              <div key={idx} className="text-sm text-slate-700">
+                                <span className="font-medium">{persona.name}</span> - {persona.title}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      <Button
+                        onClick={() => handleStartPractice(bot)}
+                        className="w-full bg-blue-600 hover:bg-blue-700 gap-2"
+                      >
+                        <Play className="w-4 h-4" />
+                        Start Practice
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          {/* My Scenarios Tab */}
+          <TabsContent value="my-bots" className="space-y-6">
+            {filteredMyBots.length === 0 ? (
+              <Card className="border-dashed">
+                <CardContent className="flex flex-col items-center justify-center py-12">
+                  <BookOpen className="w-12 h-12 text-slate-400 mb-4" />
+                  <h3 className="text-lg font-semibold text-slate-900 mb-2">No custom scenarios yet</h3>
+                  <p className="text-slate-600 mb-6">Create your first scenario to get started</p>
+                  <Button onClick={handleCreateNew} className="bg-blue-600 hover:bg-blue-700 gap-2">
+                    <Plus className="w-4 h-4" />
+                    Create Scenario
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredMyBots.map(bot => (
+                  <Card key={bot.id} className="hover:shadow-lg transition-all">
+                    <div className="h-2 bg-gradient-to-r from-purple-500 to-purple-600"></div>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-lg line-clamp-2">{bot.name}</CardTitle>
+                      <CardDescription className="line-clamp-2">{bot.description}</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="flex flex-wrap gap-2">
+                        {bot.industry && (
+                          <Badge variant="secondary" className="text-xs">{bot.industry}</Badge>
+                        )}
+                        <Badge variant="outline" className="text-xs">
+                          {bot.is_public ? 'Public' : 'Private'}
+                        </Badge>
+                      </div>
+                      <Button
+                        onClick={() => handleStartPractice(bot)}
+                        className="w-full bg-blue-600 hover:bg-blue-700 gap-2"
+                      >
+                        <Play className="w-4 h-4" />
+                        Start Practice
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
-
-      {/* Modals */}
-      <CustomBotForm
-        isOpen={showCustomBotForm}
-        onClose={() => setShowCustomBotForm(false)}
-        scenarioBots={scenarioBots}
-        onBotCreated={handleBotCreated}
-      />
-
-      <BotSelectionModal
-        isOpen={showBotModal}
-        onClose={() => setShowBotModal(false)}
-        onSelectBot={handleSelectBot}
-      />
     </div>
   );
 }

@@ -279,6 +279,7 @@ import LetsPractice from "./LetsPractice";
 import ModuleCreation from "./ModuleCreation";
 import StudioRoleplayDiscover from "./StudioRoleplayDiscover";
 import ManageBotTemplates from "./ManageBotTemplates";
+import CreateRoleplay from "./CreateRoleplay";
 
 import { BrowserRouter as Router, Route, Routes, Navigate, useLocation } from 'react-router-dom';
 
@@ -559,6 +560,7 @@ const PAGES = {
     ModuleCreation: ModuleCreation,
     StudioRoleplayDiscover: StudioRoleplayDiscover,
     ManageBotTemplates: ManageBotTemplates,
+    CreateRoleplay: CreateRoleplay,
 
 }
 
@@ -882,6 +884,8 @@ function PagesContent() {
                 <Route path="/AIRoleplayContentLibrary" element={<AIRoleplayContentLibrary />} />
 
                 <Route path="/ManageBotTemplates" element={<ManageBotTemplates />} />
+
+                <Route path="/CreateRoleplay" element={<CreateRoleplay />} />
 
             </Routes>
         </Layout>
