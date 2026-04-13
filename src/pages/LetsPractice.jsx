@@ -2,34 +2,35 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Progress } from '@/components/ui/progress';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
-  Play, CheckCircle, Clock, BookOpen, Send, MessageCircle, Users, Loader2,
-  Target, Zap, Trophy
+  Play, Plus, Loader2, Sparkles, Users, Target, Brain,
+  ExternalLink, Zap, Star, Clock
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 import { User } from '@/api/entities';
 import { createPageUrl } from '@/utils';
-import { Link } from 'react-router-dom';
+import BotSelectionModal from '@/components/roleplay/BotSelectionModal';
 
 export default function LetsPractice() {
-  const [modules, setModules] = useState([]);
+  const [bots, setBots] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('all');
-  const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
-  const [selectedModule, setSelectedModule] = useState(null);
+  const [showBotModal, setShowBotModal] = useState(false);
+  const [showCustomBotForm, setShowCustomBotForm] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const [feedbackData, setFeedbackData] = useState({
-    feedbackType: 'ai_bot',
-    content: '',
-    activityId: ''
+  const [customBotData, setCustomBotData] = useState({
+    bot_name: '',
+    company_name: '',
+    linkedin_url: '',
+    scenario_bot_id: null
   });
+
+  const [scenarioBots, setScenarioBots] = useState([]);
 
   useEffect(() => {
     loadData();
@@ -40,7 +41,10 @@ export default function LetsPractice() {
     try {
       const user = await User.me();
       setCurrentUser(user);
-      loadModules(user.email);
+      await Promise.all([
+        loadBots(user.id),
+        loadScenarioBots()
+      ]);
     } catch (error) {
       console.error('Error loading data:', error);
       toast.error('Failed to load data');
@@ -49,298 +53,304 @@ export default function LetsPractice() {
     }
   };
 
-  const loadModules = async (userEmail) => {
+  const loadBots = async (userId) => {
     try {
       const { data, error } = await supabase
-        .from('user_module_assignments_new')
-        .select('*, module:practice_modules_new(*)')
-        .eq('user_email', userEmail)
-        .order('assignment_date', { ascending: false });
+        .from('ai_clients')
+        .select('*')
+        .or(`created_by.eq.${userId},is_public.eq.true`)
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setModules(data || []);
+      setBots(data || []);
     } catch (error) {
-      console.error('Error loading modules:', error);
-      toast.error('Failed to load practice modules');
+      console.error('Error loading bots:', error);
+      toast.error('Failed to load bots');
     }
   };
 
-  const handleStartPractice = (module) => {
-    window.location.href = createPageUrl('AIRoleplay');
+  const loadScenarioBots = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('ai_clients')
+        .select('*')
+        .eq('is_scenario_template', true)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setScenarioBots(data || []);
+    } catch (error) {
+      console.error('Error loading scenario bots:', error);
+    }
   };
 
-  const handleSubmitFeedbackRequest = async () => {
-    if (!selectedModule || !feedbackData.content.trim()) {
+  const handleStartPractice = (bot) => {
+    window.location.href = createPageUrl('AIRoleplay', { botId: bot.id });
+  };
+
+  const handleCreateCustomBot = async () => {
+    if (!customBotData.bot_name.trim() || !customBotData.company_name.trim() || !customBotData.scenario_bot_id) {
       toast.error('Please fill in all required fields');
       return;
     }
 
     try {
-      const { error } = await supabase
-        .from('module_feedback_submissions_new')
+      const { data, error } = await supabase
+        .from('ai_clients')
         .insert([{
-          user_email: currentUser?.email,
-          module_id: selectedModule.module_id,
-          activity_id: feedbackData.activityId || `activity_${Date.now()}`,
-          feedback_type: feedbackData.feedbackType,
-          submitted_by_email: currentUser?.email,
-          feedback_content: {
-            request: feedbackData.content,
-            timestamp: new Date().toISOString()
-          }
+          name: customBotData.bot_name,
+          company: customBotData.company_name,
+          linkedin_profile_url: customBotData.linkedin_url,
+          created_by: currentUser.id,
+          parent_bot_id: customBotData.scenario_bot_id,
+          is_public: false
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast.success('Custom bot created successfully!');
+      setShowCustomBotForm(false);
+      setCustomBotData({
+        bot_name: '',
+        company_name: '',
+        linkedin_url: '',
+        scenario_bot_id: null
+      });
+      loadBots(currentUser.id);
+    } catch (error) {
+      console.error('Error creating bot:', error);
+      toast.error('Failed to create bot');
+    }
+  };
+
+  const handleSelectExistingBot = async (bot) => {
+    try {
+      await supabase
+        .from('user_bot_sessions')
+        .insert([{
+          user_id: currentUser.id,
+          bot_id: bot.id,
+          started_at: new Date().toISOString()
         }]);
 
-      if (error) throw error;
-
-      toast.success(`Feedback request submitted to ${feedbackData.feedbackType === 'ai_bot' ? 'AI Coach' : 'Team Member'}!`);
-      setShowFeedbackDialog(false);
-      setFeedbackData({ feedbackType: 'ai_bot', content: '', activityId: '' });
-      setSelectedModule(null);
+      handleStartPractice(bot);
     } catch (error) {
-      console.error('Error submitting feedback:', error);
-      toast.error('Failed to submit feedback request');
+      console.error('Error selecting bot:', error);
+      toast.error('Failed to start session');
     }
   };
 
-  const handleUpdateModuleStatus = async (moduleId, newStatus) => {
-    try {
-      const { error } = await supabase
-        .from('user_module_assignments_new')
-        .update({ status: newStatus })
-        .eq('id', moduleId);
-
-      if (error) throw error;
-
-      toast.success('Status updated!');
-      loadModules(currentUser?.email);
-    } catch (error) {
-      console.error('Error updating status:', error);
-      toast.error('Failed to update status');
-    }
-  };
-
-  const getFilteredModules = () => {
-    if (activeTab === 'all') return modules;
-    return modules.filter(m => m.status === activeTab);
-  };
-
-  const getStatusColor = (status) => {
-    const colors = {
-      assigned: 'bg-blue-500',
-      in_progress: 'bg-yellow-500',
-      completed: 'bg-green-500'
-    };
-    return colors[status] || 'bg-gray-500';
-  };
-
-  const getStatusIcon = (status) => {
-    const icons = {
-      assigned: Clock,
-      in_progress: Play,
-      completed: CheckCircle
-    };
-    const Icon = icons[status] || Clock;
-    return <Icon className="w-4 h-4" />;
-  };
+  const filteredBots = bots.filter(bot =>
+    bot.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    bot.company?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gradient-to-br from-background via-background to-muted">
+      <div className="flex items-center justify-center h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
         <div className="text-center space-y-4">
-          <Loader2 className="w-10 h-10 animate-spin text-primary mx-auto" />
-          <p className="text-muted-foreground font-medium">Loading your modules...</p>
+          <Loader2 className="w-12 h-12 animate-spin text-blue-500 mx-auto" />
+          <p className="text-slate-300 font-medium">Loading practice bots...</p>
         </div>
       </div>
     );
   }
 
-  const filteredModules = getFilteredModules();
-  const completedCount = modules.filter(m => m.status === 'completed').length;
-  const inProgressCount = modules.filter(m => m.status === 'in_progress').length;
-
   return (
-    <div className="p-6 space-y-8 bg-gradient-to-br from-background via-background to-muted min-h-screen">
-      <div>
-        <h1 className="text-4xl font-bold text-foreground">Lets Practice</h1>
-        <p className="text-muted-foreground mt-2 text-base">Your personalized practice modules assigned by your manager</p>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="card-hover border-0 shadow-lg">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-semibold text-muted-foreground">Total Modules</CardTitle>
-            <BookOpen className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-foreground">{modules.length}</div>
-            <p className="text-xs text-muted-foreground mt-2">Assigned to you</p>
-          </CardContent>
-        </Card>
-
-        <Card className="card-hover border-0 shadow-lg">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-semibold text-muted-foreground">In Progress</CardTitle>
-            <Zap className="h-4 w-4 text-yellow-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-foreground">{inProgressCount}</div>
-            <p className="text-xs text-muted-foreground mt-2">Currently practicing</p>
-          </CardContent>
-        </Card>
-
-        <Card className="card-hover border-0 shadow-lg">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-semibold text-muted-foreground">Completed</CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-foreground">{completedCount}</div>
-            <p className="text-xs text-muted-foreground mt-2">Modules finished</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Modules List */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="all">All ({modules.length})</TabsTrigger>
-          <TabsTrigger value="assigned">Assigned</TabsTrigger>
-          <TabsTrigger value="in_progress">In Progress</TabsTrigger>
-          <TabsTrigger value="completed">Completed</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value={activeTab} className="space-y-4">
-          {filteredModules.length === 0 ? (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-12">
-                <Target className="w-12 h-12 text-muted-foreground mb-4" />
-                <p className="text-muted-foreground font-medium">No modules in this category</p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid gap-4">
-              {filteredModules.map((assignment) => (
-                <Card key={assignment.id} className="hover:shadow-lg transition-shadow">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <CardTitle className="text-lg">{assignment.module?.module_name}</CardTitle>
-                        <CardDescription className="mt-2 text-sm">
-                          {assignment.module?.description}
-                        </CardDescription>
-                      </div>
-                      <Badge className={`${getStatusColor(assignment.status)} text-white`}>
-                        <span className="flex items-center gap-1">
-                          {React.createElement(getStatusIcon(assignment.status))}
-                          {assignment.status.charAt(0).toUpperCase() + assignment.status.slice(1)}
-                        </span>
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="flex flex-wrap gap-2">
-                      <Badge variant="outline">
-                        {assignment.module?.module_type.charAt(0).toUpperCase() + assignment.module?.module_type.slice(1)}
-                      </Badge>
-                      <Badge variant="outline">
-                        {assignment.module?.difficulty_level.charAt(0).toUpperCase() + assignment.module?.difficulty_level.slice(1)}
-                      </Badge>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      <div className="max-w-7xl mx-auto px-6 py-12">
+        <div className="mb-12">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h1 className="text-5xl font-bold text-white mb-2">Let's Practice</h1>
+              <p className="text-slate-300 text-lg">Master your sales skills with AI-powered roleplay scenarios</p>
+            </div>
+            <div className="flex gap-3">
+              <Dialog open={showCustomBotForm} onOpenChange={setShowCustomBotForm}>
+                <DialogTrigger asChild>
+                  <Button size="lg" className="bg-blue-600 hover:bg-blue-700 gap-2">
+                    <Plus className="w-5 h-5" />
+                    Create Custom Bot
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Create Custom Bot</DialogTitle>
+                    <DialogDescription>
+                      Customize an existing scenario bot for your specific needs
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-white">Select Scenario Template</label>
+                      <select
+                        value={customBotData.scenario_bot_id || ''}
+                        onChange={(e) => setCustomBotData({ ...customBotData, scenario_bot_id: e.target.value })}
+                        className="w-full px-3 py-2 bg-slate-700 text-white rounded-md border border-slate-600 focus:border-blue-500 focus:outline-none"
+                      >
+                        <option value="">Choose a template...</option>
+                        {scenarioBots.map(bot => (
+                          <option key={bot.id} value={bot.id}>
+                            {bot.name}
+                          </option>
+                        ))}
+                      </select>
                     </div>
 
-                    <div className="flex gap-2 flex-wrap">
-                      {assignment.status === 'assigned' && (
-                        <Button
-                          onClick={() => {
-                            handleUpdateModuleStatus(assignment.id, 'in_progress');
-                            handleStartPractice(assignment.module);
-                          }}
-                          className="gap-2"
-                        >
-                          <Play className="w-4 h-4" />
-                          Start Practicing
-                        </Button>
-                      )}
-
-                      {assignment.status === 'in_progress' && (
-                        <>
-                          <Button
-                            onClick={() => handleStartPractice(assignment.module)}
-                            variant="default"
-                            className="gap-2"
-                          >
-                            <Play className="w-4 h-4" />
-                            Continue
-                          </Button>
-                          <Button
-                            onClick={() => handleUpdateModuleStatus(assignment.id, 'completed')}
-                            variant="outline"
-                            className="gap-2"
-                          >
-                            <CheckCircle className="w-4 h-4" />
-                            Mark Complete
-                          </Button>
-                        </>
-                      )}
-
-                      <Dialog open={showFeedbackDialog} onOpenChange={setShowFeedbackDialog}>
-                        <DialogTrigger asChild>
-                          <Button
-                            variant="outline"
-                            onClick={() => setSelectedModule(assignment)}
-                            className="gap-2"
-                          >
-                            <MessageCircle className="w-4 h-4" />
-                            Request Feedback
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>Request Feedback</DialogTitle>
-                            <DialogDescription>
-                              Get feedback on your practice from AI Coach or your team
-                            </DialogDescription>
-                          </DialogHeader>
-                          <div className="space-y-4">
-                            <div className="space-y-2">
-                              <label className="text-sm font-semibold">Feedback From</label>
-                              <Select value={feedbackData.feedbackType} onValueChange={(value) => setFeedbackData({ ...feedbackData, feedbackType: value })}>
-                                <SelectTrigger>
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="ai_bot">AI Coach</SelectItem>
-                                  <SelectItem value="human_review">Manager/Team</SelectItem>
-                                  <SelectItem value="peer_feedback">Peer Feedback</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-
-                            <div className="space-y-2">
-                              <label className="text-sm font-semibold">Your Feedback Request</label>
-                              <Textarea
-                                placeholder="What specific feedback would you like? E.g., 'Help me improve my discovery questions' or 'Review my closing technique'"
-                                value={feedbackData.content}
-                                onChange={(e) => setFeedbackData({ ...feedbackData, content: e.target.value })}
-                                rows={4}
-                              />
-                            </div>
-
-                            <Button onClick={handleSubmitFeedbackRequest} className="w-full">
-                              <Send className="w-4 h-4 mr-2" />
-                              Submit Request
-                            </Button>
-                          </div>
-                        </DialogContent>
-                      </Dialog>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-white">Bot Name</label>
+                      <Input
+                        placeholder="e.g., Sarah Johnson - Tech Buyer"
+                        value={customBotData.bot_name}
+                        onChange={(e) => setCustomBotData({ ...customBotData, bot_name: e.target.value })}
+                        className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400"
+                      />
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-white">Company</label>
+                      <Input
+                        placeholder="e.g., Acme Corporation"
+                        value={customBotData.company_name}
+                        onChange={(e) => setCustomBotData({ ...customBotData, company_name: e.target.value })}
+                        className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-white">LinkedIn Profile (Optional)</label>
+                      <Input
+                        type="url"
+                        placeholder="https://linkedin.com/in/..."
+                        value={customBotData.linkedin_url}
+                        onChange={(e) => setCustomBotData({ ...customBotData, linkedin_url: e.target.value })}
+                        className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400"
+                      />
+                    </div>
+
+                    <Button onClick={handleCreateCustomBot} className="w-full bg-blue-600 hover:bg-blue-700">
+                      Create Bot
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+
+              <Dialog open={showBotModal} onOpenChange={setShowBotModal}>
+                <DialogTrigger asChild>
+                  <Button size="lg" variant="outline" className="border-slate-600 text-white hover:bg-slate-700 gap-2">
+                    <Users className="w-5 h-5" />
+                    Browse Bots
+                  </Button>
+                </DialogTrigger>
+                <BotSelectionModal
+                  isOpen={showBotModal}
+                  onClose={() => setShowBotModal(false)}
+                  onSelectBot={handleSelectExistingBot}
+                />
+              </Dialog>
+            </div>
+          </div>
+
+          {filteredBots.length > 0 && (
+            <div className="flex items-center gap-2 text-sm text-slate-400">
+              <Search className="w-4 h-4" />
+              <Input
+                placeholder="Search your bots..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="max-w-xs bg-slate-700 border-slate-600 text-white placeholder:text-slate-400"
+              />
             </div>
           )}
-        </TabsContent>
-      </Tabs>
+        </div>
+
+        {filteredBots.length === 0 ? (
+          <div className="text-center py-20">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-slate-700 rounded-full mb-6">
+              <Target className="w-8 h-8 text-slate-400" />
+            </div>
+            <h3 className="text-xl font-semibold text-white mb-2">No bots yet</h3>
+            <p className="text-slate-400 mb-6">Create your first custom bot or browse available scenario templates</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredBots.map((bot) => (
+              <Card key={bot.id} className="bg-slate-800 border-slate-700 hover:border-blue-500 transition-all hover:shadow-lg hover:shadow-blue-500/10 group">
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex-1">
+                      <CardTitle className="text-lg text-white">{bot.name}</CardTitle>
+                      {bot.company && (
+                        <CardDescription className="text-slate-400 text-sm mt-1">{bot.company}</CardDescription>
+                      )}
+                    </div>
+                    {bot.linkedin_profile_url && (
+                      <a
+                        href={bot.linkedin_profile_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-400 hover:text-blue-300 transition-colors"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                      </a>
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <p className="text-sm text-slate-400">
+                    {bot.description || 'Practice scenario bot'}
+                  </p>
+
+                  <div className="flex flex-wrap gap-2">
+                    {bot.industry && (
+                      <Badge variant="outline" className="bg-slate-700 border-slate-600 text-slate-200">
+                        {bot.industry}
+                      </Badge>
+                    )}
+                    {bot.difficulty_level && (
+                      <Badge variant="outline" className="bg-slate-700 border-slate-600 text-slate-200">
+                        {bot.difficulty_level}
+                      </Badge>
+                    )}
+                  </div>
+
+                  <div className="flex gap-2 pt-2 border-t border-slate-700">
+                    <Button
+                      onClick={() => handleSelectExistingBot(bot)}
+                      className="flex-1 bg-blue-600 hover:bg-blue-700 gap-2"
+                    >
+                      <Play className="w-4 h-4" />
+                      Start Practice
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
+  );
+}
+
+function Search({ className }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <circle cx="11" cy="11" r="8"></circle>
+      <path d="m21 21-4.35-4.35"></path>
+    </svg>
   );
 }
