@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Toaster } from '@/components/ui/sonner';
 import { Menu, LogOut, Search, BrainCircuit, Bell, Settings, MoreHorizontal, User as UserIcon, Shield, Bot, Building, BarChart3, Globe, ChevronDown, ChevronRight } from 'lucide-react';
-import { navSections, adminNavConfig, effyAíCallsNavConfig, superAdminNavConfig } from '@/components/navigation/navConfig';
+import { navSections, adminNavConfig, effyAíCallsNavConfig, superAdminNavConfig, aiRoleplayStudioNav } from '@/components/navigation/navConfig';
 import AuthWrapper from '@/components/auth/AuthWrapper';
 import AICommandBar from '@/components/ai/AICommandBar';
 import RealTimeNotifications from '@/components/notifications/RealTimeNotifications';
@@ -48,6 +48,7 @@ const PrivateLayout = ({ children, currentPageName }) => {
     const [demoRole, setDemoRole] = useState(null);
     const [isCommandBarOpen, setCommandBarOpen] = useState(false);
     const [expandedMenus, setExpandedMenus] = useState(new Set(['AIRoleplay']));
+    const [activeModule, setActiveModule] = useState(() => localStorage.getItem('activeModule') || 'main');
     const location = useLocation();
 
     useEffect(() => {
@@ -99,6 +100,11 @@ const PrivateLayout = ({ children, currentPageName }) => {
 
     const resetToDefaultRole = () => {
         setDemoRole(user?.role);
+    };
+
+    const switchModule = (moduleName) => {
+        setActiveModule(moduleName);
+        localStorage.setItem('activeModule', moduleName);
     };
 
     const effectiveRole = demoRole || user?.role;
@@ -167,26 +173,60 @@ const PrivateLayout = ({ children, currentPageName }) => {
     const UserNav = () => (
         <div className="flex flex-col h-full">
              <div className="h-16 flex items-center px-4 border-b border-slate-700">
-                 <Link to={createPageUrl('Dashboard')} className="flex items-center gap-2">
+                 <Link to={createPageUrl('Dashboard')} className="flex items-center gap-2 flex-1">
                     <BrainCircuit className="w-8 h-8 text-blue-500" />
                     <span className="text-xl font-bold text-white">effySales Pro</span>
                 </Link>
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="text-xs">
+                            {activeModule === 'roleplay' ? 'Studio' : 'Main'}
+                            <ChevronDown className="w-4 h-4 ml-1" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Switch Module</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => switchModule('main')} className={activeModule === 'main' ? 'bg-blue-600' : ''}>
+                            Main Platform
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => switchModule('roleplay')} className={activeModule === 'roleplay' ? 'bg-blue-600' : ''}>
+                            AI Roleplay Studio
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 space-y-6">
-                {navSections.filter(s => !s.items.some(i => i.page === 'AIAssistant')).map((section, index) => {
-                    const visibleItems = section.items.filter(item => !item.roles || item.roles.includes(effectiveRole));
-                    if (visibleItems.length === 0) return null;
+                {activeModule === 'roleplay' ? (
+                    aiRoleplayStudioNav.map((section, index) => {
+                        const visibleItems = section.items.filter(item => !item.roles || item.roles.includes(effectiveRole));
+                        if (visibleItems.length === 0) return null;
 
-                    return (
-                        <div key={index}>
-                            {section.title && <h3 className="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">{section.title}</h3>}
-                            <nav className="space-y-1">
-                                {section.items.map(item => <NavItem key={item.page} item={item} />)}
-                            </nav>
-                        </div>
-                    );
-                })}
+                        return (
+                            <div key={index}>
+                                {section.title && <h3 className="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">{section.title}</h3>}
+                                <nav className="space-y-1">
+                                    {section.items.map(item => <NavItem key={item.page} item={item} />)}
+                                </nav>
+                            </div>
+                        );
+                    })
+                ) : (
+                    navSections.filter(s => !s.items.some(i => i.page === 'AIAssistant')).map((section, index) => {
+                        const visibleItems = section.items.filter(item => !item.roles || item.roles.includes(effectiveRole));
+                        if (visibleItems.length === 0) return null;
+
+                        return (
+                            <div key={index}>
+                                {section.title && <h3 className="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">{section.title}</h3>}
+                                <nav className="space-y-1">
+                                    {section.items.map(item => <NavItem key={item.page} item={item} />)}
+                                </nav>
+                            </div>
+                        );
+                    })
+                )}
                 
                 {(effectiveRole === 'admin' || effectiveRole === 'saas_admin' || effectiveRole === 'company_admin') && (
                     <div>

@@ -38,3 +38,126 @@ export const createMeetingLinks = (params) => invokeFunction('create-meeting-lin
 export const switchRole = (params) => invokeFunction('switch-role', params);
 export const generateReimbursementLetter = (params) => invokeFunction('generate-reimbursement-letter', params);
 export const multiPartyAIRoleplay = (params) => invokeFunction('multi-party-ai-roleplay', params);
+
+// Content Management Functions
+export async function uploadContentMaterial(file, metadata) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const fileExt = file.name.split('.').pop().toLowerCase();
+  const fileName = `${Date.now()}-${file.name}`;
+  const storagePath = `${user.id}/${fileName}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from('roleplay-content')
+    .upload(storagePath, file);
+
+  if (uploadError) throw uploadError;
+
+  const fileSizeKb = Math.ceil(file.size / 1024);
+
+  const { data, error } = await supabase
+    .from('roleplay_content_materials')
+    .insert({
+      user_id: user.id,
+      file_name: file.name,
+      file_type: fileExt,
+      storage_path: storagePath,
+      file_size_kb: fileSizeKb,
+      ...metadata
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteContentMaterial(materialId) {
+  const material = await supabase
+    .from('roleplay_content_materials')
+    .select('storage_path')
+    .eq('id', materialId)
+    .maybeSingle();
+
+  if (material?.data?.storage_path) {
+    await supabase.storage.from('roleplay-content').remove([material.data.storage_path]);
+  }
+
+  const { error } = await supabase
+    .from('roleplay_content_materials')
+    .delete()
+    .eq('id', materialId);
+
+  if (error) throw error;
+}
+
+export async function getContentLibrary(filters = {}) {
+  let query = supabase
+    .from('roleplay_content_materials')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (filters.category) {
+    query = query.eq('category', filters.category);
+  }
+  if (filters.search) {
+    query = query.ilike('file_name', `%${filters.search}%`);
+  }
+  if (filters.visibility) {
+    query = query.eq('visibility', filters.visibility);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return data;
+}
+
+export async function linkMaterialToSession(sessionId, materialIds) {
+  const links = materialIds.map(materialId => ({
+    session_id: sessionId,
+    content_material_id: materialId
+  }));
+
+  const { error } = await supabase
+    .from('roleplay_session_content_links')
+    .insert(links);
+
+  if (error) throw error;
+}
+
+export async function getSessionMaterials(sessionId) {
+  const { data, error } = await supabase
+    .from('roleplay_session_content_links')
+    .select('content_material_id, roleplay_content_materials(*)')
+    .eq('session_id', sessionId);
+
+  if (error) throw error;
+  return data?.map(link => link.roleplay_content_materials) || [];
+}
+
+export async function getContentUsageStats(materialId) {
+  const { data, error } = await supabase
+    .from('content_usage_analytics')
+    .select('*')
+    .eq('content_material_id', materialId);
+
+  if (error) throw error;
+  return data || [];
+}
+
+export async function recordContentUsage(materialId, sessionId, durationMinutes) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { error } = await supabase
+    .from('content_usage_analytics')
+    .insert({
+      content_material_id: materialId,
+      session_id: sessionId,
+      user_id: user.id,
+      session_duration_minutes: durationMinutes
+    });
+
+  if (error) throw error;
+}

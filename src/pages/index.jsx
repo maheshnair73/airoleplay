@@ -272,6 +272,9 @@ import CertificationResults from "./CertificationResults";
 import SkillCoach from "./SkillCoach";
 import UserManagement from "./UserManagement";
 
+import AIRoleplayContentUpload from "./AIRoleplayContentUpload";
+import AIRoleplayContentLibrary from "./AIRoleplayContentLibrary";
+
 import { BrowserRouter as Router, Route, Routes, Navigate, useLocation } from 'react-router-dom';
 
 const PAGES = {
@@ -544,6 +547,8 @@ const PAGES = {
     CertificationResults: CertificationResults,
     SkillCoach: SkillCoach,
     UserManagement: UserManagement,
+    AIRoleplayContentUpload: AIRoleplayContentUpload,
+    AIRoleplayContentLibrary: AIRoleplayContentLibrary,
 
 }
 
