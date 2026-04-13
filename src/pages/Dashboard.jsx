@@ -105,25 +105,27 @@ export default function Dashboard() {
 
     if (isLoading) {
         return (
-            <div className="flex items-center justify-center h-screen">
-                <div className="text-center">
-                    <Loader2 className="w-8 h-8 animate-spin text-blue-500 mx-auto mb-4" />
-                    <p className="text-slate-500">Loading dashboard...</p>
+            <div className="flex items-center justify-center h-screen bg-gradient-to-br from-background via-background to-muted">
+                <div className="text-center space-y-4">
+                    <div className="flex justify-center">
+                        <Loader2 className="w-10 h-10 animate-spin text-primary" />
+                    </div>
+                    <p className="text-muted-foreground font-medium">Loading your dashboard...</p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="p-6 space-y-8 bg-gradient-to-br from-slate-50 to-blue-50 min-h-screen">
+        <div className="p-6 space-y-8 bg-gradient-to-br from-background via-background to-muted min-h-screen">
             {/* Header with Action Buttons */}
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                 <div>
-                    <h1 className="text-4xl font-bold text-slate-900">Dashboard</h1>
-                    <p className="text-slate-600 mt-1">Welcome back! Here's your sales overview.</p>
+                    <h1 className="text-4xl font-bold text-foreground">Dashboard</h1>
+                    <p className="text-muted-foreground mt-2 text-base">Welcome back! Here's your sales overview.</p>
                 </div>
                 <div className="flex gap-3">
-                    <Button asChild className="bg-blue-600 hover:bg-blue-700">
+                    <Button asChild>
                         <Link to={createPageUrl('effyLeads')}>
                             <Plus className="w-4 h-4 mr-2" />
                             Add Lead
@@ -186,66 +188,66 @@ export default function Dashboard() {
 
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => window.location.href = createPageUrl('effyLeads')}>
+                <Card className="card-hover border-0 shadow-lg" onClick={() => window.location.href = createPageUrl('effyLeads')}>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-slate-600">Total Leads</CardTitle>
-                        <div className="p-2 bg-blue-100 rounded-lg">
+                        <CardTitle className="text-sm font-semibold text-muted-foreground">Total Leads</CardTitle>
+                        <div className="p-2.5 bg-gradient-to-br from-blue-100 to-blue-50 rounded-lg">
                             <Users className="h-4 w-4 text-blue-600" />
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-slate-900">{stats.totalLeads}</div>
-                        <div className="flex items-center text-xs text-green-600 mt-1">
+                        <div className="text-3xl font-bold text-foreground">{stats.totalLeads}</div>
+                        <div className="flex items-center text-xs text-green-600 font-medium mt-2">
                             <TrendingUp className="w-3 h-3 mr-1" />
-                            +12%
+                            +12% from last month
                         </div>
                     </CardContent>
                 </Card>
 
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => window.location.href = createPageUrl('effyLeads')}>
+                <Card className="card-hover border-0 shadow-lg" onClick={() => window.location.href = createPageUrl('effyLeads')}>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-slate-600">Active Opportunities</CardTitle>
-                        <div className="p-2 bg-green-100 rounded-lg">
+                        <CardTitle className="text-sm font-semibold text-muted-foreground">Active Opportunities</CardTitle>
+                        <div className="p-2.5 bg-gradient-to-br from-green-100 to-green-50 rounded-lg">
                             <Target className="h-4 w-4 text-green-600" />
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-slate-900">{stats.activeDeals}</div>
-                        <div className="flex items-center text-xs text-green-600 mt-1">
+                        <div className="text-3xl font-bold text-foreground">{stats.activeDeals}</div>
+                        <div className="flex items-center text-xs text-green-600 font-medium mt-2">
                             <TrendingUp className="w-3 h-3 mr-1" />
-                            +8%
+                            +8% from last month
                         </div>
                     </CardContent>
                 </Card>
 
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => window.location.href = createPageUrl('effyLeads')}>
+                <Card className="card-hover border-0 shadow-lg" onClick={() => window.location.href = createPageUrl('effyLeads')}>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-slate-600">Pipeline Value</CardTitle>
-                        <div className="p-2 bg-purple-100 rounded-lg">
+                        <CardTitle className="text-sm font-semibold text-muted-foreground">Pipeline Value</CardTitle>
+                        <div className="p-2.5 bg-gradient-to-br from-purple-100 to-purple-50 rounded-lg">
                             <DollarSign className="h-4 w-4 text-purple-600" />
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-slate-900">{formatCurrency(stats.pipelineValue)}</div>
-                        <div className="flex items-center text-xs text-green-600 mt-1">
+                        <div className="text-3xl font-bold text-foreground">{formatCurrency(stats.pipelineValue)}</div>
+                        <div className="flex items-center text-xs text-green-600 font-medium mt-2">
                             <TrendingUp className="w-3 h-3 mr-1" />
-                            +23%
+                            +23% from last month
                         </div>
                     </CardContent>
                 </Card>
 
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => window.location.href = createPageUrl('Analytics')}>
+                <Card className="card-hover border-0 shadow-lg" onClick={() => window.location.href = createPageUrl('Analytics')}>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-slate-600">Win Rate</CardTitle>
-                        <div className="p-2 bg-orange-100 rounded-lg">
+                        <CardTitle className="text-sm font-semibold text-muted-foreground">Win Rate</CardTitle>
+                        <div className="p-2.5 bg-gradient-to-br from-orange-100 to-orange-50 rounded-lg">
                             <Award className="h-4 w-4 text-orange-600" />
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-slate-900">{stats.winRate}%</div>
-                        <div className="flex items-center text-xs text-red-600 mt-1">
+                        <div className="text-3xl font-bold text-foreground">{stats.winRate}%</div>
+                        <div className="flex items-center text-xs text-red-600 font-medium mt-2">
                             <TrendingDown className="w-3 h-3 mr-1" />
-                            -3%
+                            -3% from last month
                         </div>
                     </CardContent>
                 </Card>
