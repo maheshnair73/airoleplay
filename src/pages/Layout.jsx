@@ -210,14 +210,6 @@ const PrivateLayout = ({ children, currentPageName }) => {
                     })
                 )}
                 
-                {(effectiveRole === 'admin' || effectiveRole === 'saas_admin' || effectiveRole === 'company_admin') && (
-                    <div>
-                        <h3 className="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">EFFYAI CALLS</h3>
-                        <nav className="space-y-1">
-                            {effyAíCallsNavConfig.map(item => <NavItem key={item.page} item={item} />)}
-                        </nav>
-                    </div>
-                )}
 
 
                 {effectiveRole === 'super_admin' && (
