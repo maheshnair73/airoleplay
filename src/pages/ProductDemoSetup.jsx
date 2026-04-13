@@ -246,12 +246,10 @@ const ProductDemoSetup = () => {
           target_duration_minutes: targetDuration,
           key_features_to_cover: featuresArray,
           buyer_persona: buyerPersona,
-          attendees: validAttendees.map(a => ({
-            name: a.name,
-            role: a.role,
-            persona: a.persona,
-            bot_id: a.botId
-          })),
+          company_size: productInquiry.companySize || null,
+          budget_range: productInquiry.budget || null,
+          buying_timeline: productInquiry.timeline || null,
+          industry_context: productInquiry.industry || null,
           product_inquiry: productInquiry
         });
 
