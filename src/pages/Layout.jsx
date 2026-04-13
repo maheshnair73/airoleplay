@@ -177,24 +177,6 @@ const PrivateLayout = ({ children, currentPageName }) => {
                     <BrainCircuit className="w-8 h-8 text-blue-500" />
                     <span className="text-xl font-bold text-white">effySales Pro</span>
                 </Link>
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="text-xs">
-                            {activeModule === 'roleplay' ? 'Studio' : 'Main'}
-                            <ChevronDown className="w-4 h-4 ml-1" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Switch Module</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => switchModule('main')} className={activeModule === 'main' ? 'bg-blue-600' : ''}>
-                            Main Platform
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => switchModule('roleplay')} className={activeModule === 'roleplay' ? 'bg-blue-600' : ''}>
-                            AI Roleplay Studio
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 space-y-6">
@@ -256,6 +238,27 @@ const PrivateLayout = ({ children, currentPageName }) => {
                 )}
             </div>
             
+            <div className="p-4 border-t border-slate-700">
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="w-full justify-between text-xs text-slate-300 hover:text-white hover:bg-slate-700">
+                            <span>{activeModule === 'roleplay' ? 'Studio' : 'Main'}</span>
+                            <ChevronDown className="w-4 h-4" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start">
+                        <DropdownMenuLabel>Switch Module</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => switchModule('main')} className={activeModule === 'main' ? 'bg-blue-600' : ''}>
+                            Main Platform
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => switchModule('roleplay')} className={activeModule === 'roleplay' ? 'bg-blue-600' : ''}>
+                            AI Roleplay Studio
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            </div>
+
             <div className="p-4 border-t border-slate-700">
                  <NavItem item={{ page: 'AIAssistant', title: 'Chat with Effy', icon: Bot, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] }} />
             </div>
