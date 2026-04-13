@@ -62,16 +62,19 @@ const ProductDemoRoleplay = () => {
           ai_clients(*)
         `)
         .eq('id', sessionId)
-        .single();
+        .maybeSingle();
 
       if (roleplayError) throw roleplayError;
+      if (!roleplayData) {
+        throw new Error('Session not found');
+      }
       setSession(roleplayData);
 
       const { data: demoData } = await supabase
         .from('product_demo_sessions')
         .select('*')
         .eq('roleplay_session_id', sessionId)
-        .single();
+        .maybeSingle();
 
       setDemoSession(demoData);
     } catch (error) {

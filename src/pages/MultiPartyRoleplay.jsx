@@ -452,9 +452,9 @@ export default function MultiPartyRoleplay() {
 
                                 {/* Action Buttons */}
                                 <div className="flex gap-3 mt-4">
-                                    <Button 
+                                    <Button
                                         className="flex-1 bg-purple-600 hover:bg-purple-700"
-                                        onClick={() => navigate(createPageUrl(`MultiPartySession?scenario_id=${scenario.id}`))}
+                                        onClick={() => navigate(createPageUrl(`RoleplaySession?scenarioId=${scenario.id}`))}
                                     >
                                         <Play className="w-4 h-4 mr-2" />
                                         Start Session
