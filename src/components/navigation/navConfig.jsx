@@ -36,17 +36,9 @@ import {
 
 export const aiRoleplayStudioNav = [
     {
-        title: 'Practice Hub',
-        items: [
-            { page: 'LetsPractice', title: 'Lets Practice', icon: Target, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
-            { page: 'PracticeHub', title: 'All Sessions', icon: BookOpen, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
-        ]
-    },
-    {
         title: 'AI Roleplay Studio',
         items: [
-            { page: 'StudioRoleplayDiscover', title: 'Discover', icon: BookOpen, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
-            { page: 'AIRoleplay', title: 'Start Session', icon: Mic, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'], submenu: [
+            { page: 'AIRoleplay', title: 'Lets Practice', icon: Mic, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'], submenu: [
                 { page: 'AIRoleplay', title: 'Single AI Prospect', icon: Mic, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
                 { page: 'MultiPartyRoleplay', title: 'Multi-Stakeholder', icon: Users, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
                 { page: 'HumanRoleplay', title: 'Human-to-Human', icon: Video, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
