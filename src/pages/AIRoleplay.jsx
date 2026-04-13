@@ -921,6 +921,78 @@ export default function AIRoleplay() {
         fetchCurrentUser();
     }, []);
 
+    useEffect(() => {
+        const searchParams = new URLSearchParams(location.search);
+        const botId = searchParams.get('botId');
+
+        if (botId) {
+            const loadBotFromId = async () => {
+                try {
+                    let botData = null;
+
+                    const { data, error } = await supabase
+                        .from('ai_clients')
+                        .select('*')
+                        .eq('id', botId)
+                        .maybeSingle();
+
+                    if (error && error.code !== 'PGRST116') throw error;
+
+                    if (data) {
+                        botData = {
+                            ...data,
+                            name: data.name || 'Practice Partner',
+                            title: data.company || 'Sales Representative',
+                            company_name: data.company || 'Company',
+                            first_name: (data.name || '').split(' ')[0],
+                            last_name: (data.name || '').split(' ').slice(1).join(' ') || '',
+                            personas: data.personas_config || [{}],
+                            isLibraryPractice: true
+                        };
+                    } else if (botId.startsWith('dummy_')) {
+                        const DUMMY_BOTS = [
+                            { id: 'dummy_cold_call_tech', name: 'Cold Call - Tech Decision Maker', company: 'TechCorp Inc', personas_config: [{ name: 'Sarah Johnson', title: 'CTO' }] },
+                            { id: 'dummy_discovery_finance', name: 'Discovery Call - Finance Director', company: 'GlobalFinance Solutions', personas_config: [{ name: 'Michael Chen', title: 'Finance Director' }] },
+                            { id: 'dummy_warm_call_ecommerce', name: 'Warm Call - E-commerce Manager', company: 'ShopHub Co', personas_config: [{ name: 'Rachel Martinez', title: 'E-commerce Manager' }] },
+                            { id: 'dummy_objection_healthcare', name: 'Objection Handling - Healthcare IT', company: 'MediTech Solutions', personas_config: [{ name: 'Dr. James Wilson', title: 'IT Director' }] },
+                            { id: 'dummy_renewal_call_mfg', name: 'Renewal Call - Manufacturing VP', company: 'Industrial Solutions Inc', personas_config: [{ name: 'David Kumar', title: 'VP Operations' }] },
+                            { id: 'dummy_negotiation_enterprise', name: 'Negotiation - Enterprise Account', company: 'Fortune500 Corp', personas_config: [{ name: 'Patricia Adams', title: 'VP Procurement' }] },
+                            { id: 'dummy_multistakeholder_deal', name: 'Multi-Stakeholder Sales Call', company: 'BigTech Solutions', personas_config: [{ name: 'Lisa Thompson', title: 'Head of IT' }] },
+                            { id: 'dummy_executive_brief', name: 'Executive Briefing', company: 'McKinsey Advisory', personas_config: [{ name: 'Richard Blackwell', title: 'CEO' }] },
+                            { id: 'dummy_value_based_selling', name: 'Value-Based Selling', company: 'Accenture Services', personas_config: [{ name: 'Angela Foster', title: 'Operations Director' }] },
+                            { id: 'dummy_complex_sale', name: 'Complex Enterprise Sale', company: 'Goldman Sachs', personas_config: [{ name: 'Jennifer Park', title: 'Chief Risk Officer' }] }
+                        ];
+
+                        const dummyBot = DUMMY_BOTS.find(b => b.id === botId);
+                        if (dummyBot) {
+                            botData = {
+                                ...dummyBot,
+                                title: dummyBot.personas_config[0]?.title || 'Sales Representative',
+                                company_name: dummyBot.company,
+                                first_name: dummyBot.personas_config[0]?.name?.split(' ')[0] || 'Practice',
+                                last_name: dummyBot.personas_config[0]?.name?.split(' ').slice(1).join(' ') || 'Partner',
+                                personas: dummyBot.personas_config,
+                                isLibraryPractice: true
+                            };
+                        }
+                    }
+
+                    if (botData) {
+                        setBotToCall(botData);
+                        setShowConfirmationModal(true);
+                    } else {
+                        toast.error('Practice scenario not found');
+                    }
+                } catch (error) {
+                    console.error('Error loading bot:', error);
+                    toast.error('Failed to load practice scenario');
+                }
+            };
+
+            loadBotFromId();
+        }
+    }, [location.search]);
+
     const handleStartCall = useCallback((bot) => {
         setBotToCall(bot);
         setShowConfirmationModal(true);
