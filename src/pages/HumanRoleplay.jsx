@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Users, Send, Loader2, Info, UserCheck, Video, Mail, Copy, CheckCircle, Plus, ExternalLink } from 'lucide-react';
+import { Users, Send, Loader2, Info, UserCheck, Video, Mail, Copy, CheckCircle, Plus, ExternalLink, Briefcase, Target } from 'lucide-react';
 import { toast } from 'sonner';
 import { createPageUrl } from '@/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';

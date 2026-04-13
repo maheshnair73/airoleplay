@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { MultiPartyScenario } from '@/api/entities';
@@ -8,7 +8,9 @@ import { createPageUrl } from '@/utils';
 import {
     Users, Loader2, Target,
     Clock, Star, Play, Filter,
-    Briefcase, TrendingUp
+    Briefcase, TrendingUp, Brain,
+    UserCheck, DollarSign, Shield,
+    Settings, Zap, Plus, Trophy
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
