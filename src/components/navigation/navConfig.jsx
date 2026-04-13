@@ -36,6 +36,13 @@ import {
 
 export const aiRoleplayStudioNav = [
     {
+        title: 'Practice Hub',
+        items: [
+            { page: 'LetsPractice', title: 'Lets Practice', icon: Target, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
+            { page: 'PracticeHub', title: 'All Sessions', icon: BookOpen, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
+        ]
+    },
+    {
         title: 'AI Roleplay Studio',
         items: [
             { page: 'StudioRoleplayDiscover', title: 'Discover', icon: BookOpen, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
@@ -66,8 +73,6 @@ export const navSections = [
     {
         title: 'Practice & Coaching',
         items: [
-            { page: 'LetsPractice', title: 'Lets Practice', icon: Target, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
-            { page: 'PracticeHub', title: 'All Sessions', icon: Target, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
             { page: 'CreatePracticeSession', title: 'New Practice Session', icon: Dumbbell, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
             {
                 page: 'AIRoleplay',
