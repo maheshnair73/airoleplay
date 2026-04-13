@@ -42,13 +42,6 @@ export const navSections = [
         ]
     },
     {
-        title: 'Sales Execution',
-        items: [
-            { page: 'DigitalSalesRooms', title: 'Digital Sales Rooms', icon: Building, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
-            { page: 'EffyDocProposals', title: 'effyDoc (Proposals)', icon: FileText, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] }
-        ]
-    },
-    {
         title: 'Practice & Coaching',
         items: [
             { page: 'PracticeHub', title: 'My Practice Sessions', icon: Target, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
@@ -71,6 +64,22 @@ export const navSections = [
         ]
     },
     {
+        title: 'Knowledge Hub',
+        items: [
+            { page: 'RoleplayKnowledgeHub', title: 'Practice Materials', icon: Brain, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
+            { page: 'ProductManagement', title: 'My Products', icon: Package, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
+            { page: 'CompetitorManagement', title: 'Competitor Intel', icon: Shield, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
+            { page: 'ProductKnowledgeReview', title: 'Knowledge Review Queue', icon: CheckSquare, roles: ['admin', 'saas_admin', 'company_admin', 'sales_manager'] },
+        ]
+    },
+    {
+        title: 'Sales Execution',
+        items: [
+            { page: 'DigitalSalesRooms', title: 'Digital Sales Rooms', icon: Building, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
+            { page: 'EffyDocProposals', title: 'effyDoc (Proposals)', icon: FileText, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] }
+        ]
+    },
+    {
         title: 'Call Intelligence',
         items: [
             { page: 'LiveMeetings', title: 'Meeting Assistant', icon: Video, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
@@ -85,15 +94,6 @@ export const navSections = [
                     { page: 'AIRoleplayAnalysisDetailed', title: 'Roleplay Analytics', icon: BarChart3, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] }
                 ]
             }
-        ]
-    },
-    {
-        title: 'Knowledge Hub',
-        items: [
-            { page: 'RoleplayKnowledgeHub', title: 'Practice Materials', icon: Brain, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
-            { page: 'ProductManagement', title: 'My Products', icon: Package, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
-            { page: 'CompetitorManagement', title: 'Competitor Intel', icon: Shield, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
-            { page: 'ProductKnowledgeReview', title: 'Knowledge Review Queue', icon: CheckSquare, roles: ['admin', 'saas_admin', 'company_admin', 'sales_manager'] },
         ]
     },
     {
