@@ -65,7 +65,9 @@ export const navSections = [
     {
         title: 'Practice & Coaching',
         items: [
-            { page: 'PracticeHub', title: 'My Practice Sessions', icon: Target, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
+            { page: 'LetsPractice', title: 'Lets Practice', icon: Target, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
+            { page: 'StudioRoleplayDiscover', title: 'Studio Discover', icon: Mic, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
+            { page: 'PracticeHub', title: 'All Sessions', icon: Target, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
             { page: 'CreatePracticeSession', title: 'New Practice Session', icon: Dumbbell, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
             {
                 page: 'AIRoleplay',
@@ -152,6 +154,7 @@ export const navSections = [
 
 export const adminNavConfig = [
     { page: 'UserManagement', title: 'User & Module Management', icon: Users },
+    { page: 'ModuleCreation', title: 'Create Modules', icon: Dumbbell },
     { page: 'DialerSettings', title: 'Dialer Settings', icon: Settings },
     { page: 'AISalesAgentSettings', title: 'AI Agent Settings', icon: UserCog },
     { page: 'IntegrationManagement', title: 'Integration Management', icon: Zap },

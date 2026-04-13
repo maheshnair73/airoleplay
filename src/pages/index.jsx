@@ -275,6 +275,10 @@ import UserManagement from "./UserManagement";
 import AIRoleplayContentUpload from "./AIRoleplayContentUpload";
 import AIRoleplayContentLibrary from "./AIRoleplayContentLibrary";
 
+import LetsPractice from "./LetsPractice";
+import ModuleCreation from "./ModuleCreation";
+import StudioRoleplayDiscover from "./StudioRoleplayDiscover";
+
 import { BrowserRouter as Router, Route, Routes, Navigate, useLocation } from 'react-router-dom';
 
 const PAGES = {
@@ -549,6 +553,10 @@ const PAGES = {
     UserManagement: UserManagement,
     AIRoleplayContentUpload: AIRoleplayContentUpload,
     AIRoleplayContentLibrary: AIRoleplayContentLibrary,
+
+    LetsPractice: LetsPractice,
+    ModuleCreation: ModuleCreation,
+    StudioRoleplayDiscover: StudioRoleplayDiscover,
 
 }
 
