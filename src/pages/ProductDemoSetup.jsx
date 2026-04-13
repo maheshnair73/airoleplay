@@ -31,6 +31,7 @@ const ProductDemoSetup = () => {
   const [dataLoading, setDataLoading] = useState(true);
   const [bots, setBots] = useState([]);
   const [products, setProducts] = useState([]);
+  const [currentTab, setCurrentTab] = useState('attendees');
 
   const [selectedBot, setSelectedBot] = useState('');
   const [selectedProduct, setSelectedProduct] = useState('');
@@ -267,6 +268,30 @@ const ProductDemoSetup = () => {
     }
   };
 
+  const canProceedFromAttendees = () => {
+    return attendees.filter(a => a.name && a.botId).length > 0;
+  };
+
+  const canProceedFromProduct = () => {
+    return !!selectedProduct;
+  };
+
+  const goToNextTab = () => {
+    const tabs = ['attendees', 'product', 'materials', 'settings'];
+    const currentIndex = tabs.indexOf(currentTab);
+    if (currentIndex < tabs.length - 1) {
+      setCurrentTab(tabs[currentIndex + 1]);
+    }
+  };
+
+  const goToPreviousTab = () => {
+    const tabs = ['attendees', 'product', 'materials', 'settings'];
+    const currentIndex = tabs.indexOf(currentTab);
+    if (currentIndex > 0) {
+      setCurrentTab(tabs[currentIndex - 1]);
+    }
+  };
+
   if (dataLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -334,7 +359,7 @@ const ProductDemoSetup = () => {
             </div>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="attendees" className="w-full">
+            <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full">
               <TabsList className="grid w-full grid-cols-4 mb-6">
                 <TabsTrigger value="attendees" className="flex items-center gap-2">
                   <UserPlus className="w-4 h-4" />
@@ -672,25 +697,47 @@ const ProductDemoSetup = () => {
               </TabsContent>
             </Tabs>
 
-            <div className="mt-6 pt-6 border-t">
+            <div className="mt-6 pt-6 border-t flex gap-3 justify-between">
               <Button
-                onClick={handleStartDemo}
-                disabled={loading || attendees.filter(a => a.name && a.botId).length === 0 || !selectedProduct}
-                className="w-full"
-                size="lg"
+                onClick={goToPreviousTab}
+                variant="outline"
+                disabled={currentTab === 'attendees'}
               >
-                {loading ? (
-                  <>
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2" />
-                    Creating Session...
-                  </>
-                ) : (
-                  <>
-                    <MonitorUp className="w-5 h-5 mr-2" />
-                    Start Product Demo
-                  </>
-                )}
+                Previous
               </Button>
+
+              {currentTab === 'settings' ? (
+                <Button
+                  onClick={handleStartDemo}
+                  disabled={loading || !canProceedFromAttendees() || !canProceedFromProduct()}
+                  className="flex-1"
+                  size="lg"
+                >
+                  {loading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2" />
+                      Creating Session...
+                    </>
+                  ) : (
+                    <>
+                      <MonitorUp className="w-5 h-5 mr-2" />
+                      Start Product Demo
+                    </>
+                  )}
+                </Button>
+              ) : (
+                <Button
+                  onClick={goToNextTab}
+                  disabled={
+                    (currentTab === 'attendees' && !canProceedFromAttendees()) ||
+                    (currentTab === 'product' && !canProceedFromProduct())
+                  }
+                  className="flex-1"
+                  size="lg"
+                >
+                  Next
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>
