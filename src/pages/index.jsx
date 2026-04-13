@@ -278,6 +278,7 @@ import AIRoleplayContentLibrary from "./AIRoleplayContentLibrary";
 import LetsPractice from "./LetsPractice";
 import ModuleCreation from "./ModuleCreation";
 import StudioRoleplayDiscover from "./StudioRoleplayDiscover";
+import ManageBotTemplates from "./ManageBotTemplates";
 
 import { BrowserRouter as Router, Route, Routes, Navigate, useLocation } from 'react-router-dom';
 
@@ -557,6 +558,7 @@ const PAGES = {
     LetsPractice: LetsPractice,
     ModuleCreation: ModuleCreation,
     StudioRoleplayDiscover: StudioRoleplayDiscover,
+    ManageBotTemplates: ManageBotTemplates,
 
 }
 
@@ -868,6 +870,18 @@ function PagesContent() {
                 <Route path="/certification-results/:attemptId" element={<CertificationResults />} />
 
                 <Route path="/SkillCoach" element={<SkillCoach />} />
+
+                <Route path="/LetsPractice" element={<LetsPractice />} />
+
+                <Route path="/ModuleCreation" element={<ModuleCreation />} />
+
+                <Route path="/StudioRoleplayDiscover" element={<StudioRoleplayDiscover />} />
+
+                <Route path="/AIRoleplayContentUpload" element={<AIRoleplayContentUpload />} />
+
+                <Route path="/AIRoleplayContentLibrary" element={<AIRoleplayContentLibrary />} />
+
+                <Route path="/ManageBotTemplates" element={<ManageBotTemplates />} />
 
             </Routes>
         </Layout>

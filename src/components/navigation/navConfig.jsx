@@ -38,7 +38,8 @@ export const aiRoleplayStudioNav = [
     {
         title: 'AI Roleplay Studio',
         items: [
-            { page: 'AIRoleplay', title: 'Lets Practice', icon: Mic, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'], submenu: [
+            { page: 'LetsPractice', title: 'Lets Practice', icon: Mic, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'], submenu: [
+                { page: 'LetsPractice', title: 'Practice Hub', icon: Mic, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
                 { page: 'AIRoleplay', title: 'Single AI Prospect', icon: Mic, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
                 { page: 'MultiPartyRoleplay', title: 'Multi-Stakeholder', icon: Users, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
                 { page: 'HumanRoleplay', title: 'Human-to-Human', icon: Video, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
@@ -151,6 +152,8 @@ export const navSections = [
 
 export const adminNavConfig = [
     { page: 'UserManagement', title: 'User & Module Management', icon: Users },
+    { page: 'LetsPractice', title: 'Practice Studio', icon: Mic },
+    { page: 'ManageBotTemplates', title: 'Manage Bot Templates', icon: Bot },
     { page: 'ModuleCreation', title: 'Create Modules', icon: Dumbbell },
     { page: 'DialerSettings', title: 'Dialer Settings', icon: Settings },
     { page: 'AISalesAgentSettings', title: 'AI Agent Settings', icon: UserCog },
