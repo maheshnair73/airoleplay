@@ -44,8 +44,10 @@ export const aiRoleplayStudioNav = [
                 { page: 'HumanRoleplay', title: 'Human-to-Human', icon: Video, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
                 { page: 'ProductDemoSetup', title: 'Product Demo', icon: MonitorUp, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] }
             ] },
-            { page: 'AIRoleplayContentUpload', title: 'Upload Materials', icon: Upload, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
-            { page: 'AIRoleplayContentLibrary', title: 'My Materials', icon: FileText, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
+            { page: 'AIRoleplayContentLibrary', title: 'My Materials', icon: FileText, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'], submenu: [
+                { page: 'AIRoleplayContentLibrary', title: 'My Materials', icon: FileText, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
+                { page: 'AIRoleplayContentUpload', title: 'Upload Materials', icon: Upload, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] }
+            ] },
             { page: 'AIRoleplayHistory', title: 'Session History', icon: History, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] },
             { page: 'AIRoleplayAnalysisDetailed', title: 'Analytics', icon: BarChart3, roles: ['user', 'admin', 'saas_admin', 'super_admin', 'sales_agent', 'company_admin', 'sales_manager'] }
         ]

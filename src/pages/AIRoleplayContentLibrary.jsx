@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FileText, Music, Video, Loader, Trash2, Eye } from 'lucide-react';
+import { FileText, Music, Video, Loader, Trash2, Eye, Upload } from 'lucide-react';
 import { getContentLibrary, deleteContentMaterial, getContentUsageStats } from '@/api/functions';
 import { toast } from 'sonner';
 
@@ -27,6 +28,7 @@ const CATEGORIES = [
 ];
 
 export default function AIRoleplayContentLibrary() {
+  const navigate = useNavigate();
   const [materials, setMaterials] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -83,9 +85,19 @@ export default function AIRoleplayContentLibrary() {
 
   return (
     <div className="space-y-6 p-6">
-      <div>
-        <h1 className="text-3xl font-bold">Practice Materials Library</h1>
-        <p className="text-muted-foreground">Browse and manage your uploaded content</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Practice Materials Library</h1>
+          <p className="text-muted-foreground">Browse and manage your uploaded content</p>
+        </div>
+        <Button
+          onClick={() => navigate('/upload-materials')}
+          className="flex items-center gap-2"
+          size="lg"
+        >
+          <Upload className="w-4 h-4" />
+          Upload
+        </Button>
       </div>
 
       <Card>
