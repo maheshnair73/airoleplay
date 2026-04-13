@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Users, Send, Loader2, Info, UserCheck, Video, Mail, Copy, CheckCircle, Plus, ExternalLink, Briefcase, Target } from 'lucide-react';
+import { Users, Send, Loader2, Info, UserCheck, Video, Mail, Copy, CheckCircle, Plus, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 import { createPageUrl } from '@/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -18,6 +18,10 @@ import { createMeetingLinks } from '@/api/functions';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import {
+  RoleplaySetupLayout,
+  RoleplaySetupSection
+} from '@/components/roleplay/RoleplaySetupLayout';
 
 export default function HumanRoleplay() {
     const [lead, setLead] = useState(null);
@@ -301,28 +305,14 @@ export default function HumanRoleplay() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-green-50 p-6">
-            <div className="max-w-6xl mx-auto">
-                <div className="mb-6">
-                    <Button 
-                        variant="ghost" 
-                        onClick={() => navigate(-1)}
-                        className="mb-4"
-                    >
-                        <ArrowLeft className="w-4 h-4 mr-2" />
-                        Back
-                    </Button>
-                    
-                    <div className="flex items-center gap-4 mb-6">
-                        <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
-                            <Users className="w-8 h-8 text-white" />
-                        </div>
-                        <div>
-                            <h1 className="text-3xl font-bold text-slate-900">Setup Human Roleplay</h1>
-                            <p className="text-slate-600">Practice your pitch with a colleague playing {lead.contact_name}</p>
-                        </div>
-                    </div>
-                </div>
+        <RoleplaySetupLayout
+            title="Human-to-Human Roleplay"
+            description={`Practice with a colleague playing ${lead?.contact_name || 'a prospect'}`}
+            icon={Users}
+            backPath="#"
+            backLabel="Back"
+            onBack={() => navigate(-1)}
+        >
 
                 <Tabs defaultValue="prospect" className="w-full">
                     <TabsList className="grid w-full grid-cols-3">
@@ -574,7 +564,6 @@ export default function HumanRoleplay() {
                         </div>
                     </TabsContent>
                 </Tabs>
-            </div>
-        </div>
+        </RoleplaySetupLayout>
     );
 }

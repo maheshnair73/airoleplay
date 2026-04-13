@@ -1,17 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { MultiPartyScenario } from '@/api/entities';
 import { Link, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { 
-    Users, Plus, Loader2, TrendingUp, Target, 
-    Clock, Star, Play, Settings, ArrowLeft,
-    Briefcase, UserCheck, Shield, DollarSign,
-    Zap, Brain, Trophy
+import {
+    Users, Loader2, Target,
+    Clock, Star, Play, Filter,
+    Briefcase, TrendingUp
 } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+  RoleplaySetupLayout,
+  RoleplaySetupSection
+} from '@/components/roleplay/RoleplaySetupLayout';
 
 export default function MultiPartyRoleplay() {
     const [scenarios, setScenarios] = useState([]);
@@ -215,29 +218,20 @@ export default function MultiPartyRoleplay() {
     }
 
     return (
-        <div className="p-6 bg-slate-50 min-h-screen">
-            {/* Header */}
-            <div className="mb-8">
-                <Link to={createPageUrl('AIRoleplay')} className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 transition-colors mb-4">
-                    <ArrowLeft className="w-4 h-4" />
-                    Back to AI Roleplay
+        <RoleplaySetupLayout
+            title="Multi-Party Roleplay"
+            description="Practice complex sales scenarios with multiple AI stakeholders"
+            icon={Users}
+            backPath={createPageUrl('AIRoleplay')}
+            backLabel="Back to AI Roleplay"
+        >
+            <div className="p-8 bg-white border-b border-slate-200">
+                <Link to={createPageUrl('CreateMultiPartyScenario')}>
+                    <Button className="bg-blue-600 hover:bg-blue-700 shadow-md">
+                        <Play className="w-4 h-4 mr-2" />
+                        Create New Scenario
+                    </Button>
                 </Link>
-                
-                <div className="flex justify-between items-center">
-                    <div>
-                        <h1 className="text-4xl font-bold text-slate-900 flex items-center gap-3">
-                            <Users className="w-10 h-10 text-purple-600" />
-                            Multi-Party Roleplay
-                        </h1>
-                        <p className="text-slate-600 mt-2">Practice complex sales scenarios with multiple AI stakeholders</p>
-                    </div>
-                    <Link to={createPageUrl('CreateMultiPartyScenario')}>
-                        <Button className="bg-purple-600 hover:bg-purple-700">
-                            <Plus className="w-4 h-4 mr-2" />
-                            Create Scenario
-                        </Button>
-                    </Link>
-                </div>
             </div>
 
             {/* Benefits Banner */}
@@ -475,6 +469,6 @@ export default function MultiPartyRoleplay() {
                     ))}
                 </div>
             )}
-        </div>
+        </RoleplaySetupLayout>
     );
 }

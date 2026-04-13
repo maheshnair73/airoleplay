@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Select,
   SelectContent,
@@ -13,11 +12,19 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
-import { MonitorUp, Sparkles, ArrowLeft, UserPlus, X, Briefcase, Settings, Package, Upload, BookOpen, Loader2, CheckCircle2, Link as LinkIcon, FileText, Plus, Check, Circle } from 'lucide-react';
+import { MonitorUp, Sparkles, UserPlus, X, Briefcase, Settings, Package, Upload, BookOpen, Loader2, CheckCircle2, Link as LinkIcon, FileText, Plus, Check, Users } from 'lucide-react';
+import {
+  RoleplaySetupLayout,
+  RoleplaySetupSection,
+  RoleplaySetupField,
+  RoleplaySetupGrid,
+  RoleplaySetupActions,
+  InfoBanner
+} from '@/components/roleplay/RoleplaySetupLayout';
 
 const MATERIAL_CATEGORIES = [
   'Product Knowledge', 'Sales Methodology', 'Objection Handling',
@@ -301,17 +308,25 @@ const ProductDemoSetup = () => {
     );
   }
 
+  const tabs = [
+    { id: 'attendees', label: 'Attendees', icon: Users, complete: canProceedFromAttendees() },
+    { id: 'product', label: 'Product', icon: Package, complete: canProceedFromProduct(), accessible: canProceedFromAttendees() },
+    { id: 'materials', label: 'Materials', icon: BookOpen, accessible: canProceedFromAttendees() },
+    { id: 'settings', label: 'Settings', icon: Settings, accessible: canProceedFromProduct() }
+  ];
+
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-3xl mx-auto">
-        <Button
-          variant="ghost"
-          onClick={() => navigate('/ai-roleplay')}
-          className="mb-4"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to AI Roleplay
-        </Button>
+    <RoleplaySetupLayout
+      title="Product Demo Practice"
+      description="Practice your product demos with AI clients and get real-time feedback"
+      icon={MonitorUp}
+      backPath="/ai-roleplay"
+      backLabel="Back to AI Roleplay"
+      currentTab={currentTab}
+      tabs={tabs}
+      onTabChange={setCurrentTab}
+      loading={loading}
+    >
 
         {bots.length === 0 ? (
           <Card>
@@ -866,7 +881,6 @@ const ProductDemoSetup = () => {
           </CardContent>
         </Card>
         )}
-      </div>
 
       <Dialog open={showUploadModal} onOpenChange={setShowUploadModal}>
         <DialogContent className="max-w-lg">
@@ -952,7 +966,7 @@ const ProductDemoSetup = () => {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </RoleplaySetupLayout>
   );
 };
 
