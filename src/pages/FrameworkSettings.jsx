@@ -1,22 +1,34 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 import { User } from '@/api/entities';
-import { Target, DollarSign, ListChecks, HelpCircle, Plus, Edit2, Trash2, Check, X } from 'lucide-react';
+import { Target, DollarSign, ListChecks, HelpCircle, Check, X, ChevronRight, Star } from 'lucide-react';
 
 const FRAMEWORK_ICONS = {
   'MEDDIC': Target,
   'BANT': DollarSign,
   'RUBRIC': ListChecks,
   'SPIN': HelpCircle
+};
+
+const FRAMEWORK_COLORS = {
+  'MEDDIC': 'bg-blue-500',
+  'BANT': 'bg-emerald-500',
+  'RUBRIC': 'bg-amber-500',
+  'SPIN': 'bg-violet-500'
+};
+
+const FRAMEWORK_DESCRIPTIONS = {
+  'MEDDIC': 'Enterprise sales qualification focusing on Metrics, Economic Buyer, Decision Criteria, Decision Process, Identify Pain, and Champion',
+  'BANT': 'SMB sales qualification framework addressing Budget, Authority, Need, and Timeline',
+  'SPIN': 'Strategic questioning methodology using Situation, Problem, Implication, and Need-payoff questions',
+  'RUBRIC': 'Flexible scoring system with customizable performance categories and levels'
 };
 
 export default function FrameworkSettings() {
@@ -28,7 +40,7 @@ export default function FrameworkSettings() {
   const [defaultFramework, setDefaultFramework] = useState(null);
   const [savingDefault, setSavingDefault] = useState(false);
   const [selectedFramework, setSelectedFramework] = useState(null);
-  const [showCriteriaDialog, setShowCriteriaDialog] = useState(false);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
 
   useEffect(() => {
     const initPage = async () => {
@@ -42,35 +54,31 @@ export default function FrameworkSettings() {
         console.error('Error fetching user:', e);
         toast.error('Failed to load user information');
       }
-
       fetchFrameworks();
     };
-
     initPage();
   }, []);
 
   const fetchFrameworks = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: frameworksData, error } = await supabase
         .from('evaluation_frameworks')
         .select('*')
         .order('name');
 
       if (error) throw error;
-      setFrameworks(data || []);
+      setFrameworks(frameworksData || []);
 
-      for (const framework of data || []) {
+      const criteriaMap = {};
+      for (const framework of frameworksData || []) {
         const { data: criteriaData } = await supabase
           .from('framework_criteria')
           .select('*, framework_scoring_rules(*)')
           .eq('framework_id', framework.id)
           .order('display_order');
-
-        setCriteria(prev => ({
-          ...prev,
-          [framework.id]: criteriaData || []
-        }));
+        criteriaMap[framework.id] = criteriaData || [];
       }
+      setCriteria(criteriaMap);
 
       if (companyId) {
         fetchCompanyFrameworkDefault();
@@ -85,14 +93,12 @@ export default function FrameworkSettings() {
 
   const fetchCompanyFrameworkDefault = async () => {
     if (!companyId) return;
-
     try {
       const { data } = await supabase
         .from('company_framework_settings')
         .select('default_framework_id')
         .eq('company_id', companyId)
         .maybeSingle();
-
       if (data) {
         setDefaultFramework(data.default_framework_id);
       }
@@ -120,21 +126,16 @@ export default function FrameworkSettings() {
           .from('company_framework_settings')
           .update({ default_framework_id: frameworkId })
           .eq('company_id', companyId);
-
         if (error) throw error;
       } else {
         const { error } = await supabase
           .from('company_framework_settings')
-          .insert([{
-            company_id: companyId,
-            default_framework_id: frameworkId
-          }]);
-
+          .insert([{ company_id: companyId, default_framework_id: frameworkId }]);
         if (error) throw error;
       }
 
       setDefaultFramework(frameworkId);
-      toast.success('Default framework updated successfully');
+      toast.success('Default framework updated');
     } catch (error) {
       console.error('Error updating framework:', error);
       toast.error('Failed to update default framework');
@@ -149,13 +150,11 @@ export default function FrameworkSettings() {
         .from('evaluation_frameworks')
         .update({ is_active: !isActive })
         .eq('id', frameworkId);
-
       if (error) throw error;
 
       setFrameworks(prev =>
         prev.map(f => f.id === frameworkId ? { ...f, is_active: !isActive } : f)
       );
-
       toast.success(isActive ? 'Framework disabled' : 'Framework enabled');
     } catch (error) {
       console.error('Error updating framework:', error);
@@ -171,217 +170,209 @@ export default function FrameworkSettings() {
     );
   }
 
-  const frameworkObj = selectedFramework ? frameworks.find(f => f.id === selectedFramework) : null;
-  const frameworkCriteria = selectedFramework ? (criteria[selectedFramework] || []) : [];
+  const selectedFrameworkObj = selectedFramework ? frameworks.find(f => f.id === selectedFramework) : null;
+  const selectedFrameworkCriteria = selectedFramework ? (criteria[selectedFramework] || []) : [];
+  const canManage = currentUser?.role === 'company_admin' || currentUser?.role === 'super_admin';
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-8">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-slate-50">
+      <div className="max-w-7xl mx-auto p-8">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-slate-900 mb-2">Evaluation Frameworks</h1>
-          <p className="text-slate-600">
-            Manage evaluation frameworks for roleplay training and practice sessions
-          </p>
+          <h1 className="text-3xl font-bold text-slate-900 mb-2">Evaluation Frameworks</h1>
+          <p className="text-slate-600">Configure and manage evaluation frameworks for your team's practice sessions</p>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Frameworks List */}
-          <div className="lg:col-span-2">
-            <Card className="border-0 shadow-lg">
-              <CardHeader className="border-b border-slate-200">
-                <CardTitle>Available Frameworks</CardTitle>
-                <CardDescription>
-                  Select a framework to view details and criteria
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="pt-6">
-                <div className="space-y-3">
-                  {frameworks.map(framework => {
-                    const Icon = FRAMEWORK_ICONS[framework.framework_type] || ListChecks;
-                    const isSelected = selectedFramework === framework.id;
-                    const isDefault = defaultFramework === framework.id;
+        <Tabs defaultValue="overview" className="space-y-6">
+          <TabsList className="grid w-full max-w-md grid-cols-2">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="default">Default Setting</TabsTrigger>
+          </TabsList>
 
-                    return (
-                      <div
-                        key={framework.id}
-                        onClick={() => setSelectedFramework(framework.id)}
-                        className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                          isSelected
-                            ? 'border-blue-600 bg-blue-50'
-                            : 'border-slate-200 bg-white hover:border-slate-300'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="p-2 bg-blue-100 rounded-lg">
-                              <Icon className="w-5 h-5 text-blue-600" />
-                            </div>
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <h4 className="font-semibold text-slate-900">{framework.name}</h4>
-                                {isDefault && (
-                                  <Badge className="bg-green-600">Default</Badge>
-                                )}
-                                {!framework.is_active && (
-                                  <Badge variant="secondary">Disabled</Badge>
-                                )}
-                              </div>
-                              <p className="text-sm text-slate-600">{framework.framework_type}</p>
-                            </div>
-                          </div>
-                          <div className="flex gap-2">
-                            {isSelected && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setShowCriteriaDialog(true);
-                                }}
-                              >
-                                View Details
-                              </Button>
-                            )}
-                            <Button
-                              variant={framework.is_active ? 'default' : 'outline'}
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                toggleFrameworkActive(framework.id, framework.is_active);
-                              }}
-                            >
-                              {framework.is_active ? <Check className="w-4 h-4" /> : <X className="w-4 h-4" />}
-                            </Button>
-                          </div>
+          <TabsContent value="overview" className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {frameworks.map(framework => {
+                const Icon = FRAMEWORK_ICONS[framework.framework_type] || ListChecks;
+                const colorClass = FRAMEWORK_COLORS[framework.framework_type] || 'bg-slate-500';
+                const isDefault = defaultFramework === framework.id;
+                const criteriaCount = criteria[framework.id]?.length || 0;
+
+                return (
+                  <Card
+                    key={framework.id}
+                    className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
+                    onClick={() => {
+                      setSelectedFramework(framework.id);
+                      setShowDetailsModal(true);
+                    }}
+                  >
+                    <div className={`${colorClass} h-20 flex items-center justify-center`}>
+                      <Icon className="w-10 h-10 text-white" />
+                    </div>
+                    <CardContent className="p-4 space-y-3">
+                      <div>
+                        <div className="flex items-start justify-between gap-2 mb-1">
+                          <h3 className="font-semibold text-slate-900">{framework.name}</h3>
+                          {isDefault && <Star className="w-4 h-4 fill-amber-500 text-amber-500 flex-shrink-0" />}
+                        </div>
+                        <p className="text-xs text-slate-500">{framework.framework_type}</p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-slate-600">Status:</span>
+                          <Badge variant={framework.is_active ? 'default' : 'secondary'} className="text-xs">
+                            {framework.is_active ? 'Active' : 'Inactive'}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-slate-600">Criteria:</span>
+                          <span className="font-medium text-slate-900">{criteriaCount}</span>
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
 
-          {/* Framework Details & Default Setting */}
-          <div className="space-y-6">
-            <Card className="border-0 shadow-lg">
+                      <Separator className="my-2" />
+
+                      <div className="flex gap-2">
+                        <Button
+                          variant={framework.is_active ? 'default' : 'outline'}
+                          size="sm"
+                          className="flex-1"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleFrameworkActive(framework.id, framework.is_active);
+                          }}
+                        >
+                          {framework.is_active ? <Check className="w-3 h-3 mr-1" /> : <X className="w-3 h-3 mr-1" />}
+                          {framework.is_active ? 'Active' : 'Enable'}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedFramework(framework.id);
+                            setShowDetailsModal(true);
+                          }}
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="default" className="space-y-6">
+            <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Company Default</CardTitle>
+                <CardTitle>Set Default Framework</CardTitle>
                 <CardDescription>
-                  Set the default framework for your company
+                  {canManage
+                    ? 'Choose which framework will be selected by default for your team'
+                    : 'Only company admins can change this setting'
+                  }
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                {currentUser?.role === 'company_admin' || currentUser?.role === 'super_admin' ? (
-                  <>
-                    {frameworks.filter(f => f.is_active).length > 0 ? (
-                      <div className="space-y-3">
-                        {frameworks.filter(f => f.is_active).map(framework => (
-                          <Button
-                            key={framework.id}
-                            variant={defaultFramework === framework.id ? 'default' : 'outline'}
-                            className="w-full justify-start"
-                            onClick={() => handleSetDefaultFramework(framework.id)}
-                            disabled={savingDefault}
-                          >
-                            {defaultFramework === framework.id && (
-                              <Check className="w-4 h-4 mr-2" />
-                            )}
-                            {framework.name}
-                          </Button>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-slate-600">No active frameworks available</p>
-                    )}
-                  </>
+              <CardContent>
+                {canManage ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {frameworks.filter(f => f.is_active).map(framework => {
+                      const Icon = FRAMEWORK_ICONS[framework.framework_type] || ListChecks;
+                      const isSelected = defaultFramework === framework.id;
+
+                      return (
+                        <Button
+                          key={framework.id}
+                          variant={isSelected ? 'default' : 'outline'}
+                          className="justify-start h-auto p-4"
+                          onClick={() => handleSetDefaultFramework(framework.id)}
+                          disabled={savingDefault}
+                        >
+                          <Icon className="w-5 h-5 mr-3 flex-shrink-0" />
+                          <div className="text-left">
+                            <div className="font-semibold">{framework.name}</div>
+                            <div className="text-xs opacity-75">{framework.framework_type}</div>
+                          </div>
+                          {isSelected && <Check className="w-4 h-4 ml-auto flex-shrink-0" />}
+                        </Button>
+                      );
+                    })}
+                  </div>
                 ) : (
-                  <p className="text-sm text-slate-600">
-                    Only company admins can change framework settings
-                  </p>
+                  <div className="p-4 bg-slate-50 rounded-lg text-sm text-slate-600">
+                    Contact your company admin to change the default framework
+                  </div>
                 )}
               </CardContent>
             </Card>
-
-            {/* Framework Summary */}
-            {selectedFramework && frameworkObj && (
-              <Card className="border-0 shadow-lg">
-                <CardHeader>
-                  <CardTitle className="text-lg">{frameworkObj.name}</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <p className="text-xs font-semibold text-slate-700 uppercase mb-2">Description</p>
-                    <p className="text-sm text-slate-600">
-                      {frameworkObj.description || 'No description available'}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold text-slate-700 uppercase mb-2">Type</p>
-                    <Badge className="bg-blue-600">{frameworkObj.framework_type}</Badge>
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold text-slate-700 uppercase mb-2">Criteria Count</p>
-                    <p className="text-sm font-medium">{frameworkCriteria.length} criteria</p>
-                  </div>
-                  <Button
-                    onClick={() => setShowCriteriaDialog(true)}
-                    className="w-full bg-blue-600 hover:bg-blue-700"
-                  >
-                    View All Criteria
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        </div>
+          </TabsContent>
+        </Tabs>
       </div>
 
-      {/* Criteria Dialog */}
-      <Dialog open={showCriteriaDialog} onOpenChange={setShowCriteriaDialog}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{frameworkObj?.name} - Evaluation Criteria</DialogTitle>
-            <DialogDescription>
-              Complete breakdown of all criteria and scoring levels for this framework
-            </DialogDescription>
-          </DialogHeader>
+      <Dialog open={showDetailsModal} onOpenChange={setShowDetailsModal}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          {selectedFrameworkObj && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-3">
+                  {React.createElement(FRAMEWORK_ICONS[selectedFrameworkObj.framework_type] || ListChecks, {
+                    className: 'w-6 h-6'
+                  })}
+                  {selectedFrameworkObj.name}
+                </DialogTitle>
+                <DialogDescription>
+                  {FRAMEWORK_DESCRIPTIONS[selectedFrameworkObj.framework_type] || selectedFrameworkObj.description}
+                </DialogDescription>
+              </DialogHeader>
 
-          <div className="space-y-6 py-4">
-            {frameworkCriteria.length > 0 ? (
-              frameworkCriteria.map((criterion, idx) => (
-                <div key={criterion.id} className="space-y-3 pb-6 border-b last:border-b-0">
-                  <div>
-                    <h4 className="font-semibold text-slate-900">{criterion.name}</h4>
-                    <p className="text-sm text-slate-600 mt-1">{criterion.description}</p>
-                    <div className="mt-2 flex items-center gap-2">
-                      <Badge variant="secondary">{criterion.criterion_key}</Badge>
-                      <span className="text-xs text-slate-500">Weight: {criterion.weight}</span>
-                    </div>
-                  </div>
-
-                  {criterion.framework_scoring_rules && criterion.framework_scoring_rules.length > 0 && (
-                    <div className="ml-2 space-y-2">
-                      <p className="text-xs font-semibold text-slate-700 uppercase">Scoring Levels:</p>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                        {criterion.framework_scoring_rules
-                          .sort((a, b) => a.score_level - b.score_level)
-                          .map(rule => (
-                            <div key={rule.id} className="bg-slate-50 rounded p-2 text-xs">
-                              <p className="font-medium text-slate-900">Level {rule.score_level}: {rule.label}</p>
-                              <p className="text-slate-600">{rule.description}</p>
-                              <p className="text-slate-500 mt-1">{rule.min_score}-{rule.max_score}%</p>
+              <div className="space-y-6 py-4">
+                <div>
+                  <h4 className="font-semibold text-slate-900 mb-3">Evaluation Criteria ({selectedFrameworkCriteria.length})</h4>
+                  {selectedFrameworkCriteria.length > 0 ? (
+                    <div className="space-y-4">
+                      {selectedFrameworkCriteria.map((criterion, idx) => (
+                        <div key={criterion.id} className="border border-slate-200 rounded-lg p-4 space-y-3">
+                          <div>
+                            <div className="flex items-start justify-between gap-2 mb-2">
+                              <h5 className="font-semibold text-slate-900">{criterion.name}</h5>
+                              <Badge variant="secondary" className="text-xs">{criterion.criterion_key}</Badge>
                             </div>
-                          ))}
-                      </div>
+                            <p className="text-sm text-slate-600">{criterion.description}</p>
+                            <div className="mt-2 text-xs text-slate-500">Weight: <span className="font-medium">{criterion.weight}</span></div>
+                          </div>
+
+                          {criterion.framework_scoring_rules && criterion.framework_scoring_rules.length > 0 && (
+                            <div className="space-y-2 pt-2 border-t border-slate-200">
+                              <p className="text-xs font-semibold text-slate-700 uppercase">Scoring Levels</p>
+                              <div className="grid grid-cols-2 gap-2">
+                                {criterion.framework_scoring_rules
+                                  .sort((a, b) => a.score_level - b.score_level)
+                                  .map(rule => (
+                                    <div key={rule.id} className="bg-slate-50 rounded p-3 text-xs space-y-1">
+                                      <p className="font-semibold text-slate-900">Level {rule.score_level}: {rule.label}</p>
+                                      <p className="text-slate-600">{rule.description}</p>
+                                      <div className="flex items-center justify-between text-slate-500 pt-1 border-t border-slate-200">
+                                        <span>{rule.min_score}%</span>
+                                        <span>-</span>
+                                        <span>{rule.max_score}%</span>
+                                      </div>
+                                    </div>
+                                  ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
                     </div>
+                  ) : (
+                    <p className="text-sm text-slate-600">No criteria found for this framework</p>
                   )}
                 </div>
-              ))
-            ) : (
-              <p className="text-slate-600">No criteria found for this framework</p>
-            )}
-          </div>
+              </div>
+            </>
+          )}
         </DialogContent>
       </Dialog>
     </div>
