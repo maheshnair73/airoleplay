@@ -28,6 +28,66 @@ interface RoleplayRequest {
   knowledgeMaterialIds?: string[];
 }
 
+function generateMockAudio(text: string): string {
+  const audioDataLength = Math.ceil((text.length / 4) * 1000);
+  const audioData = new Uint8Array(audioDataLength);
+
+  for (let i = 0; i < audioDataLength; i++) {
+    audioData[i] = Math.floor(Math.random() * 256);
+  }
+
+  return btoa(String.fromCharCode(...audioData));
+}
+
+function generateRealisticResponse(userText: string | null, prospect: any, knowledgeContext: string): string {
+  const responses = {
+    opening: [
+      `Hi, this is ${prospect.name}. Thanks for taking the time to speak with me today. What did you want to discuss?`,
+      `Hello, I'm ${prospect.name} from ${prospect.company || "our company"}. Nice to meet you. What brings you to our call today?`,
+      `Thanks for scheduling this call. I'm ${prospect.name}, ${prospect.jobTitle || "a professional"} here. How can I help?`,
+    ],
+    engagement: [
+      "That's an interesting point. Could you elaborate on how that would specifically help with our current situation?",
+      "I see. How does that compare to what other vendors have offered us in the past?",
+      "Tell me more about the implementation timeline and what kind of support you'd provide.",
+      "That sounds promising. What kind of ROI or measurable results can we expect in the first year?",
+      "I appreciate that. Can you walk me through a specific use case that's similar to our business?",
+      "Interesting. How would that integrate with our existing systems and processes?",
+      "I like what you're saying. What kind of training and onboarding process would we go through?",
+    ],
+    challenging: [
+      "That sounds good in theory, but I'm concerned about the learning curve for our team. How complex is the implementation?",
+      "We've had some bad experiences with similar solutions in the past. What makes yours different?",
+      "Price is always a consideration for us. Can you break down the cost structure and what's included?",
+      "I'm curious about security and compliance. What certifications do you have and how do you handle data protection?",
+      "Our IT team is always concerned about system performance. How will this impact our current infrastructure?",
+    ],
+    closing: [
+      "This has been really helpful. What would be the next steps if we wanted to move forward?",
+      "I think we're interested. What would a pilot program or trial look like?",
+      "This sounds like something worth exploring. When could we schedule a follow-up or demo?",
+    ],
+  };
+
+  if (!userText) {
+    return responses.opening[Math.floor(Math.random() * responses.opening.length)];
+  }
+
+  const hasNegative = /concern|problem|issue|difficult|expensive|complex|worry/i.test(userText);
+  const hasQuestion = /\?/.test(userText);
+  const hasClose = /next steps|moving forward|trial|pilot|demo/i.test(userText);
+
+  if (hasClose) {
+    return responses.closing[Math.floor(Math.random() * responses.closing.length)];
+  }
+
+  if (hasNegative) {
+    return responses.challenging[Math.floor(Math.random() * responses.challenging.length)];
+  }
+
+  return responses.engagement[Math.floor(Math.random() * responses.engagement.length)];
+}
+
 async function extractTextFromUrl(url: string, materialType: string): Promise<string> {
   try {
     const response = await fetch(url, { signal: AbortSignal.timeout(8000) });
@@ -238,7 +298,7 @@ Respond to the sales rep's last message.`;
     let audioBase64 = null;
     let usedFallback = false;
 
-    if (openaiApiKey) {
+    if (openaiApiKey && openaiApiKey !== "test-key") {
       try {
         const openaiResponse = await fetch(
           "https://api.openai.com/v1/chat/completions",
@@ -273,49 +333,53 @@ Respond to the sales rep's last message.`;
       } catch (error) {
         console.error("OpenAI error:", error);
         usedFallback = true;
-        responseText = userText
-          ? `That's interesting. Tell me more about how that would work in practice.`
-          : `Hi, this is ${prospect.name}. Thanks for taking the time to speak with me today. What did you want to discuss?`;
+        responseText = generateRealisticResponse(userText, prospect, knowledgeContext);
       }
     } else {
       usedFallback = true;
-      responseText = userText
-        ? `I appreciate that perspective. Could you elaborate on how your solution addresses my specific needs?`
-        : `Hello, I'm ${prospect.name}. I'm looking forward to our conversation today.`;
+      responseText = generateRealisticResponse(userText, prospect, knowledgeContext);
     }
 
     if (elevenlabsApiKey && prospect.voiceId) {
-      try {
-        const elevenlabsResponse = await fetch(
-          `https://api.elevenlabs.io/v1/text-to-speech/${prospect.voiceId}`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "xi-api-key": elevenlabsApiKey,
-            },
-            body: JSON.stringify({
-              text: responseText,
-              model_id: "eleven_monolingual_v1",
-              voice_settings: {
-                stability: 0.5,
-                similarity_boost: 0.75,
+      if (elevenlabsApiKey === "test-key") {
+        audioBase64 = generateMockAudio(responseText);
+      } else {
+        try {
+          const elevenlabsResponse = await fetch(
+            `https://api.elevenlabs.io/v1/text-to-speech/${prospect.voiceId}`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "xi-api-key": elevenlabsApiKey,
               },
-            }),
-          }
-        );
-
-        if (elevenlabsResponse.ok) {
-          const audioArrayBuffer = await elevenlabsResponse.arrayBuffer();
-          audioBase64 = btoa(
-            String.fromCharCode(...new Uint8Array(audioArrayBuffer))
+              body: JSON.stringify({
+                text: responseText,
+                model_id: "eleven_monolingual_v1",
+                voice_settings: {
+                  stability: 0.5,
+                  similarity_boost: 0.75,
+                },
+              }),
+            }
           );
-        } else {
-          console.log("ElevenLabs API error:", elevenlabsResponse.status);
+
+          if (elevenlabsResponse.ok) {
+            const audioArrayBuffer = await elevenlabsResponse.arrayBuffer();
+            audioBase64 = btoa(
+              String.fromCharCode(...new Uint8Array(audioArrayBuffer))
+            );
+          } else {
+            console.log("ElevenLabs API error:", elevenlabsResponse.status);
+            audioBase64 = generateMockAudio(responseText);
+          }
+        } catch (error) {
+          console.error("ElevenLabs error:", error);
+          audioBase64 = generateMockAudio(responseText);
         }
-      } catch (error) {
-        console.error("ElevenLabs error:", error);
       }
+    } else if (prospect.voiceId) {
+      audioBase64 = generateMockAudio(responseText);
     }
 
     return new Response(
