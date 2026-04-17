@@ -182,13 +182,25 @@ export default function FrameworkSettings() {
           <p className="text-slate-600">Configure and manage evaluation frameworks for your team's practice sessions</p>
         </div>
 
-        <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full max-w-md grid-cols-2">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="default">Default Setting</TabsTrigger>
-          </TabsList>
+        <Tabs defaultValue="overview" className="w-full">
+          <div className="mb-6 border-b border-slate-200">
+            <TabsList className="grid grid-cols-2 w-full max-w-md bg-transparent p-0 h-auto">
+              <TabsTrigger
+                value="overview"
+                className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-600 data-[state=active]:bg-transparent px-4 py-3 font-medium"
+              >
+                Overview
+              </TabsTrigger>
+              <TabsTrigger
+                value="default"
+                className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-600 data-[state=active]:bg-transparent px-4 py-3 font-medium"
+              >
+                Default Setting
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
-          <TabsContent value="overview" className="space-y-6">
+          <TabsContent value="overview" className="space-y-6 mt-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {frameworks.map(framework => {
                 const Icon = FRAMEWORK_ICONS[framework.framework_type] || ListChecks;
@@ -199,55 +211,68 @@ export default function FrameworkSettings() {
                 return (
                   <Card
                     key={framework.id}
-                    className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
+                    className="overflow-hidden hover:shadow-xl transition-all duration-200 cursor-pointer border-0 group"
                     onClick={() => {
                       setSelectedFramework(framework.id);
                       setShowDetailsModal(true);
                     }}
                   >
-                    <div className={`${colorClass} h-20 flex items-center justify-center`}>
-                      <Icon className="w-10 h-10 text-white" />
+                    <div className={`${colorClass} h-24 flex items-center justify-center group-hover:scale-105 transition-transform duration-200`}>
+                      <Icon className="w-12 h-12 text-white" />
                     </div>
-                    <CardContent className="p-4 space-y-3">
-                      <div>
-                        <div className="flex items-start justify-between gap-2 mb-1">
-                          <h3 className="font-semibold text-slate-900">{framework.name}</h3>
-                          {isDefault && <Star className="w-4 h-4 fill-amber-500 text-amber-500 flex-shrink-0" />}
+                    <CardContent className="p-5 space-y-4">
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <h3 className="font-bold text-slate-900 text-lg">{framework.name}</h3>
+                          {isDefault && (
+                            <div className="flex items-center gap-1 bg-amber-100 px-2 py-1 rounded-full">
+                              <Star className="w-3 h-3 fill-amber-600 text-amber-600" />
+                              <span className="text-xs font-semibold text-amber-700">Default</span>
+                            </div>
+                          )}
                         </div>
-                        <p className="text-xs text-slate-500">{framework.framework_type}</p>
+                        <p className="text-sm text-slate-500 font-medium">{framework.framework_type}</p>
                       </div>
 
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-slate-600">Status:</span>
-                          <Badge variant={framework.is_active ? 'default' : 'secondary'} className="text-xs">
+                      <div className="space-y-2 py-3 border-t border-b border-slate-100">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-slate-600">Status</span>
+                          <Badge variant={framework.is_active ? 'default' : 'secondary'} className="text-xs font-medium">
                             {framework.is_active ? 'Active' : 'Inactive'}
                           </Badge>
                         </div>
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-slate-600">Criteria:</span>
-                          <span className="font-medium text-slate-900">{criteriaCount}</span>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-slate-600">Criteria</span>
+                          <span className="font-bold text-slate-900">{criteriaCount}</span>
                         </div>
                       </div>
 
-                      <Separator className="my-2" />
-
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 pt-2">
                         <Button
                           variant={framework.is_active ? 'default' : 'outline'}
                           size="sm"
-                          className="flex-1"
+                          className="flex-1 font-medium"
                           onClick={(e) => {
                             e.stopPropagation();
                             toggleFrameworkActive(framework.id, framework.is_active);
                           }}
                         >
-                          {framework.is_active ? <Check className="w-3 h-3 mr-1" /> : <X className="w-3 h-3 mr-1" />}
-                          {framework.is_active ? 'Active' : 'Enable'}
+                          {framework.is_active ? (
+                            <>
+                              <Check className="w-4 h-4 mr-1" />
+                              Active
+                            </>
+                          ) : (
+                            <>
+                              <X className="w-4 h-4 mr-1" />
+                              Disabled
+                            </>
+                          )}
                         </Button>
                         <Button
-                          variant="ghost"
+                          variant="outline"
                           size="sm"
+                          className="px-2"
                           onClick={(e) => {
                             e.stopPropagation();
                             setSelectedFramework(framework.id);
@@ -264,45 +289,58 @@ export default function FrameworkSettings() {
             </div>
           </TabsContent>
 
-          <TabsContent value="default" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Set Default Framework</CardTitle>
-                <CardDescription>
+          <TabsContent value="default" className="space-y-6 mt-6">
+            <Card className="border-0 shadow-sm">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-2xl">Set Default Framework</CardTitle>
+                <CardDescription className="text-base">
                   {canManage
                     ? 'Choose which framework will be selected by default for your team'
                     : 'Only company admins can change this setting'
                   }
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
                 {canManage ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {frameworks.filter(f => f.is_active).map(framework => {
                       const Icon = FRAMEWORK_ICONS[framework.framework_type] || ListChecks;
                       const isSelected = defaultFramework === framework.id;
+                      const colorClass = FRAMEWORK_COLORS[framework.framework_type] || 'bg-slate-500';
 
                       return (
-                        <Button
+                        <button
                           key={framework.id}
-                          variant={isSelected ? 'default' : 'outline'}
-                          className="justify-start h-auto p-4"
                           onClick={() => handleSetDefaultFramework(framework.id)}
                           disabled={savingDefault}
+                          className={`relative overflow-hidden rounded-lg border-2 p-4 text-left transition-all ${
+                            isSelected
+                              ? 'border-blue-600 bg-blue-50'
+                              : 'border-slate-200 bg-white hover:border-slate-300'
+                          } disabled:opacity-50 disabled:cursor-not-allowed`}
                         >
-                          <Icon className="w-5 h-5 mr-3 flex-shrink-0" />
-                          <div className="text-left">
-                            <div className="font-semibold">{framework.name}</div>
-                            <div className="text-xs opacity-75">{framework.framework_type}</div>
+                          <div className="flex items-start gap-3">
+                            <div className={`${colorClass} rounded-lg p-2 text-white flex-shrink-0`}>
+                              <Icon className="w-5 h-5" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-semibold text-slate-900">{framework.name}</h4>
+                              <p className="text-sm text-slate-600">{framework.framework_type}</p>
+                            </div>
+                            {isSelected && (
+                              <div className="flex-shrink-0 ml-2">
+                                <Check className="w-5 h-5 text-blue-600" />
+                              </div>
+                            )}
                           </div>
-                          {isSelected && <Check className="w-4 h-4 ml-auto flex-shrink-0" />}
-                        </Button>
+                        </button>
                       );
                     })}
                   </div>
                 ) : (
-                  <div className="p-4 bg-slate-50 rounded-lg text-sm text-slate-600">
-                    Contact your company admin to change the default framework
+                  <div className="p-6 bg-blue-50 border border-blue-200 rounded-lg text-center space-y-2">
+                    <p className="text-sm font-medium text-blue-900">Access Restricted</p>
+                    <p className="text-sm text-blue-700">Contact your company admin to change the default framework</p>
                   </div>
                 )}
               </CardContent>
