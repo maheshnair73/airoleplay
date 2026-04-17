@@ -319,5 +319,39 @@ export const mockSupabase = {
         };
       }
     };
+  },
+
+  functions: {
+    async invoke(functionName, options = {}) {
+      await delay(500);
+
+      if (functionName === 'ai-roleplay') {
+        const { userText, prospect, transcriptHistory } = options.body || {};
+
+        const mockResponses = [
+          "That's interesting. Can you tell me more about how this would impact your team?",
+          "I appreciate that perspective. What are your main concerns about implementation?",
+          "Great question. Let me share how other clients have approached this.",
+          "I understand. What would success look like for you in this initiative?",
+          "Absolutely. Our solution is designed to address exactly that challenge."
+        ];
+
+        const randomResponse = mockResponses[Math.floor(Math.random() * mockResponses.length)];
+
+        return {
+          data: {
+            text: userText === null ? `Hello! I'm ${prospect.name}, ${prospect.title} at ${prospect.company_name}. How can I help you today?` : randomResponse,
+            audio: null,
+            fallback_mode: false
+          },
+          error: null
+        };
+      }
+
+      return {
+        data: { success: true, message: `Mock response for ${functionName}` },
+        error: null
+      };
+    }
   }
 };
