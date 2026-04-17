@@ -259,7 +259,7 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
                 timestamp: t.timestamp
             }));
 
-            const { data } = await aiRoleplay({
+            const data = await aiRoleplay({
                 userText,
                 prospect,
                 transcriptHistory: history,
@@ -299,7 +299,7 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
         callStartTime.current = Date.now(); // Set call start time
         setIsAIResponding(true);
         try {
-            const { data } = await aiRoleplay({
+            const data = await aiRoleplay({
                 userText: null,
                 prospect,
                 transcriptHistory: [],
