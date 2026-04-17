@@ -212,6 +212,15 @@ const PrivateLayout = ({ children, currentPageName }) => {
                 
 
 
+                {['admin', 'company_admin', 'saas_admin'].includes(effectiveRole) && (
+                    <div>
+                        <h3 className="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Company Admin</h3>
+                        <nav className="space-y-1">
+                            {adminNavConfig.map(item => <NavItem key={item.page} item={item} />)}
+                        </nav>
+                    </div>
+                )}
+
                 {effectiveRole === 'super_admin' && (
                      <div>
                         <h3 className="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Platform Admin</h3>
