@@ -13,10 +13,12 @@ import { supabase } from '@/lib/supabase';
 import { User } from '@/api/entities';
 import { ArrowLeft, Upload, Plus, X, CheckCircle2, Zap, BookOpen, FileText, Target, Users, Settings, Save } from 'lucide-react';
 import { createPageUrl } from '@/utils';
+import FrameworkSelector from '@/components/roleplay/FrameworkSelector';
 
 const steps = [
   { id: 'basic', label: 'Basic Info', icon: Zap },
   { id: 'scenario', label: 'Scenario', icon: Target },
+  { id: 'framework', label: 'Evaluation', icon: Target },
   { id: 'personas', label: 'Personas', icon: Users },
   { id: 'materials', label: 'Materials', icon: BookOpen },
   { id: 'review', label: 'Review', icon: CheckCircle2 }
@@ -52,6 +54,7 @@ export default function CreateRoleplay() {
     company: '',
     context: '',
     objections: [],
+    evaluation_framework: '',
     personas: [
       { name: '', title: '', traits: [], buyingStage: '', details: '' }
     ],
@@ -156,6 +159,11 @@ export default function CreateRoleplay() {
       return;
     }
 
+    if (!formData.evaluation_framework) {
+      toast.error('Please select an evaluation framework');
+      return;
+    }
+
     if (formData.personas.some(p => !p.name.trim())) {
       toast.error('Please fill in all persona names');
       return;
@@ -173,6 +181,7 @@ export default function CreateRoleplay() {
           company: formData.company,
           context: formData.context,
           objections: formData.objections,
+          evaluation_framework: formData.evaluation_framework,
           personas_config: formData.personas,
           materials: formData.materials,
           user_id: user.id,
@@ -365,8 +374,18 @@ Can you send me information?"
                   </div>
                 )}
 
-                {/* Step 3: Personas */}
+                {/* Step 3: Framework Selection */}
                 {currentStep === 2 && (
+                  <div className="space-y-6">
+                    <FrameworkSelector
+                      value={formData.evaluation_framework}
+                      onChange={(value) => handleBasicChange('evaluation_framework', value)}
+                    />
+                  </div>
+                )}
+
+                {/* Step 4: Personas */}
+                {currentStep === 3 && (
                   <div className="space-y-6">
                     <p className="text-sm text-slate-600 mb-4">
                       Create the personas that users will practice with
@@ -468,8 +487,8 @@ Can you send me information?"
                   </div>
                 )}
 
-                {/* Step 4: Materials */}
-                {currentStep === 3 && (
+                {/* Step 5: Materials */}
+                {currentStep === 4 && (
                   <div className="space-y-6">
                     <div>
                       <h4 className="font-semibold mb-2">Upload Learning Materials (Optional)</h4>
@@ -523,8 +542,8 @@ Can you send me information?"
                   </div>
                 )}
 
-                {/* Step 5: Review */}
-                {currentStep === 4 && (
+                {/* Step 6: Review */}
+                {currentStep === 5 && (
                   <div className="space-y-6">
                     <div>
                       <h3 className="font-semibold mb-4">Review Your Scenario</h3>
