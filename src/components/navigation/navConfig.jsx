@@ -31,7 +31,8 @@ import {
     ClipboardList,
     PhoneCall,
     Sparkles,
-    Upload
+    Upload,
+    Gauge
 } from 'lucide-react';
 
 export const aiRoleplayStudioNav = [
@@ -155,6 +156,7 @@ export const adminNavConfig = [
     { page: 'LetsPractice', title: 'Practice Studio', icon: Mic },
     { page: 'ManageBotTemplates', title: 'Manage Bot Templates', icon: Bot },
     { page: 'ModuleCreation', title: 'Create Modules', icon: Dumbbell },
+    { page: 'FrameworkSettings', title: 'Evaluation Frameworks', icon: Gauge },
     { page: 'DialerSettings', title: 'Dialer Settings', icon: Settings },
     { page: 'AISalesAgentSettings', title: 'AI Agent Settings', icon: UserCog },
     { page: 'IntegrationManagement', title: 'Integration Management', icon: Zap },

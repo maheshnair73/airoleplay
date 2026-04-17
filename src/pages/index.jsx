@@ -280,6 +280,7 @@ import ModuleCreation from "./ModuleCreation";
 import StudioRoleplayDiscover from "./StudioRoleplayDiscover";
 import ManageBotTemplates from "./ManageBotTemplates";
 import CreateRoleplay from "./CreateRoleplay";
+import FrameworkSettings from "./FrameworkSettings";
 
 import { BrowserRouter as Router, Route, Routes, Navigate, useLocation } from 'react-router-dom';
 
@@ -561,6 +562,7 @@ const PAGES = {
     StudioRoleplayDiscover: StudioRoleplayDiscover,
     ManageBotTemplates: ManageBotTemplates,
     CreateRoleplay: CreateRoleplay,
+    FrameworkSettings: FrameworkSettings,
 
 }
 
@@ -886,6 +888,8 @@ function PagesContent() {
                 <Route path="/ManageBotTemplates" element={<ManageBotTemplates />} />
 
                 <Route path="/CreateRoleplay" element={<CreateRoleplay />} />
+
+                <Route path="/FrameworkSettings" element={<FrameworkSettings />} />
 
             </Routes>
         </Layout>
