@@ -194,7 +194,7 @@ export default function LetsPractice() {
           started_at: new Date().toISOString()
         }]);
 
-      window.location.href = `/AIRoleplay?botId=${bot.id}`;
+      navigate(`/AIRoleplay?botId=${bot.id}`);
     } catch (error) {
       console.error('Error starting practice:', error);
       toast.error('Failed to start practice session');
