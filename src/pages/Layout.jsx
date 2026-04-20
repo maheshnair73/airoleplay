@@ -2,6 +2,7 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { User } from '@/api/entities';
+import { localAuth } from '@/lib/localAuth';
 import { createPageUrl } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -52,20 +53,24 @@ const PrivateLayout = ({ children, currentPageName }) => {
     const location = useLocation();
 
     useEffect(() => {
-        const fetchUser = async () => {
-            try {
-                const currentUser = await User.me();
-                if (currentUser) {
-                    setUser(currentUser);
-                    setDemoRole(currentUser.role);
-                }
-            } catch (e) {
-                console.error('Failed to fetch user:', e);
-                setUser(null);
-                setDemoRole(null);
+        const loadUser = (sessionUser) => {
+            if (sessionUser) {
+                const u = { ...sessionUser, role: sessionUser.role || 'sales_agent' };
+                setUser(u);
+                setDemoRole(u.role);
             }
         };
-        fetchUser();
+
+        localAuth.getSession().then(({ data: { session } }) => {
+            if (session?.user) loadUser(session.user);
+        });
+
+        const { data: { subscription } } = localAuth.onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_IN' && session?.user) loadUser(session.user);
+            if (event === 'SIGNED_OUT') { setUser(null); setDemoRole(null); }
+        });
+
+        return () => subscription.unsubscribe();
     }, []);
 
     useEffect(() => {
@@ -214,7 +219,7 @@ const PrivateLayout = ({ children, currentPageName }) => {
                 
 
 
-                {['admin', 'company_admin', 'saas_admin'].includes(effectiveRole) && (
+                {['admin', 'company_admin', 'sales_manager'].includes(effectiveRole) && (
                     <div>
                         <h3 className="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Company Admin</h3>
                         <nav className="space-y-1">
@@ -223,11 +228,20 @@ const PrivateLayout = ({ children, currentPageName }) => {
                     </div>
                 )}
 
-                {effectiveRole === 'super_admin' && (
+                {['saas_admin', 'super_admin'].includes(effectiveRole) && (
                      <div>
                         <h3 className="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Platform Admin</h3>
                         <nav className="space-y-1">
                             {superAdminNavConfig.map(item => <NavItem key={item.page} item={item} />)}
+                        </nav>
+                    </div>
+                )}
+
+                {['saas_admin', 'super_admin'].includes(effectiveRole) && (
+                    <div>
+                        <h3 className="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Company Admin</h3>
+                        <nav className="space-y-1">
+                            {adminNavConfig.map(item => <NavItem key={item.page} item={item} />)}
                         </nav>
                     </div>
                 )}
