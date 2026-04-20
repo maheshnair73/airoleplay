@@ -33,7 +33,7 @@ export const mockSupabase = {
 
       const user = mockData.users.find(u => u.email === email);
 
-      if (!user || password !== 'demo123') {
+      if (!user || password !== 'demo1234') {
         throw new Error('Invalid login credentials');
       }
 

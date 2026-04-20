@@ -1,6 +1,13 @@
 export const mockData = {
   users: [
     {
+      id: 'mock-user-saas-001',
+      email: 'saas@effysalespro.com',
+      role: 'saas_admin',
+      full_name: 'SaaS Admin',
+      created_at: '2024-01-01T00:00:00Z'
+    },
+    {
       id: 'mock-user-admin-001',
       email: 'admin@effysalespro.com',
       role: 'company_admin',
@@ -41,6 +48,14 @@ export const mockData = {
   ],
 
   user_profiles: [
+    {
+      id: 'mock-user-saas-001',
+      email: 'saas@effysalespro.com',
+      role: 'saas_admin',
+      full_name: 'SaaS Admin',
+      company_id: null,
+      created_at: '2024-01-01T00:00:00Z'
+    },
     {
       id: 'mock-user-admin-001',
       email: 'admin@effysalespro.com',
