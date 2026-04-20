@@ -1,222 +1,242 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { User } from '@/api/entities';
 import { supabase } from '@/lib/supabase';
-import { Building2, Loader2, ShieldCheck, Users, UserCircle, Info, Eye, EyeOff } from 'lucide-react';
+import { Building2, Loader2, ShieldCheck, Users, UserCircle, Eye, EyeOff, Globe, ChevronDown, ChevronUp } from 'lucide-react';
 import { toast } from 'sonner';
 
-const DEMO_USERS = [
-    {
-        email: 'admin@effysalespro.com',
-        password: 'demo123',
-        role: 'company_admin',
-        label: 'Admin',
-        bgColor: 'bg-white border-2 border-blue-600',
-        textColor: 'text-blue-700',
-        icon: ShieldCheck,
-        description: 'Company management'
-    },
-    {
-        email: 'manager@effysalespro.com',
-        password: 'demo123',
-        role: 'sales_manager',
-        label: 'Manager',
-        bgColor: 'bg-sky-100 border-2 border-sky-300',
-        textColor: 'text-sky-800',
-        icon: Users,
-        description: 'Team Manager'
-    },
-    {
-        email: 'user@effysalespro.com',
-        password: 'demo123',
-        role: 'user',
-        label: 'User',
-        bgColor: 'bg-gray-100 border-2 border-gray-300',
-        textColor: 'text-gray-800',
-        icon: UserCircle,
-        description: 'Regular User'
-    }
+const DEMO_ACCOUNTS = [
+  {
+    email: 'saas@effysalespro.com',
+    password: 'demo123',
+    label: 'SaaS Admin',
+    sublabel: 'Platform owner',
+    color: 'from-slate-800 to-slate-900',
+    ring: 'ring-slate-600',
+    icon: Globe,
+    badge: 'bg-slate-700 text-slate-200',
+  },
+  {
+    email: 'admin@effysalespro.com',
+    password: 'demo123',
+    label: 'Company Admin',
+    sublabel: 'Acme Corp',
+    color: 'from-blue-600 to-blue-800',
+    ring: 'ring-blue-400',
+    icon: ShieldCheck,
+    badge: 'bg-blue-700 text-blue-100',
+  },
+  {
+    email: 'manager@effysalespro.com',
+    password: 'demo123',
+    label: 'Manager',
+    sublabel: 'Sales Manager',
+    color: 'from-sky-500 to-sky-700',
+    ring: 'ring-sky-400',
+    icon: Users,
+    badge: 'bg-sky-600 text-sky-100',
+  },
+  {
+    email: 'agent1@effysalespro.com',
+    password: 'demo123',
+    label: 'Sales Agent',
+    sublabel: 'Individual Rep',
+    color: 'from-emerald-500 to-emerald-700',
+    ring: 'ring-emerald-400',
+    icon: UserCircle,
+    badge: 'bg-emerald-600 text-emerald-100',
+  },
 ];
 
-export default function CorporateAuthMessage() {
-    const navigate = useNavigate();
-    const [isLoading, setIsLoading] = useState(false);
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [showPassword, setShowPassword] = useState(false);
+export default function CorporateAuth() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadingDemo, setLoadingDemo] = useState(null);
+  const [showDemo, setShowDemo] = useState(false);
 
-    const handleSignIn = async (e) => {
-        e.preventDefault();
-        setIsLoading(true);
-        try {
-            const { data, error } = await supabase.auth.signInWithPassword({
-                email: email,
-                password: password,
-            });
+  const signIn = async (emailVal, passwordVal, demoLabel = null) => {
+    if (demoLabel) setLoadingDemo(demoLabel);
+    else setIsLoading(true);
 
-            if (error) throw error;
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: emailVal,
+        password: passwordVal,
+      });
+      if (error) throw error;
 
-            toast.success('Welcome back!');
-        } catch (error) {
-            console.error('Login error:', error);
-            toast.error(error.message || 'Failed to sign in');
-            setIsLoading(false);
-        }
-    };
+      await supabase
+        .from('user_profiles')
+        .update({ last_login_at: new Date().toISOString() })
+        .eq('id', data.user.id);
 
-    const handleQuickLogin = async (demoUser) => {
-        setEmail(demoUser.email);
-        setPassword(demoUser.password);
+      toast.success('Welcome back!');
+    } catch (err) {
+      const msg = err.message?.includes('Invalid login credentials')
+        ? 'Incorrect email or password'
+        : err.message || 'Sign in failed';
+      toast.error(msg);
+    } finally {
+      setIsLoading(false);
+      setLoadingDemo(null);
+    }
+  };
 
-        setIsLoading(true);
-        try {
-            console.log('Attempting sign in with:', demoUser.email);
-            console.log('Supabase client exists:', !!supabase);
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!email || !password) { toast.error('Please enter email and password'); return; }
+    signIn(email, password);
+  };
 
-            const { data, error } = await supabase.auth.signInWithPassword({
-                email: demoUser.email,
-                password: demoUser.password,
-            });
-
-            console.log('Sign in response:', { data, error });
-
-            if (error) throw error;
-
-            toast.success(`Signed in as ${demoUser.label}`);
-        } catch (error) {
-            console.error('Login error details:', {
-                message: error.message,
-                name: error.name,
-                stack: error.stack,
-                error
-            });
-
-            let errorMessage = error.message || 'Failed to sign in with demo account';
-
-            if (error.message?.includes('Failed to connect to Supabase')) {
-                errorMessage = 'Cannot connect to authentication server. Please check your internet connection and try again.';
-            } else if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
-                errorMessage = 'Network error: Unable to reach authentication server. Please check your connection.';
-            }
-
-            toast.error(errorMessage, { duration: 5000 });
-            setIsLoading(false);
-        }
-    };
-
-    return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100 p-4">
-            <Card className="w-full max-w-md shadow-2xl">
-                <CardHeader className="text-center space-y-2 pb-4">
-                    <div className="w-20 h-20 bg-gradient-to-br from-blue-600 via-blue-700 to-cyan-600 rounded-2xl flex items-center justify-center mx-auto mb-2 shadow-lg">
-                        <Building2 className="h-10 w-10 text-white" />
-                    </div>
-                    <CardTitle className="text-3xl font-bold bg-gradient-to-r from-blue-700 to-cyan-600 bg-clip-text text-transparent">
-                        effySalesPro
-                    </CardTitle>
-                    <CardDescription className="text-base">
-                        Sales Intelligence Platform
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                    <form onSubmit={handleSignIn} className="space-y-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="email" className="text-slate-700">Email</Label>
-                            <Input
-                                id="email"
-                                type="email"
-                                placeholder="name@company.com"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                required
-                                className="h-11"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="password" className="text-slate-700">Password</Label>
-                            <div className="relative">
-                                <Input
-                                    id="password"
-                                    type={showPassword ? "text" : "password"}
-                                    placeholder="Enter your password"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    required
-                                    className="h-11 pr-10"
-                                />
-                                <button
-                                    type="button"
-                                    onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-700 transition-colors"
-                                >
-                                    {showPassword ? (
-                                        <EyeOff className="h-4 w-4" />
-                                    ) : (
-                                        <Eye className="h-4 w-4" />
-                                    )}
-                                </button>
-                            </div>
-                        </div>
-                        <Button
-                            type="submit"
-                            className="w-full h-11 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-medium shadow-md"
-                            disabled={isLoading}
-                        >
-                            {isLoading ? (
-                                <>
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    Signing in...
-                                </>
-                            ) : (
-                                'Sign In'
-                            )}
-                        </Button>
-                    </form>
-
-                    <div className="relative">
-                        <Separator className="my-4" />
-                        <div className="absolute inset-0 flex items-center justify-center">
-                            <span className="bg-white px-3 text-sm text-slate-500">
-                                Quick Login (Demo Accounts)
-                            </span>
-                        </div>
-                    </div>
-
-                    <TooltipProvider>
-                        <div className="grid grid-cols-2 gap-4">
-                            {DEMO_USERS.map((demoUser) => {
-                                return (
-                                    <Tooltip key={demoUser.email}>
-                                        <TooltipTrigger asChild>
-                                            <Button
-                                                onClick={() => handleQuickLogin(demoUser)}
-                                                disabled={isLoading}
-                                                variant="outline"
-                                                className={`h-auto py-6 ${demoUser.bgColor} ${demoUser.textColor} hover:shadow-xl hover:scale-105 transition-all duration-200 font-bold text-lg relative group rounded-xl`}
-                                            >
-                                                {demoUser.label}
-                                                <Info className="h-3 w-3 absolute top-2 right-2 opacity-40 group-hover:opacity-70" />
-                                            </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent side="bottom" className="bg-slate-800 text-white p-3">
-                                            <div className="space-y-1 text-xs">
-                                                <div><span className="font-semibold">Email:</span> {demoUser.email}</div>
-                                                <div><span className="font-semibold">Password:</span> {demoUser.password}</div>
-                                            </div>
-                                        </TooltipContent>
-                                    </Tooltip>
-                                );
-                            })}
-                        </div>
-                    </TooltipProvider>
-                </CardContent>
-            </Card>
+  return (
+    <div className="min-h-screen flex bg-slate-50">
+      <div className="hidden lg:flex w-1/2 bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 relative overflow-hidden items-center justify-center p-12">
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-20 left-20 w-72 h-72 rounded-full bg-blue-500 blur-3xl" />
+          <div className="absolute bottom-20 right-20 w-64 h-64 rounded-full bg-cyan-500 blur-3xl" />
         </div>
-    );
+        <div className="relative z-10 text-white max-w-md">
+          <div className="w-16 h-16 bg-white bg-opacity-10 backdrop-blur-sm rounded-2xl flex items-center justify-center mb-8 border border-white border-opacity-20">
+            <Building2 className="w-8 h-8 text-white" />
+          </div>
+          <h1 className="text-4xl font-bold mb-4">effySales Pro</h1>
+          <p className="text-lg text-slate-300 mb-10 leading-relaxed">
+            AI-powered sales intelligence platform for modern revenue teams.
+          </p>
+          <div className="space-y-4">
+            {[
+              'AI Roleplay & coaching sessions',
+              'Real-time call intelligence',
+              'Team performance analytics',
+              'Gamified sales training',
+            ].map((item, i) => (
+              <div key={i} className="flex items-center gap-3">
+                <div className="w-5 h-5 rounded-full bg-blue-500 bg-opacity-30 border border-blue-400 flex items-center justify-center flex-shrink-0">
+                  <div className="w-2 h-2 rounded-full bg-blue-400" />
+                </div>
+                <span className="text-slate-300 text-sm">{item}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="flex-1 flex items-center justify-center p-8">
+        <div className="w-full max-w-md space-y-6">
+          <div className="lg:hidden flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
+              <Building2 className="w-5 h-5 text-white" />
+            </div>
+            <span className="text-xl font-bold text-slate-900">effySales Pro</span>
+          </div>
+
+          <div>
+            <h2 className="text-2xl font-bold text-slate-900">Sign in to your account</h2>
+            <p className="text-slate-500 mt-1 text-sm">Enter your credentials to access the platform</p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="email" className="text-slate-700 font-medium">Email address</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="you@company.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="h-11 border-slate-300 focus:border-blue-500"
+                autoComplete="email"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <div className="flex justify-between items-center">
+                <Label htmlFor="password" className="text-slate-700 font-medium">Password</Label>
+              </div>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="h-11 pr-10 border-slate-300 focus:border-blue-500"
+                  autoComplete="current-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+            <Button
+              type="submit"
+              className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-semibold"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Signing in...</>
+              ) : (
+                'Sign In'
+              )}
+            </Button>
+          </form>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-slate-200" />
+            </div>
+            <div className="relative flex justify-center">
+              <button
+                type="button"
+                onClick={() => setShowDemo(!showDemo)}
+                className="flex items-center gap-1.5 bg-white px-3 py-1 text-xs font-medium text-slate-500 hover:text-slate-700 transition-colors"
+              >
+                Demo accounts
+                {showDemo ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+              </button>
+            </div>
+          </div>
+
+          {showDemo && (
+            <div className="space-y-2.5">
+              <p className="text-xs text-slate-400 text-center">Click any role to sign in instantly</p>
+              <div className="grid grid-cols-2 gap-2.5">
+                {DEMO_ACCOUNTS.map((account) => {
+                  const Icon = account.icon;
+                  const isThisLoading = loadingDemo === account.label;
+                  return (
+                    <button
+                      key={account.email}
+                      onClick={() => signIn(account.email, account.password, account.label)}
+                      disabled={!!loadingDemo || isLoading}
+                      className={`group relative overflow-hidden rounded-xl bg-gradient-to-br ${account.color} p-4 text-left text-white transition-all hover:scale-[1.02] hover:shadow-lg disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100`}
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="w-8 h-8 rounded-lg bg-white bg-opacity-15 flex items-center justify-center">
+                          {isThisLoading
+                            ? <Loader2 className="w-4 h-4 animate-spin text-white" />
+                            : <Icon className="w-4 h-4 text-white" />
+                          }
+                        </div>
+                      </div>
+                      <p className="font-bold text-sm leading-tight">{account.label}</p>
+                      <p className="text-xs opacity-75 mt-0.5">{account.sublabel}</p>
+                      <p className="text-xs opacity-50 mt-1 truncate">{account.email}</p>
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-xs text-slate-400 text-center">All demo accounts use password: <code className="bg-slate-100 px-1 rounded">demo123</code></p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }

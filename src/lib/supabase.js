@@ -1,5 +1,6 @@
-import { mockSupabase } from './mockSupabase';
+import { createClient } from '@supabase/supabase-js';
 
-console.log('Using Mock Supabase Client (No Network Connection Required)');
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-export const supabase = mockSupabase;
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
