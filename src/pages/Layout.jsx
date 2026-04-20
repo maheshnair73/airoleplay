@@ -55,8 +55,10 @@ const PrivateLayout = ({ children, currentPageName }) => {
         const fetchUser = async () => {
             try {
                 const currentUser = await User.me();
-                setUser(currentUser);
-                setDemoRole(currentUser.role);
+                if (currentUser) {
+                    setUser(currentUser);
+                    setDemoRole(currentUser.role);
+                }
             } catch (e) {
                 console.error('Failed to fetch user:', e);
                 setUser(null);

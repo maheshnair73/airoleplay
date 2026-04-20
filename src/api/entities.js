@@ -1,8 +1,9 @@
 import { supabase } from '@/lib/supabase';
+import { localAuth } from '@/lib/localAuth';
 import { mockData } from '@/lib/mockData';
 
 async function getUserRole() {
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await localAuth.getUser();
   if (!user) return null;
 
   const { data: profile } = await supabase
@@ -158,7 +159,7 @@ export const UserModuleAssignment = createEntity('user_module_assignments');
 
 export const User = {
   async me() {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await localAuth.getUser();
     if (!user) return null;
     return {
       ...user,
@@ -173,13 +174,13 @@ export const User = {
   },
 
   async signIn(email, password) {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await localAuth.signInWithPassword({ email, password });
     if (error) throw error;
     return data;
   },
 
   async signOut() {
-    const { error } = await supabase.auth.signOut();
+    const { error } = await localAuth.signOut();
     if (error) throw error;
   },
 

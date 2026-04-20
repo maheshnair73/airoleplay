@@ -189,9 +189,12 @@ export default function CorporateAuth() {
             {DEMO_ACCOUNTS.map((account, i) => {
               const Icon = account.icon;
               return (
-                <div
+                <button
                   key={account.email}
-                  className={`flex items-center justify-between px-4 py-3 ${i < DEMO_ACCOUNTS.length - 1 ? 'border-b border-slate-100' : ''} hover:bg-slate-50 transition-colors`}
+                  type="button"
+                  onClick={() => signIn(account.email, account.password)}
+                  disabled={isLoading}
+                  className={`w-full flex items-center justify-between px-4 py-3 ${i < DEMO_ACCOUNTS.length - 1 ? 'border-b border-slate-100' : ''} hover:bg-slate-50 active:bg-slate-100 transition-colors text-left disabled:opacity-50`}
                 >
                   <div className="flex items-center gap-3">
                     <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${account.color} flex items-center justify-center flex-shrink-0`}>
@@ -199,14 +202,11 @@ export default function CorporateAuth() {
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-slate-800">{account.label}</p>
-                      <p className="text-xs text-slate-500">{account.email}</p>
+                      <p className="text-xs text-slate-500">{account.sublabel}</p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-xs text-slate-400">Password</p>
-                    <code className="text-xs font-mono font-semibold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded">{account.password}</code>
-                  </div>
-                </div>
+                  <span className="text-xs font-medium text-blue-600 hover:text-blue-700">Login</span>
+                </button>
               );
             })}
           </div>
