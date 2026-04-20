@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 const DEMO_ACCOUNTS = [
   {
     email: 'saas@effysalespro.com',
-    password: 'demo123',
+    password: 'demo1234',
     label: 'SaaS Admin',
     sublabel: 'Platform owner',
     color: 'from-slate-800 to-slate-900',
@@ -19,7 +19,7 @@ const DEMO_ACCOUNTS = [
   },
   {
     email: 'admin@effysalespro.com',
-    password: 'demo123',
+    password: 'demo1234',
     label: 'Company Admin',
     sublabel: 'Acme Corp',
     color: 'from-blue-600 to-blue-800',
@@ -29,7 +29,7 @@ const DEMO_ACCOUNTS = [
   },
   {
     email: 'manager@effysalespro.com',
-    password: 'demo123',
+    password: 'demo1234',
     label: 'Manager',
     sublabel: 'Sales Manager',
     color: 'from-sky-500 to-sky-700',
@@ -39,7 +39,7 @@ const DEMO_ACCOUNTS = [
   },
   {
     email: 'agent1@effysalespro.com',
-    password: 'demo123',
+    password: 'demo1234',
     label: 'Sales Agent',
     sublabel: 'Individual Rep',
     color: 'from-emerald-500 to-emerald-700',
