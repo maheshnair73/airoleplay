@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { supabase } from '@/lib/supabase';
+import { localAuth } from '@/lib/localAuth';
 import { Building2, Loader2, ShieldCheck, Users, UserCircle, Eye, EyeOff, Globe } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -58,17 +58,11 @@ export default function CorporateAuth() {
   const signIn = async (emailVal, passwordVal) => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await localAuth.signInWithPassword({
         email: emailVal,
         password: passwordVal,
       });
-      if (error) throw error;
-
-      await supabase
-        .from('user_profiles')
-        .update({ last_login_at: new Date().toISOString() })
-        .eq('id', data.user.id);
-
+      if (error) throw new Error(error.message);
       toast.success('Welcome back!');
     } catch (err) {
       const msg = err.message?.includes('Invalid login credentials')

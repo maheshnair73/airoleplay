@@ -1,66 +1,33 @@
 import React, { useState, useEffect } from 'react';
-import { User } from '@/api/entities';
-import { supabase } from '@/lib/supabase';
+import { localAuth } from '@/lib/localAuth';
 import { Loader2 } from 'lucide-react';
-import CorporateAuthMessage from './CorporateAuth';
+import CorporateAuth from './CorporateAuth';
 
 export default function AuthWrapper({ children }) {
-    const [user, setUser] = useState(null);
-    const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState(undefined);
 
-    useEffect(() => {
-        const checkAuth = async () => {
-            try {
-                const { data: { session } } = await supabase.auth.getSession();
+  useEffect(() => {
+    localAuth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
 
-                if (session) {
-                    const currentUser = await User.me();
-                    setUser(currentUser);
-                } else {
-                    setUser(null);
-                }
-            } catch (error) {
-                console.error('Auth check error:', error);
-                setUser(null);
-            } finally {
-                setIsLoading(false);
-            }
-        };
+    const { data: { subscription } } = localAuth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN') setUser(session?.user ?? null);
+      if (event === 'SIGNED_OUT') setUser(null);
+    });
 
-        checkAuth();
+    return () => subscription.unsubscribe();
+  }, []);
 
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-            if (event === 'SIGNED_IN' && session) {
-                (async () => {
-                    try {
-                        const currentUser = await User.me();
-                        setUser(currentUser);
-                    } catch (error) {
-                        console.error('Failed to load user profile:', error);
-                        setUser(null);
-                    }
-                })();
-            } else if (event === 'SIGNED_OUT') {
-                setUser(null);
-            }
-        });
+  if (user === undefined) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+      </div>
+    );
+  }
 
-        return () => {
-            subscription?.unsubscribe();
-        };
-    }, []);
+  if (!user) return <CorporateAuth />;
 
-    if (isLoading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center">
-                <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-            </div>
-        );
-    }
-
-    if (!user) {
-        return <CorporateAuthMessage />;
-    }
-
-    return children;
+  return children;
 }

@@ -158,31 +158,12 @@ export const UserModuleAssignment = createEntity('user_module_assignments');
 
 export const User = {
   async me() {
-    const { data: { user }, error } = await supabase.auth.getUser();
-    if (error) throw error;
-
-    if (user) {
-      console.log('[User.me] Auth user:', user);
-
-      const { data: profile, error: profileError } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('id', user.id)
-        .maybeSingle();
-
-      console.log('[User.me] Profile query result:', { profile, profileError });
-
-      const result = {
-        ...user,
-        ...profile,
-        role: profile?.role || user?.role || 'sales_agent'
-      };
-
-      console.log('[User.me] Final result:', result);
-      return result;
-    }
-
-    return user;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+    return {
+      ...user,
+      role: user.role || 'sales_agent',
+    };
   },
 
   async list() {
@@ -193,12 +174,6 @@ export const User = {
 
   async signIn(email, password) {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw error;
-    return data;
-  },
-
-  async signUp(email, password) {
-    const { data, error } = await supabase.auth.signUp({ email, password });
     if (error) throw error;
     return data;
   },
