@@ -61,9 +61,9 @@ const saveSession = (session) => {
 };
 
 const buildSession = (user) => {
-  const { password: _pw, ...safeUser } = user;
+  const { password: _pw, role, ...safeUser } = user;
   return {
-    user: { ...safeUser, aud: 'authenticated', role: 'authenticated' },
+    user: { ...safeUser, aud: 'authenticated', role, app_role: role },
     access_token: `local-token-${user.id}`,
     refresh_token: `local-refresh-${user.id}`,
     expires_at: Date.now() + 1000 * 60 * 60 * 24,
