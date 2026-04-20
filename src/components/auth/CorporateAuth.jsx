@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/lib/supabase';
-import { Building2, Loader2, ShieldCheck, Users, UserCircle, Eye, EyeOff, Globe, ChevronDown, ChevronUp } from 'lucide-react';
+import { Building2, Loader2, ShieldCheck, Users, UserCircle, Eye, EyeOff, Globe } from 'lucide-react';
 import { toast } from 'sonner';
 
 const DEMO_ACCOUNTS = [
@@ -54,13 +54,9 @@ export default function CorporateAuth() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [loadingDemo, setLoadingDemo] = useState(null);
-  const [showDemo, setShowDemo] = useState(false);
 
-  const signIn = async (emailVal, passwordVal, demoLabel = null) => {
-    if (demoLabel) setLoadingDemo(demoLabel);
-    else setIsLoading(true);
-
+  const signIn = async (emailVal, passwordVal) => {
+    setIsLoading(true);
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email: emailVal,
@@ -81,7 +77,6 @@ export default function CorporateAuth() {
       toast.error(msg);
     } finally {
       setIsLoading(false);
-      setLoadingDemo(null);
     }
   };
 
@@ -192,49 +187,35 @@ export default function CorporateAuth() {
               <div className="w-full border-t border-slate-200" />
             </div>
             <div className="relative flex justify-center">
-              <button
-                type="button"
-                onClick={() => setShowDemo(!showDemo)}
-                className="flex items-center gap-1.5 bg-white px-3 py-1 text-xs font-medium text-slate-500 hover:text-slate-700 transition-colors"
-              >
-                Demo accounts
-                {showDemo ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-              </button>
+              <span className="bg-slate-50 px-3 py-1 text-xs font-medium text-slate-400">Demo accounts</span>
             </div>
           </div>
 
-          {showDemo && (
-            <div className="space-y-2.5">
-              <p className="text-xs text-slate-400 text-center">Click any role to sign in instantly</p>
-              <div className="grid grid-cols-2 gap-2.5">
-                {DEMO_ACCOUNTS.map((account) => {
-                  const Icon = account.icon;
-                  const isThisLoading = loadingDemo === account.label;
-                  return (
-                    <button
-                      key={account.email}
-                      onClick={() => signIn(account.email, account.password, account.label)}
-                      disabled={!!loadingDemo || isLoading}
-                      className={`group relative overflow-hidden rounded-xl bg-gradient-to-br ${account.color} p-4 text-left text-white transition-all hover:scale-[1.02] hover:shadow-lg disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100`}
-                    >
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="w-8 h-8 rounded-lg bg-white bg-opacity-15 flex items-center justify-center">
-                          {isThisLoading
-                            ? <Loader2 className="w-4 h-4 animate-spin text-white" />
-                            : <Icon className="w-4 h-4 text-white" />
-                          }
-                        </div>
-                      </div>
-                      <p className="font-bold text-sm leading-tight">{account.label}</p>
-                      <p className="text-xs opacity-75 mt-0.5">{account.sublabel}</p>
-                      <p className="text-xs opacity-50 mt-1 truncate">{account.email}</p>
-                    </button>
-                  );
-                })}
-              </div>
-              <p className="text-xs text-slate-400 text-center">All demo accounts use password: <code className="bg-slate-100 px-1 rounded">demo123</code></p>
-            </div>
-          )}
+          <div className="rounded-xl border border-slate-200 overflow-hidden">
+            {DEMO_ACCOUNTS.map((account, i) => {
+              const Icon = account.icon;
+              return (
+                <div
+                  key={account.email}
+                  className={`flex items-center justify-between px-4 py-3 ${i < DEMO_ACCOUNTS.length - 1 ? 'border-b border-slate-100' : ''} hover:bg-slate-50 transition-colors`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${account.color} flex items-center justify-center flex-shrink-0`}>
+                      <Icon className="w-4 h-4 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-slate-800">{account.label}</p>
+                      <p className="text-xs text-slate-500">{account.email}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-slate-400">Password</p>
+                    <code className="text-xs font-mono font-semibold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded">{account.password}</code>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>
