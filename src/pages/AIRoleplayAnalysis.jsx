@@ -1130,9 +1130,49 @@ export default function AIRoleplayAnalysis() {
         return { ...baseMockSession, ...(variations[id] || {}) };
     }, []);
 
+    // Normalise an array that may contain strings or {title,text} objects into {title,text}
+    const normaliseItems = (arr) => {
+        if (!Array.isArray(arr)) return [];
+        return arr.map((item) => {
+            if (typeof item === 'string') return { title: item, text: '' };
+            if (item && typeof item === 'object') {
+                // Handle {category, note, passed} from scorecard-style objects
+                if (item.note && !item.text) return { title: item.category || '', text: item.note };
+                return { title: item.title || item.category || '', text: item.text || item.note || '' };
+            }
+            return { title: String(item), text: '' };
+        }).filter(i => i.title || i.text);
+    };
+
+    // Add relative timeInSeconds to each transcript message using first message as t=0
+    const addTimestamps = (rawTranscript) => {
+        if (!Array.isArray(rawTranscript) || rawTranscript.length === 0) return [];
+        const firstTs = rawTranscript[0].timestamp ? new Date(rawTranscript[0].timestamp).getTime() : 0;
+        return rawTranscript.map((msg) => ({
+            ...msg,
+            timeInSeconds: msg.timestamp && firstTs
+                ? Math.max(0, Math.round((new Date(msg.timestamp).getTime() - firstTs) / 1000))
+                : (msg.timeInSeconds || 0),
+        }));
+    };
+
     const buildSessionFromData = useCallback((sessionData) => {
         const md = sessionData.meeting_details || {};
         const rawTranscript = Array.isArray(sessionData.transcript) ? sessionData.transcript : [];
+
+        const rawWentWell = md.what_went_well || sessionData.what_went_well || [];
+        const rawImprove  = md.areas_for_improvement || sessionData.areas_for_improvement || [];
+        const rawScorecard = md.scorecard || sessionData.scorecard || [];
+
+        // Normalise scorecard: may be {category,passed,note} or {category,criteria:[...]}
+        const normalisedScorecard = rawScorecard.map((s) => {
+            if (Array.isArray(s.criteria)) return s; // already correct shape
+            return {
+                category: s.category || '',
+                criteria: [{ text: s.note || s.category || '', passed: s.passed ?? false }],
+            };
+        });
+
         return {
             id: sessionData.id,
             bot_name: md.bot_name || 'AI Bot',
@@ -1141,16 +1181,20 @@ export default function AIRoleplayAnalysis() {
             created_date: sessionData.created_at || new Date().toISOString(),
             session_duration: sessionData.duration || 0,
             call_type: sessionData.scenario_type || 'Cold Call',
-            transcript: rawTranscript,
+            transcript: addTimestamps(rawTranscript),
             analysis_results: {
                 overall_score: sessionData.score || sessionData.overall_score || 0,
-                summary: sessionData.feedback || sessionData.feedback_summary || 'Session completed.',
                 feedback_summary: sessionData.feedback || sessionData.feedback_summary || '',
                 objections: [],
                 questions_asked: [],
-                what_went_well: md.what_went_well || sessionData.what_went_well || [],
-                areas_for_improvement: md.areas_for_improvement || sessionData.areas_for_improvement || [],
-                scorecard: md.scorecard || sessionData.scorecard || [],
+                what_went_well: normaliseItems(rawWentWell),
+                areas_for_improvement: normaliseItems(rawImprove),
+                scorecard: normalisedScorecard,
+                // computed from transcript
+                questions_count: rawTranscript.filter(m => m.speaker === 'user' && m.text?.includes('?')).length,
+                talk_listen_ratio: rawTranscript.length > 0
+                    ? Math.round((rawTranscript.filter(m => m.speaker === 'user').length / rawTranscript.length) * 100)
+                    : 0,
             },
             bot_configuration: JSON.stringify(md.bot_configuration || { name: md.bot_name || 'AI Bot' }),
         };
@@ -1233,34 +1277,50 @@ export default function AIRoleplayAnalysis() {
         return `${mins}:${secs.toString().padStart(2, '0')}`;
     };
 
-    const TranscriptViewer = ({ transcript }) => (
-        <div className="space-y-4 max-h-96 overflow-y-auto bg-slate-50 p-4 rounded-lg">
-            {transcript.map((item, index) => (
-                <div
-                    key={index}
-                    className={`flex gap-3 ${item.speaker === 'user' ? 'justify-end' : 'justify-start'} group cursor-pointer hover:bg-slate-100/50 p-2 rounded-lg transition-colors`}
-                    onClick={() => handleSeekToTime(item.timeInSeconds || 0)}
-                >
-                    <div className={`max-w-[80%] p-3 rounded-lg ${
-                        item.speaker === 'user'
-                            ? 'bg-blue-500 text-white'
-                            : 'bg-white border border-slate-200'
-                    }`}>
-                        <div className="flex items-center gap-2 mb-1">
-                            <Clock className="w-3 h-3 opacity-50" />
-                            <span className="text-xs font-medium opacity-70">
-                                {formatTime(item.timeInSeconds || 0)}
-                            </span>
-                            <span className="text-xs opacity-50">
-                                {item.speaker === 'user' ? 'You' : session?.bot_name}
-                            </span>
-                        </div>
-                        <p className="text-sm">{item.text}</p>
-                    </div>
+    const TranscriptViewer = ({ transcript }) => {
+        if (!transcript || transcript.length === 0) {
+            return (
+                <div className="text-center py-12 text-slate-400">
+                    <MessageSquare className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                    <p className="text-sm">No transcript available for this session.</p>
                 </div>
-            ))}
-        </div>
-    );
+            );
+        }
+        return (
+            <div className="space-y-3 max-h-[600px] overflow-y-auto pr-1">
+                {transcript.map((item, index) => (
+                    <div
+                        key={index}
+                        className={`flex gap-3 ${item.speaker === 'user' ? 'justify-end' : 'justify-start'}`}
+                    >
+                        {item.speaker !== 'user' && (
+                            <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-600 flex-shrink-0 mt-1">
+                                {session?.bot_name?.[0] || 'A'}
+                            </div>
+                        )}
+                        <div className={`max-w-[75%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${
+                            item.speaker === 'user'
+                                ? 'bg-blue-600 text-white rounded-br-sm'
+                                : 'bg-slate-100 text-slate-800 rounded-bl-sm'
+                        }`}>
+                            <p className="font-semibold text-xs mb-1 opacity-60">
+                                {item.speaker === 'user' ? 'You' : session?.bot_name}
+                                {item.timeInSeconds > 0 && (
+                                    <span className="ml-2 font-normal">{formatTime(item.timeInSeconds)}</span>
+                                )}
+                            </p>
+                            <p>{item.text}</p>
+                        </div>
+                        {item.speaker === 'user' && (
+                            <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-xs font-bold text-white flex-shrink-0 mt-1">
+                                Y
+                            </div>
+                        )}
+                    </div>
+                ))}
+            </div>
+        );
+    };
 
     const ScorecardView = ({ scorecard }) => {
         const [expandedCriteria, setExpandedCriteria] = useState({});
@@ -1537,41 +1597,89 @@ export default function AIRoleplayAnalysis() {
                     </TabsList>
 
                     <TabsContent value="feedback" className="space-y-6">
+                        {/* AI Feedback Summary */}
+                        {session.analysis_results?.feedback_summary && (
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <Brain className="w-5 h-5 text-blue-600" />
+                                        AI Feedback Summary
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <p className="text-sm text-slate-700 leading-relaxed">
+                                        {session.analysis_results.feedback_summary}
+                                    </p>
+                                </CardContent>
+                            </Card>
+                        )}
+
+                        {/* What Went Well + Areas for Improvement */}
+                        {(session.analysis_results?.what_went_well?.length > 0 || session.analysis_results?.areas_for_improvement?.length > 0) && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {session.analysis_results?.what_went_well?.length > 0 && (
+                                    <Card>
+                                        <CardHeader>
+                                            <CardTitle className="text-green-600 flex items-center gap-2">
+                                                <CheckCircle className="w-5 h-5" />
+                                                What Went Well
+                                            </CardTitle>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <ul className="space-y-3">
+                                                {session.analysis_results.what_went_well.map((item, i) => (
+                                                    <li key={i} className="flex items-start gap-3">
+                                                        <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                                                        <div>
+                                                            {item.title && <p className="text-sm font-semibold text-slate-800">{item.title}</p>}
+                                                            {item.text && <p className="text-sm text-slate-600">{item.text}</p>}
+                                                        </div>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </CardContent>
+                                    </Card>
+                                )}
+                                {session.analysis_results?.areas_for_improvement?.length > 0 && (
+                                    <Card>
+                                        <CardHeader>
+                                            <CardTitle className="text-orange-600 flex items-center gap-2">
+                                                <TrendingUp className="w-5 h-5" />
+                                                Areas for Improvement
+                                            </CardTitle>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <ul className="space-y-3">
+                                                {session.analysis_results.areas_for_improvement.map((item, i) => (
+                                                    <li key={i} className="flex items-start gap-3">
+                                                        <XCircle className="w-4 h-4 text-orange-500 mt-0.5 flex-shrink-0" />
+                                                        <div>
+                                                            {item.title && <p className="text-sm font-semibold text-slate-800">{item.title}</p>}
+                                                            {item.text && <p className="text-sm text-slate-600">{item.text}</p>}
+                                                        </div>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </CardContent>
+                                    </Card>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Scorecard */}
                         <Card>
                             <CardHeader>
-                                <CardTitle>AI Feedback Summary</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <ul className="space-y-3 mb-8">
-                                    <li className="flex items-start gap-3">
-                                        <div className="w-1.5 h-1.5 bg-slate-400 rounded-full mt-2 flex-shrink-0" />
-                                        <p className="text-sm text-slate-700">
-                                            You provided a concise description of your product's key benefits (interactive CRM that saves time through voice input).
-                                        </p>
-                                    </li>
-                                    <li className="flex items-start gap-3">
-                                        <div className="w-1.5 h-1.5 bg-slate-400 rounded-full mt-2 flex-shrink-0" />
-                                        <p className="text-sm text-slate-700">
-                                            You introduced yourself clearly at the beginning of the call.
-                                        </p>
-                                    </li>
-                                    <li className="flex items-start gap-3">
-                                        <div className="w-1.5 h-1.5 bg-slate-400 rounded-full mt-2 flex-shrink-0" />
-                                        <p className="text-sm text-slate-700">
-                                            You attempted to build some initial rapport by acknowledging the prospect's busy schedule.
-                                        </p>
-                                    </li>
-                                </ul>
-
-                                <div className="flex items-center justify-between mb-6">
-                                    <h3 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
+                                <div className="flex items-center justify-between">
+                                    <CardTitle className="flex items-center gap-2">
                                         <Award className="w-5 h-5 text-blue-600" />
                                         Scorecard
-                                    </h3>
+                                    </CardTitle>
                                     <Badge variant="outline" className="text-xs font-normal">
                                         {session.analysis_results?.evaluation_framework || "Standard Framework"}
                                     </Badge>
                                 </div>
+                            </CardHeader>
+                            <CardContent>
                                 {session.analysis_results?.scorecard?.length > 0 ? (
                                     <ScorecardView scorecard={session.analysis_results.scorecard} />
                                 ) : (
@@ -1595,32 +1703,16 @@ export default function AIRoleplayAnalysis() {
 
                     <TabsContent value="insights">
                         <div className="space-y-6">
-                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <Card>
                                     <CardContent className="pt-6">
                                         <div className="text-center">
                                             <MessageSquare className="w-8 h-8 text-blue-600 mx-auto mb-2" />
-                                            <p className="text-sm text-slate-600 mb-1">Talk/Listen Ratio</p>
+                                            <p className="text-sm text-slate-600 mb-1">Your Talk Ratio</p>
                                             <p className="text-2xl font-bold text-blue-600">
-                                                {session.analysis_results?.talk_listen_ratio || 45}%
+                                                {session.analysis_results?.talk_listen_ratio ?? 0}%
                                             </p>
-                                            <p className="text-xs text-slate-500 mt-1">
-                                                Recommended: 30-40%
-                                            </p>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                                <Card>
-                                    <CardContent className="pt-6">
-                                        <div className="text-center">
-                                            <AlertCircle className="w-8 h-8 text-yellow-600 mx-auto mb-2" />
-                                            <p className="text-sm text-slate-600 mb-1">Filler Words</p>
-                                            <p className="text-2xl font-bold text-yellow-600">
-                                                {session.analysis_results?.filler_words || 0}
-                                            </p>
-                                            <p className="text-xs text-slate-500 mt-1">
-                                                Recommended: 0-5
-                                            </p>
+                                            <p className="text-xs text-slate-500 mt-1">Aim for 30–40% talking</p>
                                         </div>
                                     </CardContent>
                                 </Card>
@@ -1628,85 +1720,46 @@ export default function AIRoleplayAnalysis() {
                                     <CardContent className="pt-6">
                                         <div className="text-center">
                                             <Target className="w-8 h-8 text-green-600 mx-auto mb-2" />
-                                            <p className="text-sm text-slate-600 mb-1">Questions Asked</p>
+                                            <p className="text-sm text-slate-600 mb-1">Questions You Asked</p>
                                             <p className="text-2xl font-bold text-green-600">
-                                                {session.analysis_results?.questions_count || 0}
+                                                {session.analysis_results?.questions_count ?? 0}
                                             </p>
-                                            <p className="text-xs text-slate-500 mt-1">
-                                                Great discovery!
-                                            </p>
+                                            <p className="text-xs text-slate-500 mt-1">Counted from transcript</p>
                                         </div>
                                     </CardContent>
                                 </Card>
                                 <Card>
                                     <CardContent className="pt-6">
                                         <div className="text-center">
-                                            <Clock className="w-8 h-8 text-slate-600 mx-auto mb-2" />
-                                            <p className="text-sm text-slate-600 mb-1">Talk Speed</p>
+                                            <Award className="w-8 h-8 text-slate-600 mx-auto mb-2" />
+                                            <p className="text-sm text-slate-600 mb-1">Total Exchanges</p>
                                             <p className="text-2xl font-bold text-slate-700">
-                                                {session.analysis_results?.talk_speed_wpm || 0} wpm
+                                                {session.transcript?.length ?? 0}
                                             </p>
-                                            <p className="text-xs text-slate-500 mt-1">
-                                                Recommended: 120-150
-                                            </p>
+                                            <p className="text-xs text-slate-500 mt-1">Messages in conversation</p>
                                         </div>
                                     </CardContent>
                                 </Card>
                             </div>
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle className="text-blue-600">Key Objections & Rep Responses</CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    <ul className="space-y-4">
-                                        {session.analysis_results?.objections?.map((item, index) => (
-                                            <li key={index} className="p-4 bg-blue-50/50 rounded-lg border border-blue-100">
-                                                <p className="text-sm font-semibold text-slate-600 mb-1">Objection: "{item.objection}"</p>
-                                                <p className="text-sm text-slate-800">Response: "{item.response}"</p>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </CardContent>
-                            </Card>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle className="text-green-600">What Went Well</CardTitle>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <ul className="space-y-3">
-                                            {session.analysis_results?.what_went_well?.map((item, index) => (
-                                                <li key={index} className="flex items-start gap-3">
-                                                    <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
-                                                    <div>
-                                                        <h4 className="font-semibold">{item.title}</h4>
-                                                        <p className="text-sm text-slate-600">{item.text}</p>
-                                                    </div>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </CardContent>
-                                </Card>
 
+                            {/* Objections raised during the call */}
+                            {session.analysis_results?.objections?.length > 0 && (
                                 <Card>
                                     <CardHeader>
-                                        <CardTitle className="text-orange-600">Areas for Improvement</CardTitle>
+                                        <CardTitle className="text-blue-600">Objections & How You Handled Them</CardTitle>
                                     </CardHeader>
                                     <CardContent>
-                                        <ul className="space-y-3">
-                                            {session.analysis_results?.areas_for_improvement?.map((item, index) => (
-                                                 <li key={index} className="flex items-start gap-3">
-                                                    <XCircle className="w-5 h-5 text-orange-500 mt-0.5 flex-shrink-0" />
-                                                    <div>
-                                                        <h4 className="font-semibold">{item.title}</h4>
-                                                        <p className="text-sm text-slate-600">{item.text}</p>
-                                                    </div>
+                                        <ul className="space-y-4">
+                                            {session.analysis_results.objections.map((item, index) => (
+                                                <li key={index} className="p-4 bg-blue-50/50 rounded-lg border border-blue-100">
+                                                    <p className="text-sm font-semibold text-slate-600 mb-1">Objection: "{item.objection}"</p>
+                                                    <p className="text-sm text-slate-800">Your response: "{item.response}"</p>
                                                 </li>
                                             ))}
                                         </ul>
                                     </CardContent>
                                 </Card>
-                            </div>
+                            )}
                         </div>
                     </TabsContent>
                 </Tabs>
