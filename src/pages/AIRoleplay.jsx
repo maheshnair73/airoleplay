@@ -143,9 +143,9 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
     const messagesEndRef = useRef(null);
     const conversationState = useRef('idle');
     const callStartTime = useRef(null);
-    const audioContext = useRef(null);
+    const sharedAudioCtx = useRef(null); // single AudioContext for both ring and voice
+    const currentAudioSource = useRef(null); // currently playing BufferSource
     const currentAudioPromise = useRef(null);
-    const ringAudioCtx = useRef(null);
 
     // Update transcriptRef whenever transcript state changes
     useEffect(() => {
@@ -171,77 +171,63 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
         }
     }, [isMuted]);
 
-    const playAudio = useCallback((audioBase64) => {
-        // Skip audio playback if no audio is provided
+    // Ensure the shared AudioContext is created/resumed (must be called from user gesture or after one)
+    const getAudioCtx = useCallback(() => {
+        if (!sharedAudioCtx.current || sharedAudioCtx.current.state === 'closed') {
+            sharedAudioCtx.current = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (sharedAudioCtx.current.state === 'suspended') {
+            sharedAudioCtx.current.resume().catch(() => {});
+        }
+        return sharedAudioCtx.current;
+    }, []);
+
+    const playAudio = useCallback(async (audioBase64) => {
         if (!audioBase64) {
             setIsSpeaking(false);
             conversationState.current = 'idle';
             return;
         }
-
         try {
-            // Stop any currently playing audio first
-            if (audioPlayer.current) {
-                // Cancel any pending play promise
-                if (currentAudioPromise.current) {
-                    currentAudioPromise.current.catch(() => {}); // Ignore any errors from cancelled promise
-                    currentAudioPromise.current = null;
-                }
-                audioPlayer.current.pause();
-                audioPlayer.current.currentTime = 0;
+            // Stop any currently playing source
+            if (currentAudioSource.current) {
+                try { currentAudioSource.current.stop(); } catch (_) {}
+                currentAudioSource.current = null;
             }
 
-            const audioSrc = `data:audio/mpeg;base64,${audioBase64}`;
-            audioPlayer.current = new Audio(audioSrc);
+            const ctx = getAudioCtx();
+            if (isAudioMuted) {
+                // Still track state but don't play
+                setIsSpeaking(false);
+                conversationState.current = 'idle';
+                return;
+            }
+
+            // Decode base64 → ArrayBuffer → AudioBuffer
+            const binary = atob(audioBase64);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+            const audioBuffer = await ctx.decodeAudioData(bytes.buffer);
+
+            const source = ctx.createBufferSource();
+            source.buffer = audioBuffer;
+            source.connect(ctx.destination);
+            currentAudioSource.current = source;
             conversationState.current = 'ai_speaking';
+            setIsSpeaking(true);
 
-            // Set up event handlers before playing
-            audioPlayer.current.onplay = () => setIsSpeaking(true);
-            audioPlayer.current.onended = () => {
+            source.onended = () => {
                 setIsSpeaking(false);
                 conversationState.current = 'idle';
-                currentAudioPromise.current = null;
+                currentAudioSource.current = null;
             };
-            audioPlayer.current.onerror = (error) => {
-                console.warn("Audio playback error:", error);
-                setIsSpeaking(false);
-                conversationState.current = 'idle';
-                currentAudioPromise.current = null;
-            };
-
-            // Respect audio mute state
-            audioPlayer.current.muted = isAudioMuted;
-
-            // Start playback and track the promise
-            currentAudioPromise.current = audioPlayer.current.play();
-
-            currentAudioPromise.current
-                .then(() => {
-                    // Audio started successfully
-                    console.log("Audio playback started successfully");
-                })
-                .catch((error) => {
-                    // Handle play interruption or other errors gracefully
-                    if (error.name === 'AbortError') {
-                        console.log("Audio playback was interrupted - this is normal");
-                    } else if (error.name === 'NotAllowedError') {
-                        console.warn("Audio playback blocked - user interaction may be required");
-                        toast.warning("Click anywhere to enable audio");
-                    } else {
-                        console.warn("Audio playback failed:", error.message);
-                    }
-                    setIsSpeaking(false);
-                    conversationState.current = 'idle';
-                    currentAudioPromise.current = null;
-                });
-
+            source.start(0);
         } catch (e) {
-            console.error("Audio Setup Error: ", e);
+            console.error('Audio playback error:', e);
             setIsSpeaking(false);
             conversationState.current = 'idle';
-            currentAudioPromise.current = null;
         }
-    }, []);
+    }, [getAudioCtx, isAudioMuted]);
 
     const sendTextToAI = useCallback(async (userText) => {
         setIsAIResponding(true);
@@ -301,55 +287,59 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
         }
     }, [prospect, playAudio]); // Removed 'transcript' from dependencies due to transcriptRef
 
-    // Play a telephone ring tone using Web Audio API
+    // Natural PSTN-style ring: dual-tone (440+480 Hz) with proper cadence
     const playRingTone = useCallback(() => {
         try {
-            if (!ringAudioCtx.current || ringAudioCtx.current.state === 'closed') {
-                ringAudioCtx.current = new (window.AudioContext || window.webkitAudioContext)();
-            }
-            const ctx = ringAudioCtx.current;
+            const ctx = getAudioCtx();
             const now = ctx.currentTime;
 
-            // Classic double-ring pattern: two 400ms tones with a short gap
-            [[0, 0.4], [0.5, 0.9]].forEach(([start, end]) => {
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-                osc.frequency.setValueAtTime(440, now + start);
-                osc.frequency.setValueAtTime(480, now + start + 0.01);
-                gain.gain.setValueAtTime(0, now + start);
-                gain.gain.linearRampToValueAtTime(0.3, now + start + 0.02);
-                gain.gain.setValueAtTime(0.3, now + end - 0.05);
-                gain.gain.linearRampToValueAtTime(0, now + end);
-                osc.start(now + start);
-                osc.stop(now + end);
+            // US phone ring cadence: two 0.8s bursts separated by 0.4s gap
+            [[0, 0.8], [1.2, 2.0]].forEach(([start, end]) => {
+                const osc1 = ctx.createOscillator();
+                const osc2 = ctx.createOscillator();
+                const gainNode = ctx.createGain();
+                const masterGain = ctx.createGain();
+
+                osc1.type = 'sine';
+                osc2.type = 'sine';
+                osc1.frequency.value = 440;
+                osc2.frequency.value = 480;
+
+                // Slight AM tremolo to sound like real phone
+                const lfo = ctx.createOscillator();
+                const lfoGain = ctx.createGain();
+                lfo.frequency.value = 20;
+                lfoGain.gain.value = 0.15;
+                lfo.connect(lfoGain);
+                lfoGain.connect(gainNode.gain);
+
+                osc1.connect(gainNode);
+                osc2.connect(gainNode);
+                gainNode.connect(masterGain);
+                masterGain.connect(ctx.destination);
+
+                masterGain.gain.setValueAtTime(0, now + start);
+                masterGain.gain.linearRampToValueAtTime(0.18, now + start + 0.04);
+                masterGain.gain.setValueAtTime(0.18, now + end - 0.04);
+                masterGain.gain.linearRampToValueAtTime(0, now + end);
+
+                gainNode.gain.value = 1;
+
+                lfo.start(now + start);
+                lfo.stop(now + end);
+                osc1.start(now + start);
+                osc1.stop(now + end);
+                osc2.start(now + start);
+                osc2.stop(now + end);
             });
         } catch (e) {
             console.warn('Ring tone error:', e);
         }
-    }, []);
+    }, [getAudioCtx]);
 
     const handleStartGreeting = useCallback(async () => {
         setCallStatus('connected');
         callStartTime.current = Date.now();
-
-        // Close ring audio context
-        if (ringAudioCtx.current && ringAudioCtx.current.state !== 'closed') {
-            ringAudioCtx.current.close().catch(() => {});
-        }
-
-        // Pre-warm audio context with a silent buffer so subsequent playback isn't blocked
-        try {
-            const ctx = new (window.AudioContext || window.webkitAudioContext)();
-            const buf = ctx.createBuffer(1, 1, 22050);
-            const src = ctx.createBufferSource();
-            src.buffer = buf;
-            src.connect(ctx.destination);
-            src.start(0);
-            audioContext.current = ctx;
-        } catch (e) {}
-
         setIsAIResponding(true);
         try {
             const data = await aiRoleplay({
@@ -437,32 +427,18 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
             toast.error("Speech recognition is not supported in this browser.");
         }
 
-        // Capture the current audioContext value for cleanup
-        const contextToClose = audioContext.current;
         // Cleanup function
         return () => {
             if (recognition.current) {
                 recognition.current.abort();
-                recognition.current = null; // Clear ref to avoid stale instances
+                recognition.current = null;
             }
-
-            // Clean up audio properly
-            if (currentAudioPromise.current) {
-                currentAudioPromise.current.catch(() => {}); // Ignore errors from cancelled promise
-                currentAudioPromise.current = null;
+            if (currentAudioSource.current) {
+                try { currentAudioSource.current.stop(); } catch (_) {}
+                currentAudioSource.current = null;
             }
-            if (audioPlayer.current) {
-                audioPlayer.current.pause();
-                audioPlayer.current.currentTime = 0;
-                audioPlayer.current.onended = null; // Prevent onended from firing
-                setIsSpeaking(false);
-                conversationState.current = 'idle';
-            }
-
-            if (contextToClose && contextToClose.state !== 'closed') {
-                contextToClose.close().catch(() => {
-                    // Ignore close errors
-                });
+            if (sharedAudioCtx.current && sharedAudioCtx.current.state !== 'closed') {
+                sharedAudioCtx.current.close().catch(() => {});
             }
         };
         // Dependencies are stable callbacks and state setters
@@ -476,17 +452,13 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
     }, [callStatus, isSpeaking, isAIResponding, isMuted, startListening]);
 
     const stopAudio = () => {
-        if (currentAudioPromise.current) {
-            currentAudioPromise.current.catch(() => {}); // Ignore errors from cancelled promise
-            currentAudioPromise.current = null;
+        if (currentAudioSource.current) {
+            try { currentAudioSource.current.stop(); } catch (_) {}
+            currentAudioSource.current = null;
         }
-        if (audioPlayer.current) {
-            audioPlayer.current.pause();
-            audioPlayer.current.currentTime = 0;
-            audioPlayer.current.onended = null; // Prevent onended from firing
-            setIsSpeaking(false);
-            conversationState.current = 'idle';
-        }
+        currentAudioPromise.current = null;
+        setIsSpeaking(false);
+        conversationState.current = 'idle';
     };
 
     const handleEndCall = async () => {
@@ -497,8 +469,8 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
         if (recognition.current) {
             recognition.current.stop();
         }
-        if (audioContext.current && audioContext.current.state !== 'closed') {
-            audioContext.current.close().catch(() => {}); // Catch and ignore errors on close
+        if (sharedAudioCtx.current && sharedAudioCtx.current.state !== 'closed') {
+            sharedAudioCtx.current.close().catch(() => {});
         }
 
         const sessionDuration = Math.floor((Date.now() - callStartTime.current) / 1000);
@@ -669,8 +641,12 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
     const toggleAudioMute = () => {
         setIsAudioMuted(prev => {
             const next = !prev;
-            if (audioPlayer.current) {
-                audioPlayer.current.muted = next;
+            // If muting while speaking, stop current audio
+            if (next && currentAudioSource.current) {
+                try { currentAudioSource.current.stop(); } catch (_) {}
+                currentAudioSource.current = null;
+                setIsSpeaking(false);
+                conversationState.current = 'idle';
             }
             toast.info(next ? "AI audio muted" : "AI audio on");
             return next;
