@@ -127,6 +127,28 @@ const CallAssistantSidebar = ({ prospect }) => {
 
 
 // ─── CallInProgress ────────────────────────────────────────────────────────────
+// Animated mic waveform bars shown while user is speaking
+const MicWaveform = ({ active }) => (
+    <div className="flex items-center justify-center gap-[3px] h-6">
+        {[0, 1, 2, 3, 4].map(i => (
+            <div
+                key={i}
+                className={`w-[3px] rounded-full transition-all duration-100 ${active ? 'bg-blue-500' : 'bg-slate-300'}`}
+                style={{
+                    height: active ? undefined : '6px',
+                    animation: active ? `micBar 0.6s ease-in-out ${i * 0.1}s infinite alternate` : 'none',
+                }}
+            />
+        ))}
+        <style>{`
+            @keyframes micBar {
+                from { height: 4px; }
+                to   { height: 22px; }
+            }
+        `}</style>
+    </div>
+);
+
 const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMaterialIds = [] }) => {
     const [phase, setPhase] = useState('ringing'); // ringing | connected | ending
     const [transcript, setTranscript] = useState([]);
@@ -138,6 +160,7 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
     const [ringCount, setRingCount] = useState(0);
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [userInput, setUserInput] = useState('');
+    const [interimText, setInterimText] = useState(''); // live partial speech
 
     const transcriptRef = useRef([]);
     const audioPlayer = useRef(null);
@@ -151,6 +174,7 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
     const isMutedRef = useRef(false);
     const isDeadRef = useRef(false); // set true on unmount to cancel async ops
     const sendAIMessageRef = useRef(null);
+    const wasInterruptedRef = useRef(false); // tracks if user interrupted AI mid-speech
 
     // Sync state → refs every render
     isListeningRef.current = isListening;
@@ -170,13 +194,21 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
         return audioCtxRef.current;
     };
 
-    const stopAudio = () => {
+    const stopAudio = (fromInterrupt = false) => {
         const src = audioPlayer.current;
         if (src) {
             try { src.stop(); } catch (_) {}
             audioPlayer.current = null;
         }
         setIsSpeaking(false);
+        if (fromInterrupt) {
+            // Open mic immediately — don't wait for the normal 700ms drain delay
+            setTimeout(() => {
+                if (!isDeadRef.current && !isAIRespondingRef.current && !isMutedRef.current) {
+                    startListeningRef.current?.();
+                }
+            }, 150);
+        }
     };
 
     const playAudio = async (base64) => {
@@ -264,18 +296,33 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
 
             sr.onresult = (ev) => {
                 if (isDeadRef.current) return;
-                if (isSpeakingRef.current || isAIRespondingRef.current) return;
 
-                // Find the latest final result
+                // Collect interim + final text for display
+                let interim = '';
                 let finalText = '';
                 for (let i = ev.resultIndex; i < ev.results.length; i++) {
-                    if (ev.results[i].isFinal) {
-                        finalText += ev.results[i][0].transcript;
-                    }
+                    const t = ev.results[i][0].transcript;
+                    if (ev.results[i].isFinal) finalText += t;
+                    else interim += t;
                 }
+
+                // Show live interim text so user sees mic is working
+                if (interim.trim()) setInterimText(interim.trim());
+
+                // If AI is currently speaking, this is an interruption — stop TTS immediately
+                if (isSpeakingRef.current || isAIRespondingRef.current) {
+                    const spoken = (finalText.trim() || interim.trim());
+                    if (spoken.length > 2) {
+                        wasInterruptedRef.current = true;
+                        stopAudio(true); // pass true so mic opens immediately after
+                    }
+                    return;
+                }
+
                 if (!finalText.trim()) return;
 
                 // Stop listening and send
+                setInterimText('');
                 try { sr.stop(); } catch (_) {}
                 setIsListening(false);
                 const text = finalText.trim();
@@ -302,6 +349,7 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
             sr.onend = () => {
                 if (isDeadRef.current) return;
                 setIsListening(false);
+                setInterimText('');
                 // Only auto-restart if AI is still idle (not after user spoke)
                 clearTimeout(silenceTimerRef.current);
                 silenceTimerRef.current = setTimeout(() => {
@@ -336,8 +384,10 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
     // ── Core AI messaging ─────────────────────────────────────────────────────
     const sendAIMessage = async (userText) => {
         if (isDeadRef.current) return;
+        const wasInterrupted = wasInterruptedRef.current;
+        wasInterruptedRef.current = false;
+
         setIsAIResponding(true);
-        // Kill mic and cancel any pending restart so AI can't hear itself
         clearTimeout(silenceTimerRef.current);
         try { recognitionRef.current?.abort(); } catch (_) {}
 
@@ -346,13 +396,19 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
         }));
 
         try {
-            const data = await aiRoleplay({ userText, prospect, transcriptHistory: history, knowledgeMaterialIds });
+            const data = await aiRoleplay({
+                userText,
+                prospect,
+                transcriptHistory: history,
+                knowledgeMaterialIds,
+                wasInterrupted,
+            });
             if (isDeadRef.current) return;
             const aiEntry = { speaker: 'ai', text: data.text || '...', timestamp: new Date() };
             setTranscript(prev => { const next = [...prev, aiEntry]; transcriptRef.current = next; return next; });
-            setIsAIResponding(false); // clear before audio so auto-listen waits on isSpeaking instead
+            setIsAIResponding(false);
             if (data.audio) {
-                await playAudio(data.audio); // isSpeaking=true during playback, suppresses mic
+                await playAudio(data.audio);
             } else {
                 setIsSpeaking(false);
             }
@@ -637,10 +693,22 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
                             </div>
                         )}
 
+                        {/* Live interim speech bubble */}
                         {isListening && !isMuted && (
-                            <div className="flex justify-center items-center gap-2 py-2 text-blue-600 text-sm">
-                                <Mic className="w-4 h-4 animate-pulse" />
-                                Listening...
+                            <div className="flex items-end gap-2.5 justify-end">
+                                <div className="max-w-[72%] px-4 py-3 rounded-2xl rounded-br-sm bg-blue-100 border border-blue-300 text-sm text-blue-800">
+                                    <p className="font-semibold text-xs mb-1 opacity-60">You</p>
+                                    <div className="flex items-center gap-2">
+                                        <MicWaveform active={true} />
+                                        {interimText
+                                            ? <span className="italic text-blue-700">{interimText}</span>
+                                            : <span className="text-blue-400 italic">listening...</span>
+                                        }
+                                    </div>
+                                </div>
+                                <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-xs font-bold text-white flex-shrink-0">
+                                    Y
+                                </div>
                             </div>
                         )}
                         <div ref={messagesEndRef} />
@@ -694,10 +762,31 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
                                 >
                                     {isAudioMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
                                 </Button>
-                                {isSpeaking && (
-                                    <div className="flex items-center gap-1.5 text-sm text-blue-600">
+                                {/* Status indicator — mic active / AI speaking / idle */}
+                                {isMuted ? (
+                                    <div className="flex items-center gap-1.5 text-sm text-red-500">
+                                        <MicOff className="w-4 h-4" />
+                                        <span>Mic muted</span>
+                                    </div>
+                                ) : isListening ? (
+                                    <div className="flex items-center gap-2 text-sm text-blue-600 font-medium">
+                                        <MicWaveform active={true} />
+                                        <span>{interimText ? 'Capturing...' : 'Listening...'}</span>
+                                    </div>
+                                ) : isSpeaking ? (
+                                    <div className="flex items-center gap-1.5 text-sm text-emerald-600">
                                         <Volume2 className="w-4 h-4 animate-pulse" />
-                                        <span>{prospect.name} is speaking...</span>
+                                        <span>{prospect.name} is speaking — interrupt anytime</span>
+                                    </div>
+                                ) : isAIResponding ? (
+                                    <div className="flex items-center gap-1.5 text-sm text-slate-500">
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                        <span>Thinking...</span>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center gap-1.5 text-sm text-slate-400">
+                                        <Mic className="w-4 h-4" />
+                                        <span>Waiting for mic...</span>
                                     </div>
                                 )}
                             </div>

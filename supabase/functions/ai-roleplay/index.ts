@@ -131,7 +131,7 @@ Deno.serve(async (req: Request) => {
       return data?.value || undefined;
     };
 
-    const { userText, prospect, transcriptHistory = [], knowledgeMaterialIds = [] } = await req.json();
+    const { userText, prospect, transcriptHistory = [], knowledgeMaterialIds = [], wasInterrupted = false } = await req.json();
 
     console.log("[ai-roleplay] Request:", { name: prospect?.name, hasUserText: !!userText, materialCount: knowledgeMaterialIds?.length });
 
@@ -183,6 +183,30 @@ Deno.serve(async (req: Request) => {
 
 You just received an unexpected sales call. Respond ONLY with 1-5 words exactly as you would when picking up: e.g. "Hello?", "Yes?", "Yeah, who's this?". Do NOT introduce yourself. Do NOT say your name or company. Just answer the phone briefly.${knowledgeContext}`;
       userPrompt = "You just picked up the phone.";
+    } else if (wasInterrupted) {
+      // The caller interrupted while you were speaking — acknowledge naturally based on conversation stage
+      const msgCount = (transcriptHistory as any[]).length;
+      let interruptStyle = "";
+      if (msgCount <= 2) {
+        interruptStyle = "You were just introducing yourself or answering the phone. React naturally — pause and let them speak, e.g. 'Oh sure, go ahead.' or 'Of course, what's up?'";
+      } else if (msgCount <= 6) {
+        interruptStyle = "You were mid-explanation early in the call. Acknowledge the interruption warmly and invite them to continue, e.g. 'Sorry, please go ahead.' or 'Sure, what were you saying?'";
+      } else {
+        interruptStyle = "You were deep in conversation. React naturally to being cut off — could be curious, slightly surprised, or simply attentive. e.g. 'Oh, please — go ahead.' or 'Sorry, you were saying?' or 'No no, I want to hear this.'";
+      }
+
+      systemPrompt = `${basePersona}
+
+You are on a sales call. The caller just interrupted you while you were speaking. ${interruptStyle}
+
+Rules:
+- Stay completely in character with your personality: ${prospectPersonality || "professional"}.
+- Keep your response to 1 sentence maximum.
+- Do NOT continue what you were previously saying.
+- Sound natural and human — not scripted.${knowledgeContext}`;
+      userPrompt = conversationHistory
+        ? `Conversation so far:\n${conversationHistory}\n\nThe caller just interrupted and said: "${userText}"\n\nYour brief natural reaction:`
+        : `The caller just interrupted and said: "${userText}"\n\nYour brief natural reaction:`;
     } else {
       systemPrompt = `${basePersona}
 
