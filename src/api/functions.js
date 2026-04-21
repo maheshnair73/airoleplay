@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabase';
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-async function invokeFunction(functionName, params) {
+async function invokeFunction(functionName, params, timeoutMs = 40000) {
   // Use direct fetch with anon key so fake local-auth tokens don't get rejected
   const res = await fetch(`${SUPABASE_URL}/functions/v1/${functionName}`, {
     method: 'POST',
@@ -13,6 +13,7 @@ async function invokeFunction(functionName, params) {
       'apikey': SUPABASE_ANON_KEY,
     },
     body: JSON.stringify(params),
+    signal: AbortSignal.timeout(timeoutMs),
   });
   if (!res.ok) {
     const text = await res.text();

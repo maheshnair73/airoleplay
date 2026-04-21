@@ -1,7 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
-// ─── ElevenLabs regional voice map (mirrors voiceMapping.js) ─────────────────
+// ─── ElevenLabs regional voice map ────────────────────────────────────────────
 type VoiceStyleMap = Record<string, string>;
 type GenderMap = Record<string, VoiceStyleMap>;
 type RegionMap = Record<string, GenderMap>;
@@ -23,29 +23,12 @@ const REGIONAL_VOICES: RegionMap = {
     Male:   { default: 'ZQe5CZNOzWyzPSCn5a3c', professional: 'ZQe5CZNOzWyzPSCn5a3c', authoritative: 'ZQe5CZNOzWyzPSCn5a3c', casual: 'ZQe5CZNOzWyzPSCn5a3c', warm: 'ZQe5CZNOzWyzPSCn5a3c' },
     Female: { default: 'Zlb1dXrM653N07WRdFW3', professional: 'Zlb1dXrM653N07WRdFW3', confident: 'Zlb1dXrM653N07WRdFW3', warm: 'Zlb1dXrM653N07WRdFW3', casual: 'Zlb1dXrM653N07WRdFW3' },
   },
-  Nigerian: {
-    Male:   { default: 'pNInz6obpgDQGcFmaJgB', professional: 'TxGEqnHWrfWFTfGW9XjX', authoritative: 'ErXwobaYiN019PkySvjV', casual: 'VR6AewLTigWG4xSOukaG', warm: 'pNInz6obpgDQGcFmaJgB' },
-    Female: { default: '21m00Tcm4TlvDq8ikWAM', professional: 'EXAVITQu4vr4xnSDxMaL', confident: 'jsCqWAovK2LkecY7zXl4', warm: '21m00Tcm4TlvDq8ikWAM', casual: 'MF3mGyEYCl7XYWbV9V6O' },
-  },
-  Ghanaian: {
-    Male:   { default: 'pNInz6obpgDQGcFmaJgB', professional: 'TxGEqnHWrfWFTfGW9XjX', authoritative: 'ErXwobaYiN019PkySvjV', casual: 'VR6AewLTigWG4xSOukaG', warm: 'pNInz6obpgDQGcFmaJgB' },
-    Female: { default: '21m00Tcm4TlvDq8ikWAM', professional: 'EXAVITQu4vr4xnSDxMaL', confident: 'jsCqWAovK2LkecY7zXl4', warm: '21m00Tcm4TlvDq8ikWAM', casual: 'MF3mGyEYCl7XYWbV9V6O' },
-  },
-  'South African': {
-    Male:   { default: 'pNInz6obpgDQGcFmaJgB', professional: 'TxGEqnHWrfWFTfGW9XjX', authoritative: 'ErXwobaYiN019PkySvjV', casual: 'VR6AewLTigWG4xSOukaG', warm: 'pNInz6obpgDQGcFmaJgB' },
-    Female: { default: 'EXAVITQu4vr4xnSDxMaL', professional: 'EXAVITQu4vr4xnSDxMaL', confident: 'jsCqWAovK2LkecY7zXl4', warm: '21m00Tcm4TlvDq8ikWAM', casual: 'MF3mGyEYCl7XYWbV9V6O' },
-  },
-  Arabic: {
-    Male:   { default: 'ErXwobaYiN019PkySvjV', professional: 'ErXwobaYiN019PkySvjV', authoritative: 'ErXwobaYiN019PkySvjV', casual: 'TxGEqnHWrfWFTfGW9XjX', warm: 'TxGEqnHWrfWFTfGW9XjX' },
-    Female: { default: 'jsCqWAovK2LkecY7zXl4', professional: 'jsCqWAovK2LkecY7zXl4', confident: 'jsCqWAovK2LkecY7zXl4', warm: 'EXAVITQu4vr4xnSDxMaL', casual: 'MF3mGyEYCl7XYWbV9V6O' },
-  },
   Canadian: {
     Male:   { default: 'TxGEqnHWrfWFTfGW9XjX', professional: 'TxGEqnHWrfWFTfGW9XjX', authoritative: 'ErXwobaYiN019PkySvjV', casual: 'VR6AewLTigWG4xSOukaG', warm: 'VR6AewLTigWG4xSOukaG' },
     Female: { default: '21m00Tcm4TlvDq8ikWAM', professional: 'EXAVITQu4vr4xnSDxMaL', confident: 'jsCqWAovK2LkecY7zXl4', warm: '21m00Tcm4TlvDq8ikWAM', casual: 'MF3mGyEYCl7XYWbV9V6O' },
   },
 };
 
-// Legacy flat-key fallback
 const LEGACY_VOICE_KEYS: Record<string, string> = {
   english_male: 'TxGEqnHWrfWFTfGW9XjX',
   english_male_casual: 'VR6AewLTigWG4xSOukaG',
@@ -77,27 +60,19 @@ function resolveVoiceId(prospect: {
 }): string {
   const { voiceId, voice, gender = 'Male', personality = '', nationality = '' } = prospect;
 
-  // 1. Raw ElevenLabs ID passed directly (not a named key, longer than any key)
-  if (voiceId && !LEGACY_VOICE_KEYS[voiceId] && voiceId.length > 15) {
-    return voiceId;
-  }
+  if (voiceId && !LEGACY_VOICE_KEYS[voiceId] && voiceId.length > 15) return voiceId;
 
-  // 2. Legacy voice key
   const legacyKey = voiceId || voice;
-  if (legacyKey && LEGACY_VOICE_KEYS[legacyKey]) {
-    return LEGACY_VOICE_KEYS[legacyKey];
-  }
+  if (legacyKey && LEGACY_VOICE_KEYS[legacyKey]) return LEGACY_VOICE_KEYS[legacyKey];
 
   const style = personalityToStyle(personality);
   const genderKey = gender === 'Female' ? 'Female' : 'Male';
 
-  // 3. Region-specific voice
   if (nationality && REGIONAL_VOICES[nationality]) {
     const gMap = REGIONAL_VOICES[nationality][genderKey] || REGIONAL_VOICES[nationality]['Male'];
     return gMap[style] || gMap['professional'] || gMap['default'];
   }
 
-  // 4. Default to US voices
   const fallback = REGIONAL_VOICES.US[genderKey];
   return fallback[style] || fallback['professional'] || fallback['default'];
 }
@@ -108,417 +83,212 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
-interface TranscriptMessage {
-  speaker: string;
-  text: string;
-  timestamp: string;
-}
+function generateRealisticResponse(userText: string | null): string {
+  const opening = ["Hello?", "Yes?", "Hello, who's this?", "Yeah, hello?"];
+  const engagement = [
+    "That's an interesting point. Could you elaborate on how that would specifically help with our current situation?",
+    "I see. How does that compare to what other vendors have offered us in the past?",
+    "Tell me more about the implementation timeline and what kind of support you'd provide.",
+    "That sounds promising. What kind of ROI or measurable results can we expect in the first year?",
+    "How would that integrate with our existing systems and processes?",
+  ];
+  const challenging = [
+    "That sounds good in theory, but I'm concerned about the learning curve for our team.",
+    "We've had some bad experiences with similar solutions in the past. What makes yours different?",
+    "Price is always a consideration for us. Can you break down the cost structure?",
+    "I'm curious about security and compliance. What certifications do you have?",
+  ];
+  const closing = [
+    "This has been really helpful. What would be the next steps if we wanted to move forward?",
+    "I think we're interested. What would a pilot program look like?",
+    "When could we schedule a follow-up or demo?",
+  ];
 
-interface RoleplayRequest {
-  userText: string | null;
-  prospect: {
-    name: string;
-    company?: string;
-    jobTitle?: string;
-    personality?: string;
-    painPoints?: string[];
-    industry?: string;
-    voiceId?: string;
-    voice?: string;
-    gender?: string;
-    nationality?: string;
-  };
-  transcriptHistory: TranscriptMessage[];
-  knowledgeMaterialIds?: string[];
-}
-
-// No ElevenLabs key — return null so frontend shows text-only mode
-function generateMockAudio(_text: string): null {
-  return null;
-}
-
-function generateRealisticResponse(userText: string | null, prospect: any, knowledgeContext: string): string {
-  const responses = {
-    opening: [
-      "Hello?",
-      "Yes?",
-      "Hello, who's this?",
-      "Yeah, hello?",
-    ],
-    engagement: [
-      "That's an interesting point. Could you elaborate on how that would specifically help with our current situation?",
-      "I see. How does that compare to what other vendors have offered us in the past?",
-      "Tell me more about the implementation timeline and what kind of support you'd provide.",
-      "That sounds promising. What kind of ROI or measurable results can we expect in the first year?",
-      "I appreciate that. Can you walk me through a specific use case that's similar to our business?",
-      "Interesting. How would that integrate with our existing systems and processes?",
-      "I like what you're saying. What kind of training and onboarding process would we go through?",
-    ],
-    challenging: [
-      "That sounds good in theory, but I'm concerned about the learning curve for our team. How complex is the implementation?",
-      "We've had some bad experiences with similar solutions in the past. What makes yours different?",
-      "Price is always a consideration for us. Can you break down the cost structure and what's included?",
-      "I'm curious about security and compliance. What certifications do you have and how do you handle data protection?",
-      "Our IT team is always concerned about system performance. How will this impact our current infrastructure?",
-    ],
-    closing: [
-      "This has been really helpful. What would be the next steps if we wanted to move forward?",
-      "I think we're interested. What would a pilot program or trial look like?",
-      "This sounds like something worth exploring. When could we schedule a follow-up or demo?",
-    ],
-  };
-
-  if (!userText) {
-    return responses.opening[Math.floor(Math.random() * responses.opening.length)];
-  }
-
-  const hasNegative = /concern|problem|issue|difficult|expensive|complex|worry/i.test(userText);
-  const hasQuestion = /\?/.test(userText);
-  const hasClose = /next steps|moving forward|trial|pilot|demo/i.test(userText);
-
-  if (hasClose) {
-    return responses.closing[Math.floor(Math.random() * responses.closing.length)];
-  }
-
-  if (hasNegative) {
-    return responses.challenging[Math.floor(Math.random() * responses.challenging.length)];
-  }
-
-  return responses.engagement[Math.floor(Math.random() * responses.engagement.length)];
-}
-
-async function extractTextFromUrl(url: string, materialType: string): Promise<string> {
-  try {
-    const response = await fetch(url, { signal: AbortSignal.timeout(8000) });
-    if (!response.ok) return "";
-
-    const contentType = response.headers.get("content-type") || "";
-
-    if (
-      materialType === "text" ||
-      contentType.includes("text/plain") ||
-      url.endsWith(".txt") ||
-      url.endsWith(".md")
-    ) {
-      const text = await response.text();
-      return text.substring(0, 8000);
-    }
-
-    if (
-      contentType.includes("text/html") ||
-      url.endsWith(".html") ||
-      url.endsWith(".htm")
-    ) {
-      const html = await response.text();
-      const stripped = html
-        .replace(/<script[\s\S]*?<\/script>/gi, "")
-        .replace(/<style[\s\S]*?<\/style>/gi, "")
-        .replace(/<[^>]+>/g, " ")
-        .replace(/\s{2,}/g, " ")
-        .trim();
-      return stripped.substring(0, 8000);
-    }
-
-    if (
-      materialType === "document" &&
-      (contentType.includes("application/pdf") || url.toLowerCase().endsWith(".pdf"))
-    ) {
-      return `[PDF document available at: ${url}. Use the title and description as context since direct PDF reading is not available in this environment.]`;
-    }
-
-    if (
-      contentType.includes("application/json") ||
-      url.endsWith(".json")
-    ) {
-      const json = await response.text();
-      return json.substring(0, 8000);
-    }
-
-    if (
-      contentType.includes("text/csv") ||
-      url.endsWith(".csv")
-    ) {
-      const csv = await response.text();
-      return csv.substring(0, 8000);
-    }
-
-    return "";
-  } catch (_err) {
-    return "";
-  }
+  if (!userText) return opening[Math.floor(Math.random() * opening.length)];
+  if (/next steps|moving forward|trial|pilot|demo/i.test(userText))
+    return closing[Math.floor(Math.random() * closing.length)];
+  if (/concern|problem|issue|difficult|expensive|complex|worry/i.test(userText))
+    return challenging[Math.floor(Math.random() * challenging.length)];
+  return engagement[Math.floor(Math.random() * engagement.length)];
 }
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, {
-      status: 200,
-      headers: corsHeaders,
-    });
+    return new Response(null, { status: 200, headers: corsHeaders });
   }
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Read API keys: prefer env secrets, fall back to app_settings table
-    const getSettingKey = async (envName: string): Promise<string | undefined> => {
-      const envVal = Deno.env.get(envName);
+    // Read keys from env or app_settings
+    const getKey = async (name: string): Promise<string | undefined> => {
+      const envVal = Deno.env.get(name);
       if (envVal) return envVal;
       const { data } = await supabase
-        .from("app_settings")
-        .select("value")
-        .eq("key", envName)
-        .maybeSingle();
+        .from("app_settings").select("value").eq("key", name).maybeSingle();
       return data?.value || undefined;
     };
 
+    const { userText, prospect, transcriptHistory = [], knowledgeMaterialIds = [] } = await req.json();
+
+    console.log("[ai-roleplay] Request:", { name: prospect?.name, hasUserText: !!userText, materialCount: knowledgeMaterialIds?.length });
+
+    // Fetch API keys in parallel with knowledge materials
     const [openaiApiKey, elevenlabsApiKey] = await Promise.all([
-      getSettingKey("OPENAI_API_KEY"),
-      getSettingKey("ELEVENLABS_API_KEY"),
+      getKey("OPENAI_API_KEY"),
+      getKey("ELEVENLABS_API_KEY"),
     ]);
 
-    const {
-      userText,
-      prospect,
-      transcriptHistory = [],
-      knowledgeMaterialIds = [],
-    }: RoleplayRequest = await req.json();
+    console.log("[ai-roleplay] Keys:", { hasOpenAI: !!openaiApiKey, keyLen: openaiApiKey?.length, hasElevenLabs: !!elevenlabsApiKey });
 
+    // Build knowledge context
     let knowledgeContext = "";
-
-    if (knowledgeMaterialIds && knowledgeMaterialIds.length > 0) {
-      const { data: materials, error: materialsError } = await supabase
+    if (knowledgeMaterialIds?.length > 0) {
+      const { data: materials } = await supabase
         .from("roleplay_knowledge_materials")
-        .select("title, description, content_text, file_url, material_type, category")
+        .select("title, description, content_text, category")
         .in("id", knowledgeMaterialIds)
         .eq("is_active", true);
 
-      if (!materialsError && materials && materials.length > 0) {
-        knowledgeContext = "\n\n## TRAINING MATERIALS TO REFERENCE:\n\n";
-
-        for (const material of materials) {
-          knowledgeContext += `### ${material.title} (${material.category})\n`;
-          if (material.description) {
-            knowledgeContext += `Summary: ${material.description}\n\n`;
-          }
-
-          if (material.content_text && material.content_text.trim().length > 0) {
-            const contentPreview = material.content_text.substring(0, 4000);
-            knowledgeContext += `Content:\n${contentPreview}${material.content_text.length > 4000 ? "...(truncated)" : ""}\n\n`;
-          } else if (material.file_url && material.file_url.trim().length > 0) {
-            const extractedText = await extractTextFromUrl(material.file_url, material.material_type || "document");
-            if (extractedText && extractedText.length > 0) {
-              knowledgeContext += `Content:\n${extractedText}\n\n`;
-            } else {
-              knowledgeContext += `[Uploaded file: ${material.file_url}. Use the title and description as context.]\n\n`;
-            }
-          }
+      if (materials?.length) {
+        knowledgeContext = "\n\n## TRAINING MATERIALS:\n";
+        for (const m of materials) {
+          knowledgeContext += `\n### ${m.title} (${m.category})\n`;
+          if (m.description) knowledgeContext += `${m.description}\n`;
+          if (m.content_text) knowledgeContext += m.content_text.substring(0, 2000) + "\n";
         }
-
-        knowledgeContext +=
-          "\nYou should naturally reference these materials during conversation. Test the sales rep's knowledge by asking questions about these materials when appropriate. Make sure they understand and can apply the concepts. If they cannot answer questions about these materials, gently push back and ask for clarification.\n";
       }
     }
 
-    const conversationHistory = transcriptHistory
-      .map((msg) => {
-        const role = msg.speaker === "ai" ? "assistant" : "user";
-        return `${role}: ${msg.text}`;
-      })
+    // Build prompts
+    const conversationHistory = (transcriptHistory as any[])
+      .map((msg) => `${msg.speaker === "ai" ? "assistant" : "user"}: ${msg.text}`)
       .join("\n");
 
     let systemPrompt = "";
     let userPrompt = "";
 
+    const prospectName = prospect.name || "the prospect";
+    const prospectTitle = prospect.jobTitle || prospect.title || "professional";
+    const prospectCompany = prospect.company || prospect.company_name || "a company";
+    const prospectPersonality = prospect.personality || "";
+    const prospectPains = Array.isArray(prospect.painPoints) ? prospect.painPoints : [];
+
     if (!userText) {
-      systemPrompt = `You are ${prospect.name}, a ${prospect.jobTitle || "professional"} at ${
-        prospect.company || "a company"
-      }. ${
-        prospect.personality
-          ? `Your personality: ${prospect.personality}.`
-          : ""
-      }
+      systemPrompt = `You are ${prospectName}, a ${prospectTitle} at ${prospectCompany}.${prospectPersonality ? ` Personality: ${prospectPersonality}.` : ""}${prospectPains.length ? ` Challenges: ${prospectPains.join(", ")}.` : ""}
 
-${
-  prospect.painPoints && prospect.painPoints.length > 0
-    ? `Your current challenges: ${prospect.painPoints.join(", ")}.`
-    : ""
-}
-
-This is an OUTBOUND cold call from a sales representative to you. You just picked up the phone.
-
-CRITICAL RULES for picking up:
-- You do NOT know who is calling
-- You NEVER introduce yourself first on an outbound call — the caller must introduce themselves
-- Your opening must be extremely short: just "Hello?" or "Yes?" or "Hello, who's this?" or similar — 1-5 words maximum
-- Show the appropriate emotion for your personality (e.g. busy/slightly annoyed if Skeptical, neutral if Analytical, warm if Friendly)
-- Do NOT say your name or company in this first response
-
-${knowledgeContext}`;
-
-      userPrompt = "You just picked up the phone. Give your one-line answer.";
+This is an outbound cold call. You just picked up. Respond with ONLY 1-5 words like "Hello?" or "Yes, who's this?" — nothing more.${knowledgeContext}`;
+      userPrompt = "You just picked up the phone.";
     } else {
-      systemPrompt = `You are ${prospect.name}, a ${prospect.jobTitle || "professional"} at ${
-        prospect.company || "a company"
-      }. ${
-        prospect.personality
-          ? `Your personality: ${prospect.personality}.`
-          : ""
-      }
+      systemPrompt = `You are ${prospectName}, a ${prospectTitle} at ${prospectCompany}.${prospectPersonality ? ` Personality: ${prospectPersonality}.` : ""}${prospectPains.length ? ` Challenges: ${prospectPains.join(", ")}.` : ""}
 
-${
-  prospect.painPoints && prospect.painPoints.length > 0
-    ? `Your current challenges: ${prospect.painPoints.join(", ")}.`
-    : ""
-}
-
-You are on a sales call with a sales representative. This is a training roleplay session.
-
-${knowledgeContext}
+You are on a sales call roleplay. Keep responses to 2-3 sentences. Stay in character.${knowledgeContext}
 
 Conversation so far:
-${conversationHistory}
-
-Your role:
-- Continue the conversation naturally based on what the sales rep just said
-- ${
-        knowledgeContext
-          ? "Ask specific, probing questions about the training material content — test whether the rep truly knows the product, pricing, competitive differentiators, or concepts from the uploaded documents"
-          : "Ask probing questions about their solution"
-      }
-- If the rep gives a vague or incorrect answer about something covered in the materials, push back: ask follow-up questions or express doubt
-- Respond positively and with more trust when they demonstrate deep expertise
-- Express concerns or confusion when they're unclear or lack knowledge
-- Keep responses realistic and concise (2-4 sentences)
-- Stay in character
-
-Respond to the sales rep's last message.`;
-
+${conversationHistory}`;
       userPrompt = `Sales Rep: ${userText}`;
     }
 
+    // Get AI text response
     let responseText = "";
-    let audioBase64 = null;
     let usedFallback = false;
 
     if (openaiApiKey && openaiApiKey !== "test-key") {
       try {
-        const openaiResponse = await fetch(
-          "https://api.openai.com/v1/chat/completions",
+        const res = await fetch("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${openaiApiKey}`,
+          },
+          body: JSON.stringify({
+            model: "gpt-4o-mini",
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: userPrompt },
+            ],
+            temperature: 0.8,
+            max_tokens: 150,
+          }),
+          signal: AbortSignal.timeout(15000),
+        });
+
+        if (res.ok) {
+          const json = await res.json();
+          responseText = json.choices?.[0]?.message?.content || "";
+          console.log("[ai-roleplay] OpenAI OK, chars:", responseText.length);
+        } else {
+          const errText = await res.text();
+          console.error("[ai-roleplay] OpenAI error:", res.status, errText.substring(0, 200));
+        }
+      } catch (e) {
+        console.error("[ai-roleplay] OpenAI fetch error:", e);
+      }
+    }
+
+    if (!responseText) {
+      usedFallback = true;
+      responseText = generateRealisticResponse(userText);
+      console.log("[ai-roleplay] Using fallback response");
+    }
+
+    // Get audio from ElevenLabs
+    let audioBase64: string | null = null;
+    const resolvedVoiceId = resolveVoiceId(prospect);
+    console.log("[ai-roleplay] Voice:", resolvedVoiceId, "ElevenLabs key:", !!elevenlabsApiKey);
+
+    if (elevenlabsApiKey && elevenlabsApiKey !== "test-key" && resolvedVoiceId) {
+      try {
+        const res = await fetch(
+          `https://api.elevenlabs.io/v1/text-to-speech/${resolvedVoiceId}`,
           {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${openaiApiKey}`,
+              "xi-api-key": elevenlabsApiKey,
             },
             body: JSON.stringify({
-              model: "gpt-4o-mini",
-              messages: [
-                { role: "system", content: systemPrompt },
-                { role: "user", content: userPrompt },
-              ],
-              temperature: 0.8,
-              max_tokens: 300,
+              text: responseText,
+              model_id: "eleven_monolingual_v1",
+              voice_settings: { stability: 0.5, similarity_boost: 0.75 },
             }),
+            signal: AbortSignal.timeout(12000),
           }
         );
 
-        if (!openaiResponse.ok) {
-          const errorData = await openaiResponse.text();
-          console.error("OpenAI API error:", errorData);
-          throw new Error(`OpenAI API error: ${openaiResponse.status}`);
+        if (res.ok) {
+          const buf = await res.arrayBuffer();
+          const bytes = new Uint8Array(buf);
+          let binary = "";
+          for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+          audioBase64 = btoa(binary);
+          console.log("[ai-roleplay] ElevenLabs audio OK, bytes:", bytes.length);
+        } else {
+          const errText = await res.text();
+          console.error("[ai-roleplay] ElevenLabs error:", res.status, errText.substring(0, 200));
         }
-
-        const openaiData = await openaiResponse.json();
-        responseText =
-          openaiData.choices[0]?.message?.content ||
-          "I'm interested in learning more about your solution.";
-      } catch (error) {
-        console.error("OpenAI error:", error);
-        usedFallback = true;
-        responseText = generateRealisticResponse(userText, prospect, knowledgeContext);
+      } catch (e) {
+        console.error("[ai-roleplay] ElevenLabs fetch error:", e);
       }
-    } else {
-      usedFallback = true;
-      responseText = generateRealisticResponse(userText, prospect, knowledgeContext);
-    }
-
-    const resolvedVoiceId = resolveVoiceId(prospect);
-
-    if (elevenlabsApiKey && resolvedVoiceId) {
-      if (elevenlabsApiKey === "test-key") {
-        audioBase64 = generateMockAudio(responseText);
-      } else {
-        try {
-          const elevenlabsResponse = await fetch(
-            `https://api.elevenlabs.io/v1/text-to-speech/${resolvedVoiceId}`,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "xi-api-key": elevenlabsApiKey,
-              },
-              body: JSON.stringify({
-                text: responseText,
-                model_id: "eleven_monolingual_v1",
-                voice_settings: {
-                  stability: 0.5,
-                  similarity_boost: 0.75,
-                },
-              }),
-            }
-          );
-
-          if (elevenlabsResponse.ok) {
-            const audioArrayBuffer = await elevenlabsResponse.arrayBuffer();
-            const bytes = new Uint8Array(audioArrayBuffer);
-            let binary = "";
-            for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-            audioBase64 = btoa(binary);
-          } else {
-            console.log("ElevenLabs API error:", elevenlabsResponse.status);
-            audioBase64 = generateMockAudio(responseText);
-          }
-        } catch (error) {
-          console.error("ElevenLabs error:", error);
-          audioBase64 = generateMockAudio(responseText);
-        }
-      }
-    } else if (resolvedVoiceId) {
-      audioBase64 = generateMockAudio(responseText);
     }
 
     return new Response(
-      JSON.stringify({
-        text: responseText,
-        audio: audioBase64,
-        openai_fallback: usedFallback,
-      }),
-      {
-        headers: {
-          ...corsHeaders,
-          "Content-Type": "application/json",
-        },
-      }
+      JSON.stringify({ text: responseText, audio: audioBase64, openai_fallback: usedFallback }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-  } catch (error) {
-    console.error("AI Roleplay error:", error);
 
+  } catch (error) {
+    console.error("[ai-roleplay] Fatal error:", error);
     return new Response(
       JSON.stringify({
-        error: error.message || "Internal server error",
-        text: "I'm having some technical difficulties. Could we try that again?",
+        text: "Hello, who's this?",
         audio: null,
+        openai_fallback: true,
+        error: error.message,
       }),
-      {
-        status: 500,
-        headers: {
-          ...corsHeaders,
-          "Content-Type": "application/json",
-        },
-      }
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });

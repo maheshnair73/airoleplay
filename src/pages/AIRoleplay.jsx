@@ -373,19 +373,26 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
                 knowledgeMaterialIds
             });
 
+            console.log('[AI Roleplay] Greeting response:', { hasAudio: !!data.audio, hasText: !!data.text, fallback: data.openai_fallback });
+
+            // Show text immediately
+            setTranscript([{ speaker: 'ai', text: data.text || 'Hello?', timestamp: new Date() }]);
+
             if (data.audio) {
                 playAudio(data.audio);
             } else {
                 setIsSpeaking(false);
                 conversationState.current = 'idle';
-                toast.info("Voice unavailable — ElevenLabs API key not configured. Running in text-only mode.", { duration: 5000 });
+                toast.info("Running in text-only mode — no audio returned from AI.", { duration: 4000 });
             }
-
-            setTranscript([{ speaker: 'ai', text: data.text, timestamp: new Date() }]);
         } catch (error) {
-            console.error("Error getting initial greeting:", error);
-            toast.error("Could not start session. Please try again.");
-            onEndCall();
+            console.error("[AI Roleplay] Greeting error:", error);
+            // Don't end the call — show a fallback greeting so the session is usable
+            const fallbackText = "Hello? Who's calling?";
+            setTranscript([{ speaker: 'ai', text: fallbackText, timestamp: new Date() }]);
+            setIsSpeaking(false);
+            conversationState.current = 'idle';
+            toast.warning(`AI connection slow — running in text-only mode. (${error.message})`, { duration: 6000 });
         } finally {
             setIsAIResponding(false);
         }
