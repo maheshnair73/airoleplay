@@ -230,62 +230,132 @@ ${transcript}`
     let systemPrompt = "";
     let userPrompt = "";
 
-    const prospectName = prospect.name || "the prospect";
-    const prospectTitle = prospect.jobTitle || prospect.title || "professional";
-    const prospectCompany = prospect.company || prospect.company_name || "a company";
-    const prospectPersonality = prospect.personality || "";
-    const prospectPains = Array.isArray(prospect.painPoints) ? prospect.painPoints : [];
+    // ── Extract every available field from the prospect object ──────────────────
+    const prospectName      = prospect.name || [prospect.first_name, prospect.last_name].filter(Boolean).join(' ') || "the prospect";
+    const prospectTitle     = prospect.title || prospect.jobTitle || "professional";
+    const prospectCompany   = prospect.company_name || prospect.company || "a company";
+    const prospectIndustry  = prospect.industry || "";
+    const prospectPersonality = prospect.personality || "professional";
+    const prospectEmotionalState = prospect.emotional_state || "Neutral";
+    const prospectDifficulty = prospect.difficulty || "Medium";
+    const buyerAwareness    = prospect.buyer_awareness_level || prospect.roleplay_scenario || "";
+    const roleplType        = prospect.roleplay_type || "Cold Call";
+    const callGoal          = prospect.call_goal || "";
+    const sellingContext    = prospect.selling_context || prospect.company_offerings_context || "";
+    const traits            = Array.isArray(prospect.traits) ? prospect.traits : [];
+    const painPoints        = Array.isArray(prospect.painPoints) ? prospect.painPoints : Array.isArray(prospect.priorities_and_objections) ? [prospect.priorities_and_objections] : [];
+    const commonObjections  = Array.isArray(prospect.common_objections) ? prospect.common_objections : [];
+    const buyerOpinions     = Array.isArray(prospect.buyer_opinions) ? prospect.buyer_opinions : [];
+    const personaTags       = Array.isArray(prospect.persona_tags) ? prospect.persona_tags : [];
+    const callGoalTags      = Array.isArray(prospect.call_goal_tags) ? prospect.call_goal_tags : [];
+    const background        = prospect.background || "";
 
-    const basePersona = `You are ${prospectName}, ${prospectTitle} at ${prospectCompany}.${prospectPersonality ? ` Your personality: ${prospectPersonality}.` : ""}${prospectPains.length ? ` Your business challenges: ${prospectPains.join(", ")}.` : ""}`;
+    // ── Difficulty → behavioral instructions ────────────────────────────────────
+    const difficultyGuide = {
+      Easy:   "Be fairly cooperative and open. Answer questions helpfully, raise objections gently.",
+      Medium: "Be realistic — occasionally push back, ask clarifying questions, express mild skepticism.",
+      Hard:   "Be skeptical and busy. Challenge assumptions, raise objections often, don't give information away freely.",
+    }[prospectDifficulty] || "Be realistic and moderately challenging.";
+
+    // ── Personality → behavioral tone ───────────────────────────────────────────
+    const personalityGuide: Record<string, string> = {
+      Nice: "Warm and friendly. Easy to talk to but still professional.",
+      Analytical: "Data-driven. Ask for specifics, numbers, proof. Skeptical of vague claims.",
+      Formal: "Structured, polished. Stick to professional language. Don't deviate.",
+      Rude: "Impatient and blunt. Interrupt if bored. Sigh. Ask 'get to the point' if rambling.",
+      Chatty: "Talkative and digress easily. Friendly but hard to keep on topic.",
+    };
+    const personalityInstruction = personalityGuide[prospectPersonality] || `Personality style: ${prospectPersonality}.`;
+
+    // ── Buyer awareness → how informed/receptive they are ───────────────────────
+    const awarenessGuide: Record<string, string> = {
+      "Not Ready to Buy": "You have no urgency. Not actively looking for solutions.",
+      "Is Aware of Problem": "You know there's a problem but haven't actively sought a solution.",
+      "Problem Aware Not Solution Aware": "You feel the pain but don't know what kind of solution exists.",
+      "Solution Aware": "You know solutions like this exist but haven't evaluated them yet.",
+      "Product Aware": "You've heard of this product category, maybe even competitors.",
+      "Pre-existing Champion": "You've heard good things internally and are open to hearing more.",
+    };
+    const awarenessInstruction = buyerAwareness ? (awarenessGuide[buyerAwareness] || `Buyer stage: ${buyerAwareness}.`) : "";
+
+    // ── Build the rich base persona ──────────────────────────────────────────────
+    const basePersona = [
+      `You are ${prospectName}, ${prospectTitle} at ${prospectCompany}${prospectIndustry ? ` (${prospectIndustry} industry)` : ""}.`,
+      background ? `Background: ${background}` : "",
+      traits.length ? `Your character traits: ${traits.join(", ")}.` : "",
+      personaTags.length ? `You are a: ${personaTags.join(", ")}.` : "",
+      `Personality: ${personalityInstruction}`,
+      `Current emotional state: ${prospectEmotionalState}.`,
+      painPoints.length ? `Your key business challenges: ${painPoints.join("; ")}.` : "",
+      commonObjections.length ? `Objections you typically raise: ${commonObjections.join("; ")}.` : "",
+      buyerOpinions.length ? `Your current opinions/beliefs: ${buyerOpinions.join("; ")}.` : "",
+      awarenessInstruction,
+      sellingContext ? `What the caller is selling: ${sellingContext}` : "",
+      `Difficulty level for this roleplay: ${prospectDifficulty}. ${difficultyGuide}`,
+    ].filter(Boolean).join("\n");
+
+    const coreRules = `
+CORE RULES (never break these):
+- You ARE ${prospectName}. Stay in character 100% of the time.
+- NEVER acknowledge this is a roleplay, simulation, or AI. You are a real person.
+- NEVER introduce yourself again after the first greeting — the caller already knows who you are.
+- NEVER repeat what you already said in the conversation.
+- Keep responses SHORT: 1–3 sentences unless you are deliberately being chatty or asking multiple questions.
+- React authentically to the flow of the conversation — not just the last message.
+- If the caller talks too long without a question, feel free to say "okay, and?" or "right, what's the ask?"`;
 
     if (!userText) {
       systemPrompt = `${basePersona}
+${coreRules}
 
-You just received an unexpected sales call. Respond ONLY with 1-5 words exactly as you would when picking up: e.g. "Hello?", "Yes?", "Yeah, who's this?". Do NOT introduce yourself. Do NOT say your name or company. Just answer the phone briefly.${knowledgeContext}`;
+You just received an unexpected inbound or outbound ${roleplType}. React EXACTLY like a real person picking up a call they weren't expecting. Respond with 1–5 words only — no name, no company, just answer the phone naturally. Examples: "Hello?", "Yes?", "Yeah, who's this?", "Mm-hmm?", "Go ahead."${knowledgeContext}`;
       userPrompt = "You just picked up the phone.";
-    } else if (isFarewell) {
-      // Sales rep is ending the call — respond with a brief, natural goodbye
-      systemPrompt = `${basePersona}
 
-The sales rep is ending the call. Respond with a short, natural farewell — 1 sentence only. Be genuine and in character. e.g. "Alright, thanks for calling." or "Sure, take care." or "Okay, speak soon."${knowledgeContext}`;
+    } else if (isFarewell) {
+      systemPrompt = `${basePersona}
+${coreRules}
+
+The sales rep is wrapping up the call. Give a brief, natural, in-character goodbye — 1 sentence only. Make it feel real.${knowledgeContext}`;
       userPrompt = conversationHistory
-        ? `Conversation:\n${conversationHistory}\n\nSales Rep: ${userText}\n\nYour brief farewell:`
-        : `Sales Rep said: ${userText}\n\nYour brief farewell:`;
+        ? `Conversation:\n${conversationHistory}\n\nSales Rep: ${userText}\n\nYour goodbye:`
+        : `Sales Rep said: ${userText}\n\nYour goodbye:`;
+
     } else if (wasInterrupted) {
       const msgCount = (transcriptHistory as any[]).length;
-      let interruptStyle = "";
-      if (msgCount <= 2) {
-        interruptStyle = "You were just answering the phone. React naturally — pause and let them speak, e.g. 'Oh sure, go ahead.' or 'Of course, what's up?'";
-      } else if (msgCount <= 6) {
-        interruptStyle = "You were mid-explanation early in the call. Acknowledge the interruption warmly, e.g. 'Sorry, please go ahead.' or 'Sure, what were you saying?'";
-      } else {
-        interruptStyle = "You were deep in conversation. React naturally, e.g. 'Oh, please — go ahead.' or 'Sorry, you were saying?' or 'No no, I want to hear this.'";
-      }
+      const interruptStyle =
+        msgCount <= 2 ? "You just answered the phone. Pause naturally, let them speak. e.g. 'Oh sure, go ahead.'" :
+        msgCount <= 6 ? "You were early in the call. Acknowledge warmly. e.g. 'Sorry, please go ahead.' or 'Sure, what were you saying?'" :
+        "You were mid-point in the conversation. React honestly — curious or mildly surprised. e.g. 'Oh — go ahead.' or 'No no, I want to hear this.'";
 
       systemPrompt = `${basePersona}
+${coreRules}
 
-You are on a sales call. The caller just interrupted you while you were speaking. ${interruptStyle}
-
-Rules:
-- Stay completely in character with your personality: ${prospectPersonality || "professional"}.
-- Keep your response to 1 sentence maximum.
-- Do NOT continue what you were previously saying.
-- Sound natural and human — not scripted.${knowledgeContext}`;
+The caller just interrupted you mid-sentence. ${interruptStyle} 1 sentence max.${knowledgeContext}`;
       userPrompt = conversationHistory
-        ? `Conversation so far:\n${conversationHistory}\n\nThe caller just interrupted and said: "${userText}"\n\nYour brief natural reaction:`
-        : `The caller just interrupted and said: "${userText}"\n\nYour brief natural reaction:`;
+        ? `Conversation so far:\n${conversationHistory}\n\nCaller interrupted and said: "${userText}"\n\nYour reaction:`
+        : `Caller interrupted and said: "${userText}"\n\nYour reaction:`;
+
     } else {
-      systemPrompt = `${basePersona}
+      // Build call-goal context for the main turns
+      const callGoalContext = callGoal
+        ? `The caller's stated goal for this call is: "${callGoal}". React to whether they're achieving it or not.`
+        : callGoalTags.length ? `The caller is likely trying to: ${callGoalTags.join(", ")}.` : "";
 
-You are in the middle of a sales call roleplay. Rules:
-- NEVER say "I am ${prospectName}" or introduce yourself again — the caller already knows who you are.
-- NEVER repeat information you already said in the conversation.
-- Respond naturally to what the sales rep just said. Keep it to 1-3 sentences max.
-- Stay in character: react based on your personality and challenges.
-- If the sales rep asked a question, answer it briefly then push back or ask a follow-up.${knowledgeContext}`;
+      systemPrompt = `${basePersona}
+${coreRules}
+${callGoalContext ? `\nCALL CONTEXT:\n${callGoalContext}` : ""}
+
+CONVERSATION GUIDANCE:
+- React to what the caller actually says — don't just answer robotically.
+- Surface your pain points, objections, or opinions when they're relevant to what's being discussed.
+- If you're analytical, ask for data. If you're rude, show impatience. If you're chatty, go off on a tangent.
+- If the caller says something impressive or relevant, acknowledge it genuinely.
+- If they say something vague or salesy, push back: "What does that actually mean for us?"
+- Occasionally ask YOUR own questions to keep it real (budget, timeline, who else is involved).${knowledgeContext}`;
+
       userPrompt = conversationHistory
-        ? `Conversation so far:\n${conversationHistory}\n\nSales Rep just said: ${userText}\n\nYour response:`
-        : `Sales Rep just said: ${userText}\n\nYour response:`;
+        ? `Conversation so far:\n${conversationHistory}\n\nSales Rep just said: ${userText}\n\nYour response (stay in character, 1–3 sentences):`
+        : `Sales Rep just said: ${userText}\n\nYour response (stay in character, 1–3 sentences):`;
     }
 
     // Get AI text response
