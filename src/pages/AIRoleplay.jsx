@@ -157,46 +157,45 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
     useEffect(() => { transcriptRef.current = transcript; }, [transcript]);
     useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [transcript]);
 
-    // ── Audio helpers ────────────────────────────────────────────────────────
+    // ── Audio helpers — Web Audio API avoids blob: CSP restrictions ─────────
+    const getAudioCtx = () => {
+        if (!audioCtxRef.current || audioCtxRef.current.state === 'closed') {
+            audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        return audioCtxRef.current;
+    };
+
     const stopAudio = () => {
-        const el = audioPlayer.current;
-        if (el) {
-            el.pause();
-            if (el._blobUrl) URL.revokeObjectURL(el._blobUrl);
-            el.remove();
+        const src = audioPlayer.current;
+        if (src) {
+            try { src.stop(); } catch (_) {}
             audioPlayer.current = null;
         }
         setIsSpeaking(false);
     };
 
-    const playAudio = (base64) => {
+    const playAudio = async (base64) => {
         if (!base64 || isAudioMuted) { setIsSpeaking(false); return; }
         stopAudio();
         try {
-            const bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
-            const blob = new Blob([bytes], { type: 'audio/mpeg' });
-            const url = URL.createObjectURL(blob);
-            const el = document.createElement('audio');
-            el._blobUrl = url;
-            el.src = url;
-            el.volume = 1.0;
-            el.style.display = 'none';
-            document.body.appendChild(el);
-            audioPlayer.current = el;
-            el.onplay = () => setIsSpeaking(true);
-            el.onended = () => {
+            const ctx = getAudioCtx();
+            if (ctx.state === 'suspended') await ctx.resume();
+
+            const binary = atob(base64);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+
+            const audioBuffer = await ctx.decodeAudioData(bytes.buffer);
+            const src = ctx.createBufferSource();
+            src.buffer = audioBuffer;
+            src.connect(ctx.destination);
+            audioPlayer.current = src;
+            setIsSpeaking(true);
+            src.onended = () => {
                 setIsSpeaking(false);
-                URL.revokeObjectURL(url);
-                el.remove();
-                if (audioPlayer.current === el) audioPlayer.current = null;
+                if (audioPlayer.current === src) audioPlayer.current = null;
             };
-            el.onerror = () => {
-                setIsSpeaking(false);
-                URL.revokeObjectURL(url);
-                el.remove();
-                if (audioPlayer.current === el) audioPlayer.current = null;
-            };
-            el.play().catch(() => setIsSpeaking(false));
+            src.start(0);
         } catch (e) {
             console.error('playAudio error:', e);
             setIsSpeaking(false);
@@ -206,10 +205,7 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
     // ── Ring tone ─────────────────────────────────────────────────────────────
     const playRingTone = () => {
         try {
-            if (!audioCtxRef.current || audioCtxRef.current.state === 'closed') {
-                audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
-            }
-            const ctx = audioCtxRef.current;
+            const ctx = getAudioCtx();
             if (ctx.state === 'suspended') ctx.resume();
             const now = ctx.currentTime;
             [[0, 0.8], [1.2, 2.0]].forEach(([s, e]) => {
@@ -808,7 +804,7 @@ export default function AIRoleplay() {
                 }));
                 setAllBots(botsWithName);
                 setFilteredBots(botsWithName); // INITIALIZE filteredBots
-                console.log('Fetched bots:', botsWithName); // Debug log
+                // Debug log removed
             } catch (error) {
                 console.error("Failed to fetch roleplay bots:", error);
                 toast.error("Failed to load roleplay bots.");
