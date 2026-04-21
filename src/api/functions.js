@@ -1,11 +1,24 @@
 import { supabase } from '@/lib/supabase';
 
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
 async function invokeFunction(functionName, params) {
-  const { data, error } = await supabase.functions.invoke(functionName, {
-    body: params
+  // Use direct fetch with anon key so fake local-auth tokens don't get rejected
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/${functionName}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+      'apikey': SUPABASE_ANON_KEY,
+    },
+    body: JSON.stringify(params),
   });
-  if (error) throw error;
-  return data;
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Edge function ${functionName} failed (${res.status}): ${text}`);
+  }
+  return res.json();
 }
 
 export const teamsWebhook = (params) => invokeFunction('teams-webhook', params);
