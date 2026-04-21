@@ -391,25 +391,47 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
         }
     }, [prospect, playAudio, onEndCall]);
 
-    // Ringing sequence: 3 rings over ~6 seconds, then connect
+    // Ringing sequence: request mic permission first, then ring
     useEffect(() => {
-        let ring = 0;
-        const MAX_RINGS = 3;
+        let cancelled = false;
+        let micStream = null;
 
-        const doRing = () => {
-            ring++;
-            setRingCount(ring);
-            playRingTone();
-            if (ring < MAX_RINGS) {
-                setTimeout(doRing, 2000);
-            } else {
-                setTimeout(() => handleStartGreeting(), 1500);
-            }
+        const startRinging = () => {
+            if (cancelled) return;
+            let ring = 0;
+            const MAX_RINGS = 3;
+            const doRing = () => {
+                if (cancelled) return;
+                ring++;
+                setRingCount(ring);
+                playRingTone();
+                if (ring < MAX_RINGS) {
+                    setTimeout(doRing, 2000);
+                } else {
+                    setTimeout(() => { if (!cancelled) handleStartGreeting(); }, 1500);
+                }
+            };
+            setTimeout(doRing, 600);
         };
 
-        // Small delay so component is fully mounted
-        const t = setTimeout(doRing, 600);
-        return () => clearTimeout(t);
+        // Request mic permission before anything starts so the browser shows the prompt
+        navigator.mediaDevices.getUserMedia({ audio: true })
+            .then((stream) => {
+                micStream = stream;
+                // Keep stream alive until call ends; SpeechRecognition will reuse the permission
+                startRinging();
+            })
+            .catch((err) => {
+                console.warn('Mic permission denied or unavailable:', err);
+                toast.error('Microphone access is required for the call. Please allow microphone in your browser and try again.');
+                // Still start ringing so text/AI response works even without mic
+                startRinging();
+            });
+
+        return () => {
+            cancelled = true;
+            if (micStream) micStream.getTracks().forEach(t => t.stop());
+        };
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
