@@ -28,6 +28,7 @@ import { supabase } from '@/lib/supabase';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { resolveElevenLabsVoiceId } from '@/utils/voiceMapping';
 
 const MATERIAL_CATEGORIES = [
     'Product Knowledge', 'Sales Methodology', 'Objection Handling',
@@ -1197,7 +1198,8 @@ export default function AIRoleplay() {
     const confirmStartCall = () => {
         setShowConfirmationModal(false);
         if (botToCall) {
-            setSelectedBot(botToCall);
+            const voiceId = resolveElevenLabsVoiceId(botToCall);
+            setSelectedBot({ ...botToCall, voiceId });
             setShowCallModal(true);
         }
     };

@@ -1,6 +1,48 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
+// ElevenLabs voice IDs by voice key (mirrors voiceMapping.js on the frontend)
+const ELEVENLABS_VOICES: Record<string, string> = {
+  english_male: 'TxGEqnHWrfWFTfGW9XjX',
+  english_male_casual: 'VR6AewLTigWG4xSOukaG',
+  english_male_authoritative: 'ErXwobaYiN019PkySvjV',
+  english_male_deep: 'N2lVS1w4EtoT3dr4eOWO',
+  english_female: 'EXAVITQu4vr4xnSDxMaL',
+  english_female_friendly: 'MF3mGyEYCl7XYWbV9V6O',
+  english_female_confident: 'jsCqWAovK2LkecY7zXl4',
+  english_female_warm: '21m00Tcm4TlvDq8ikWAM',
+  english_neutral: 'pNInz6obpgDQGcFmaJgB',
+  english_neutral_warm: 'yoZ06aMxZJJ28mfd3POQ',
+};
+
+function resolveVoiceId(prospect: { voiceId?: string; voice?: string; gender?: string; personality?: string }): string | null {
+  // 1. Use explicit voiceId if it looks like an ElevenLabs ID (not a key name)
+  if (prospect.voiceId && !ELEVENLABS_VOICES[prospect.voiceId]) {
+    return prospect.voiceId;
+  }
+  // 2. Resolve from voiceId or voice key
+  const key = prospect.voiceId || prospect.voice;
+  if (key && ELEVENLABS_VOICES[key]) {
+    return ELEVENLABS_VOICES[key];
+  }
+  // 3. Infer from gender + personality
+  const gender = prospect.gender || 'Male';
+  const personality = prospect.personality || '';
+  if (gender === 'Female') {
+    if (/confident|assertive|aggressive|authoritative/i.test(personality)) return ELEVENLABS_VOICES.english_female_confident;
+    if (/warm|friendly|nice|enthusiastic|cooperative/i.test(personality)) return ELEVENLABS_VOICES.english_female_friendly;
+    return ELEVENLABS_VOICES.english_female;
+  }
+  if (gender === 'Non-binary') {
+    if (/warm|friendly/i.test(personality)) return ELEVENLABS_VOICES.english_neutral_warm;
+    return ELEVENLABS_VOICES.english_neutral;
+  }
+  // Default: Male
+  if (/authoritative|aggressive|assertive|skeptical|formal/i.test(personality)) return ELEVENLABS_VOICES.english_male_authoritative;
+  if (/casual|friendly|enthusiastic|cooperative/i.test(personality)) return ELEVENLABS_VOICES.english_male_casual;
+  return ELEVENLABS_VOICES.english_male;
+}
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
@@ -340,13 +382,15 @@ Respond to the sales rep's last message.`;
       responseText = generateRealisticResponse(userText, prospect, knowledgeContext);
     }
 
-    if (elevenlabsApiKey && prospect.voiceId) {
+    const resolvedVoiceId = resolveVoiceId(prospect);
+
+    if (elevenlabsApiKey && resolvedVoiceId) {
       if (elevenlabsApiKey === "test-key") {
         audioBase64 = generateMockAudio(responseText);
       } else {
         try {
           const elevenlabsResponse = await fetch(
-            `https://api.elevenlabs.io/v1/text-to-speech/${prospect.voiceId}`,
+            `https://api.elevenlabs.io/v1/text-to-speech/${resolvedVoiceId}`,
             {
               method: "POST",
               headers: {
@@ -378,7 +422,7 @@ Respond to the sales rep's last message.`;
           audioBase64 = generateMockAudio(responseText);
         }
       }
-    } else if (prospect.voiceId) {
+    } else if (resolvedVoiceId) {
       audioBase64 = generateMockAudio(responseText);
     }
 
