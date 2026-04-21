@@ -53,24 +53,14 @@ const PrivateLayout = ({ children, currentPageName }) => {
     const location = useLocation();
 
     useEffect(() => {
-        const loadUser = (sessionUser) => {
-            if (sessionUser) {
-                const u = { ...sessionUser, role: sessionUser.role || 'sales_agent' };
+        // AuthWrapper guarantees user is logged in — just read session once, no subscription needed
+        localAuth.getSession().then(({ data: { session } }) => {
+            if (session?.user) {
+                const u = { ...session.user, role: session.user.role || 'sales_agent' };
                 setUser(u);
                 setDemoRole(u.role);
             }
-        };
-
-        localAuth.getSession().then(({ data: { session } }) => {
-            if (session?.user) loadUser(session.user);
         });
-
-        const { data: { subscription } } = localAuth.onAuthStateChange((event, session) => {
-            if (event === 'SIGNED_IN' && session?.user) loadUser(session.user);
-            if (event === 'SIGNED_OUT') { setUser(null); setDemoRole(null); }
-        });
-
-        return () => subscription.unsubscribe();
     }, []);
 
     useEffect(() => {

@@ -109,10 +109,8 @@ export const localAuth = {
 
   onAuthStateChange(callback) {
     listeners.push(callback);
-    const session = getSession();
-    if (session) {
-      setTimeout(() => callback('SIGNED_IN', session), 0);
-    }
+    // Do NOT fire immediately — callers should use getSession() for initial state.
+    // Firing here caused every new subscriber to trigger a setState → re-render loop.
     return {
       data: {
         subscription: {
