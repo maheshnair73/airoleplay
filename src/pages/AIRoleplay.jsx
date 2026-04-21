@@ -187,9 +187,9 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
             if (ctx.state === 'suspended') await ctx.resume();
             if (isDeadRef.current) return; // unmounted while resuming
 
-            const binary = atob(base64);
-            const bytes = new Uint8Array(binary.length);
-            for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+            // Fast base64 → ArrayBuffer without slow char loop
+            const binaryStr = atob(base64);
+            const bytes = Uint8Array.from(binaryStr, c => c.charCodeAt(0));
 
             const audioBuffer = await ctx.decodeAudioData(bytes.buffer.slice(0));
             if (isDeadRef.current) return; // unmounted while decoding
@@ -289,8 +289,8 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
     // Auto-start listening only after AI has fully stopped speaking and responding
     useEffect(() => {
         if (phase === 'connected' && !isSpeaking && !isAIResponding && !isMuted) {
-            // Small delay so the AI audio buffer fully drains before mic opens
-            const t = setTimeout(() => startListeningRef.current?.(), 400);
+            // 700ms lets the audio buffer fully drain and avoids capturing AI voice tail
+            const t = setTimeout(() => startListeningRef.current?.(), 700);
             return () => clearTimeout(t);
         }
     }, [phase, isSpeaking, isAIResponding, isMuted]);
@@ -337,32 +337,33 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
         // Request mic early so permission prompt shows before ringing
         navigator.mediaDevices.getUserMedia({ audio: true }).catch(() => {});
 
+        // Prefetch greeting immediately during ring so it's ready on connect
+        let greetingPromise = aiRoleplay({ userText: null, prospect, transcriptHistory: [], knowledgeMaterialIds })
+            .catch(() => null);
+
         let ring = 0;
         const doRing = () => {
             if (dead) return;
             ring++;
             setRingCount(ring);
             playRingTone();
-            if (ring < 3) {
-                setTimeout(doRing, 2000);
+            if (ring < 2) {
+                // Only 2 rings (fast, realistic)
+                setTimeout(doRing, 1800);
             } else {
-                // Connect: show greeting immediately, don't wait for API
                 setTimeout(async () => {
                     if (dead) return;
                     setPhase('connected');
-                    // Show instant placeholder so UI doesn't hang
-                    const placeholder = { speaker: 'ai', text: 'Hello?', timestamp: new Date() };
-                    setTranscript([placeholder]);
-                    transcriptRef.current = [placeholder];
                     setIsAIResponding(true);
                     try {
-                        const data = await aiRoleplay({ userText: null, prospect, transcriptHistory: [], knowledgeMaterialIds });
+                        const data = await greetingPromise;
                         if (dead) return;
-                        const greeting = { speaker: 'ai', text: data.text || 'Hello?', timestamp: new Date() };
+                        const text = data?.text || 'Hello?';
+                        const greeting = { speaker: 'ai', text, timestamp: new Date() };
                         setTranscript([greeting]);
                         transcriptRef.current = [greeting];
                         setIsAIResponding(false);
-                        if (data.audio) {
+                        if (data?.audio) {
                             await playAudio(data.audio);
                         } else {
                             setIsSpeaking(false);
@@ -370,15 +371,18 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
                     } catch (err) {
                         if (!dead) {
                             console.error('Greeting error:', err);
+                            const fallback = { speaker: 'ai', text: 'Hello?', timestamp: new Date() };
+                            setTranscript([fallback]);
+                            transcriptRef.current = [fallback];
                             setIsSpeaking(false);
                             setIsAIResponding(false);
                         }
                     }
-                }, 800);
+                }, 300);
             }
         };
 
-        setTimeout(doRing, 600);
+        setTimeout(doRing, 400);
 
         return () => {
             dead = true;
