@@ -413,21 +413,33 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
         }
 
         try {
-            const currentUser = await User.me();
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) throw new Error('Not authenticated');
+
             const savedSession = await RoleplaySession.create({
+                user_id: user.id,
                 session_type: "human_ai",
-                lead_id: "ai_roleplay_" + Date.now(),
-                initiator_email: currentUser?.email || "demo@effysalespro.com",
-                bot_name: prospect.name,
-                bot_personality: prospect.personality,
-                scenario: `${prospect.roleplay_type || 'Roleplay'} with ${prospect.name}`,
-                session_duration: sessionDuration,
+                session_name: `${prospect.roleplay_type || 'Roleplay'} with ${prospect.name}`,
+                initiator_email: user.email,
+                user_email: user.email,
+                scenario_type: prospect.roleplay_type || 'Cold Call',
+                difficulty: prospect.difficulty || 'Medium',
+                duration: sessionDuration,
+                score: Math.round(analysisData.overall_score),
+                status: 'completed',
+                session_status: 'completed',
                 transcript: finalTranscript.map(t => ({ speaker: t.speaker, text: t.text, timestamp: String(t.timestamp) })),
-                analysis_results: analysisData,
-                call_type: (prospect.roleplay_type || 'roleplay').toLowerCase().replace(' ', '_'),
-                tags: [prospect.personality, prospect.roleplay_type].filter(Boolean),
-                bot_configuration: JSON.stringify({ name: prospect.name, title: prospect.title, company_name: prospect.company_name || prospect.company, personality: prospect.personality, roleplay_type: prospect.roleplay_type, voice: prospect.voice || 'english_male', language: prospect.language || 'english', traits: prospect.traits || [], painPoints: prospect.painPoints || [], background: prospect.background || '', difficulty: prospect.difficulty || 'Medium', industry: prospect.industry }),
-                evaluation_scores: { overall_score: analysisData.overall_score }
+                feedback: analysisData.feedback_summary,
+                meeting_details: {
+                    bot_name: prospect.name,
+                    bot_title: prospect.title,
+                    bot_company: prospect.company_name || prospect.company,
+                    bot_personality: prospect.personality,
+                    scorecard: analysisData.scorecard,
+                    bot_configuration: { name: prospect.name, title: prospect.title, company_name: prospect.company_name || prospect.company, personality: prospect.personality, roleplay_type: prospect.roleplay_type, voice: prospect.voice || 'english_male', language: prospect.language || 'english', traits: prospect.traits || [], painPoints: prospect.painPoints || [], background: prospect.background || '', difficulty: prospect.difficulty || 'Medium', industry: prospect.industry }
+                },
+                framework_scores: { overall_score: analysisData.overall_score },
+                completed_at: new Date().toISOString(),
             });
             onAnalysisComplete(savedSession);
         } catch (err) {
