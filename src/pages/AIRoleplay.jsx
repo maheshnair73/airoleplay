@@ -145,6 +145,11 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
     const messagesEndRef = useRef(null);
     const callStartTime = useRef(null);
     const audioCtxRef = useRef(null);
+    const isListeningRef = useRef(false);
+    const isAIRespondingRef = useRef(false);
+    const sendAIMessageRef = useRef(null); // stable ref so effects never capture stale fn
+
+    // Sync state → refs every render so effect closures always see current values
     isListeningRef.current = isListening;
     isAIRespondingRef.current = isAIResponding;
 
@@ -257,8 +262,8 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
             if (!text) return;
             setIsListening(false);
             const entry = { speaker: 'user', text, timestamp: new Date() };
-            setTranscript(prev => { transcriptRef.current = [...prev, entry]; return transcriptRef.current; });
-            sendAIMessage(text);
+            setTranscript(prev => { const next = [...prev, entry]; transcriptRef.current = next; return next; });
+            sendAIMessageRef.current?.(text);
         };
 
         return () => {
@@ -287,7 +292,7 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
         try {
             const data = await aiRoleplay({ userText, prospect, transcriptHistory: history, knowledgeMaterialIds });
             const aiEntry = { speaker: 'ai', text: data.text || '...', timestamp: new Date() };
-            setTranscript(prev => { transcriptRef.current = [...prev, aiEntry]; return transcriptRef.current; });
+            setTranscript(prev => { const next = [...prev, aiEntry]; transcriptRef.current = next; return next; });
             if (data.audio) {
                 playAudio(data.audio);
             } else {
@@ -302,6 +307,8 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
             setIsAIResponding(false);
         }
     };
+    // Keep the ref current so the SR effect closure always calls the latest version
+    sendAIMessageRef.current = sendAIMessage;
 
     // ── Ringing → connected flow ──────────────────────────────────────────────
     useEffect(() => {
