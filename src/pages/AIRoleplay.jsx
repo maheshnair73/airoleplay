@@ -135,6 +135,7 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
     const [isListening, setIsListening] = useState(false);
     const [isSpeaking, setIsSpeaking] = useState(false);
     const [isMuted, setIsMuted] = useState(false);
+    const [isAudioMuted, setIsAudioMuted] = useState(false);
     const [isSidebarOpen, setIsSidebarOpen] = useState(true); // State for sidebar
     const audioPlayer = useRef(null);
     const recognition = useRef(null);
@@ -205,6 +206,9 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
                 conversationState.current = 'idle';
                 currentAudioPromise.current = null;
             };
+
+            // Respect audio mute state
+            audioPlayer.current.muted = isAudioMuted;
 
             // Start playback and track the promise
             currentAudioPromise.current = audioPlayer.current.play();
@@ -599,12 +603,23 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
             const newMutedState = !prev;
             if (newMutedState) {
                 if (recognition.current) recognition.current.stop();
-                toast.info("Microphone Muted");
+                toast.info("Microphone muted");
             } else {
-                toast.success("Microphone On");
+                toast.success("Microphone on");
                 startListening();
             }
             return newMutedState;
+        });
+    };
+
+    const toggleAudioMute = () => {
+        setIsAudioMuted(prev => {
+            const next = !prev;
+            if (audioPlayer.current) {
+                audioPlayer.current.muted = next;
+            }
+            toast.info(next ? "AI audio muted" : "AI audio on");
+            return next;
         });
     };
 
@@ -694,8 +709,14 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
                                     >
                                         {isMuted ? <MicOff className="w-6 h-6" /> : <Mic className="w-6 h-6" />}
                                     </Button>
-                                    <Button variant="outline" size="icon" onClick={stopAudio} disabled={!isSpeaking}>
-                                        <VolumeX className="w-5 h-5" />
+                                    <Button
+                                        variant="outline"
+                                        size="icon"
+                                        onClick={toggleAudioMute}
+                                        className={`w-14 h-14 rounded-full ${isAudioMuted ? 'bg-orange-500 text-white hover:bg-orange-600' : ''}`}
+                                        title={isAudioMuted ? "Unmute AI audio" : "Mute AI audio"}
+                                    >
+                                        {isAudioMuted ? <VolumeX className="w-6 h-6" /> : <Volume2 className="w-6 h-6" />}
                                     </Button>
                                 </div>
                                 <Button onClick={handleEndCall} variant="destructive" size="lg">
