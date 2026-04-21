@@ -337,7 +337,7 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
         // Request mic early so permission prompt shows before ringing
         navigator.mediaDevices.getUserMedia({ audio: true }).catch(() => {});
 
-        // Prefetch greeting immediately during ring so it's ready on connect
+        // Prefetch greeting immediately during ring so audio is ready the moment ringing ends
         let greetingPromise = aiRoleplay({ userText: null, prospect, transcriptHistory: [], knowledgeMaterialIds })
             .catch(() => null);
 
@@ -347,10 +347,11 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
             ring++;
             setRingCount(ring);
             playRingTone();
-            if (ring < 2) {
-                // Only 2 rings (fast, realistic)
-                setTimeout(doRing, 1800);
+            if (ring < 3) {
+                // Schedule next ring after current ring tone (~1.8s) finishes
+                setTimeout(doRing, 2000);
             } else {
+                // After 3rd ring tone completes (~2s), connect and play greeting immediately
                 setTimeout(async () => {
                     if (dead) return;
                     setPhase('connected');
@@ -378,11 +379,11 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
                             setIsAIResponding(false);
                         }
                     }
-                }, 300);
+                }, 2000); // wait for 3rd ring tone to finish before connecting
             }
         };
 
-        setTimeout(doRing, 400);
+        setTimeout(doRing, 500);
 
         return () => {
             dead = true;
