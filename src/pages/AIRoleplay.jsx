@@ -259,13 +259,28 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
         startListeningRef.current = tryStart;
 
         sr.onstart = () => { if (!isDeadRef.current) setIsListening(true); };
-        sr.onend = () => { if (!isDeadRef.current) setIsListening(false); };
+        sr.onend = () => {
+            if (isDeadRef.current) return;
+            setIsListening(false);
+            // Auto-restart: if AI is idle and mic is not muted, keep listening
+            setTimeout(() => {
+                if (!isDeadRef.current && !isAIRespondingRef.current && !isSpeakingRef.current && !isMutedRef.current) {
+                    tryStart();
+                }
+            }, 300);
+        };
         sr.onerror = (ev) => {
             if (isDeadRef.current) return;
             setIsListening(false);
             if (ev.error !== 'no-speech' && ev.error !== 'aborted') {
                 console.error('Speech recognition error:', ev.error);
             }
+            // Restart on recoverable errors
+            setTimeout(() => {
+                if (!isDeadRef.current && !isAIRespondingRef.current && !isSpeakingRef.current && !isMutedRef.current) {
+                    tryStart();
+                }
+            }, 500);
         };
         sr.onresult = (ev) => {
             if (isDeadRef.current) return;
@@ -1175,6 +1190,10 @@ export default function AIRoleplay() {
         if (botToCall) {
             const voiceId = resolveElevenLabsVoiceId(botToCall);
             setSelectedBot({ ...botToCall, voiceId });
+            // Auto-load bot's own knowledge materials if none manually selected
+            if (selectedMaterials.length === 0 && botToCall.knowledge_material_ids?.length > 0) {
+                setSelectedMaterials(botToCall.knowledge_material_ids);
+            }
             setShowCallModal(true);
         }
     };

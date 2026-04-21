@@ -10,16 +10,19 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { ArrowLeft, User, Building2, BrainCircuit, Mic, ShieldAlert, Target, Sparkles, Wand2, Bot, Linkedin, Snowflake, Search, Flame, Check, RefreshCw, Settings, PenSquare, Plus, X, Package, ShoppingBag } from 'lucide-react'; // Add Package icon
+import { ArrowLeft, User, Building2, BrainCircuit, Mic, ShieldAlert, Target, Sparkles, Wand2, Bot, Linkedin, Snowflake, Search, Flame, Check, RefreshCw, Settings, PenSquare, Plus, X, Package, ShoppingBag, BookOpen, FileText } from 'lucide-react';
 import { createPageUrl } from '@/utils';
+import { supabase } from '@/lib/supabase';
 
 const steps = [
     { id: 'start', name: 'Start', icon: Sparkles },
-    { id: 'industry', name: 'Industry', icon: Building2 }, // New step
+    { id: 'industry', name: 'Industry', icon: Building2 },
     { id: 'persona', name: 'Persona', icon: User },
     { id: 'scenario', name: 'Scenario', icon: Target },
     { id: 'details', name: 'Details', icon: BrainCircuit },
+    { id: 'training', name: 'Training', icon: BookOpen },
     { id: 'advanced', name: 'Advanced', icon: Settings },
 ];
 
@@ -163,10 +166,12 @@ export default function CreateAIClient() {
         call_goal: '',
         buyer_awareness_level: 'Is Aware of Problem',
         background: '',
-        nationality: 'US'
+        nationality: 'US',
+        knowledge_material_ids: [],
     });
     const [isLoading, setIsLoading] = useState(false);
     const [customRoleplayType, setCustomRoleplayType] = useState('');
+    const [knowledgeMaterials, setKnowledgeMaterials] = useState([]);
 
     useEffect(() => {
         const loadUserData = async () => {
@@ -184,6 +189,15 @@ export default function CreateAIClient() {
             }
         };
         loadUserData();
+    }, []);
+
+    useEffect(() => {
+        supabase
+            .from('roleplay_knowledge_materials')
+            .select('id, title, description, category')
+            .eq('is_active', true)
+            .order('created_date', { ascending: false })
+            .then(({ data }) => setKnowledgeMaterials(data || []));
     }, []);
 
     useEffect(() => {
@@ -855,7 +869,64 @@ export default function CreateAIClient() {
                         </CardContent>
                     </>
                 );
-            case 5: // Advanced Configuration (updated step number)
+            case 5: // Training Materials
+                return (
+                    <>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2"><BookOpen className="text-blue-600" /> Training Materials</CardTitle>
+                            <CardDescription>
+                                Attach knowledge materials so this bot responds with your specific product context, objection-handling scripts, and sales methodology.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="p-6 space-y-4">
+                            {knowledgeMaterials.length === 0 ? (
+                                <div className="text-center py-10 border-2 border-dashed rounded-lg">
+                                    <BookOpen className="w-10 h-10 mx-auto text-slate-300 mb-3" />
+                                    <p className="text-slate-500 font-medium">No training materials yet</p>
+                                    <p className="text-sm text-slate-400 mt-1 mb-4">Upload materials in the AI Roleplay page to give bots context.</p>
+                                    <Button variant="outline" size="sm" asChild>
+                                        <Link to={createPageUrl('AIRoleplay')}>Go to AI Roleplay</Link>
+                                    </Button>
+                                </div>
+                            ) : (
+                                <div className="space-y-2">
+                                    <p className="text-sm text-slate-600 mb-2">
+                                        Selected materials will be injected into every call with this bot as context. <span className="font-medium">{formData.knowledge_material_ids.length} selected.</span>
+                                    </p>
+                                    {knowledgeMaterials.map(m => {
+                                        const isSelected = formData.knowledge_material_ids.includes(m.id);
+                                        return (
+                                            <button
+                                                key={m.id}
+                                                type="button"
+                                                onClick={() => setFormData(prev => ({
+                                                    ...prev,
+                                                    knowledge_material_ids: isSelected
+                                                        ? prev.knowledge_material_ids.filter(id => id !== m.id)
+                                                        : [...prev.knowledge_material_ids, m.id]
+                                                }))}
+                                                className={`w-full text-left p-4 border rounded-lg transition-all ${isSelected ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-400' : 'border-slate-200 hover:border-blue-300 hover:bg-slate-50'}`}
+                                            >
+                                                <div className="flex items-start justify-between gap-3">
+                                                    <div className="flex items-start gap-3 flex-1 min-w-0">
+                                                        <FileText className={`w-5 h-5 mt-0.5 flex-shrink-0 ${isSelected ? 'text-blue-600' : 'text-slate-400'}`} />
+                                                        <div className="min-w-0">
+                                                            <p className={`font-medium text-sm ${isSelected ? 'text-blue-900' : 'text-slate-800'}`}>{m.title}</p>
+                                                            {m.description && <p className="text-xs text-slate-500 mt-0.5 truncate">{m.description}</p>}
+                                                        </div>
+                                                    </div>
+                                                    <Badge variant="outline" className="text-xs flex-shrink-0">{m.category}</Badge>
+                                                </div>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </CardContent>
+                    </>
+                );
+
+            case 6: // Advanced Configuration
                 return (
                     <>
                         <CardHeader>
