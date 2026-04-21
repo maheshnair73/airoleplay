@@ -176,19 +176,25 @@ Deno.serve(async (req: Request) => {
     const prospectPersonality = prospect.personality || "";
     const prospectPains = Array.isArray(prospect.painPoints) ? prospect.painPoints : [];
 
-    if (!userText) {
-      systemPrompt = `You are ${prospectName}, a ${prospectTitle} at ${prospectCompany}.${prospectPersonality ? ` Personality: ${prospectPersonality}.` : ""}${prospectPains.length ? ` Challenges: ${prospectPains.join(", ")}.` : ""}
+    const basePersona = `You are ${prospectName}, ${prospectTitle} at ${prospectCompany}.${prospectPersonality ? ` Your personality: ${prospectPersonality}.` : ""}${prospectPains.length ? ` Your business challenges: ${prospectPains.join(", ")}.` : ""}`;
 
-This is an outbound cold call. You just picked up. Respond with ONLY 1-5 words like "Hello?" or "Yes, who's this?" — nothing more.${knowledgeContext}`;
+    if (!userText) {
+      systemPrompt = `${basePersona}
+
+You just received an unexpected sales call. Respond ONLY with 1-5 words exactly as you would when picking up: e.g. "Hello?", "Yes?", "Yeah, who's this?". Do NOT introduce yourself. Do NOT say your name or company. Just answer the phone briefly.${knowledgeContext}`;
       userPrompt = "You just picked up the phone.";
     } else {
-      systemPrompt = `You are ${prospectName}, a ${prospectTitle} at ${prospectCompany}.${prospectPersonality ? ` Personality: ${prospectPersonality}.` : ""}${prospectPains.length ? ` Challenges: ${prospectPains.join(", ")}.` : ""}
+      systemPrompt = `${basePersona}
 
-You are on a sales call roleplay. Keep responses to 2-3 sentences. Stay in character.${knowledgeContext}
-
-Conversation so far:
-${conversationHistory}`;
-      userPrompt = `Sales Rep: ${userText}`;
+You are in the middle of a sales call roleplay. Rules:
+- NEVER say "I am ${prospectName}" or introduce yourself again — the caller already knows who you are.
+- NEVER repeat information you already said in the conversation.
+- Respond naturally to what the sales rep just said. Keep it to 1-3 sentences max.
+- Stay in character: react based on your personality and challenges.
+- If the sales rep asked a question, answer it briefly then push back or ask a follow-up.${knowledgeContext}`;
+      userPrompt = conversationHistory
+        ? `Conversation so far:\n${conversationHistory}\n\nSales Rep just said: ${userText}\n\nYour response:`
+        : `Sales Rep just said: ${userText}\n\nYour response:`;
     }
 
     // Get AI text response

@@ -147,11 +147,16 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
     const audioCtxRef = useRef(null);
     const isListeningRef = useRef(false);
     const isAIRespondingRef = useRef(false);
-    const sendAIMessageRef = useRef(null); // stable ref so effects never capture stale fn
+    const isSpeakingRef = useRef(false);
+    const isMutedRef = useRef(false);
+    const isDeadRef = useRef(false); // set true on unmount to cancel async ops
+    const sendAIMessageRef = useRef(null);
 
-    // Sync state → refs every render so effect closures always see current values
+    // Sync state → refs every render
     isListeningRef.current = isListening;
     isAIRespondingRef.current = isAIResponding;
+    isSpeakingRef.current = isSpeaking;
+    isMutedRef.current = isMuted;
 
     // Keep transcriptRef in sync
     useEffect(() => { transcriptRef.current = transcript; }, [transcript]);
@@ -175,30 +180,36 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
     };
 
     const playAudio = async (base64) => {
-        if (!base64 || isAudioMuted) { setIsSpeaking(false); return; }
+        if (!base64 || isAudioMuted || isDeadRef.current) { setIsSpeaking(false); return; }
         stopAudio();
         try {
             const ctx = getAudioCtx();
             if (ctx.state === 'suspended') await ctx.resume();
+            if (isDeadRef.current) return; // unmounted while resuming
 
             const binary = atob(base64);
             const bytes = new Uint8Array(binary.length);
             for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
 
-            const audioBuffer = await ctx.decodeAudioData(bytes.buffer);
+            const audioBuffer = await ctx.decodeAudioData(bytes.buffer.slice(0));
+            if (isDeadRef.current) return; // unmounted while decoding
+
             const src = ctx.createBufferSource();
             src.buffer = audioBuffer;
             src.connect(ctx.destination);
             audioPlayer.current = src;
             setIsSpeaking(true);
             src.onended = () => {
+                if (isDeadRef.current) return;
                 setIsSpeaking(false);
                 if (audioPlayer.current === src) audioPlayer.current = null;
             };
             src.start(0);
         } catch (e) {
-            console.error('playAudio error:', e);
-            setIsSpeaking(false);
+            if (!isDeadRef.current) {
+                console.error('playAudio error:', e);
+                setIsSpeaking(false);
+            }
         }
     };
 
@@ -227,7 +238,7 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
     };
 
     // ── Speech recognition ────────────────────────────────────────────────────
-    const startListening = useRef(null);
+    const startListeningRef = useRef(null);
 
     useEffect(() => {
         const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -239,21 +250,27 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
         sr.lang = 'en-US';
         recognitionRef.current = sr;
 
+        // Only start if nothing is happening and we're not muted
         const tryStart = () => {
-            if (isAIRespondingRef.current || isListeningRef.current) return;
+            if (isDeadRef.current) return;
+            if (isAIRespondingRef.current || isListeningRef.current || isSpeakingRef.current || isMutedRef.current) return;
             try { sr.start(); } catch (_) {}
         };
-        startListening.current = tryStart;
+        startListeningRef.current = tryStart;
 
-        sr.onstart = () => setIsListening(true);
-        sr.onend = () => setIsListening(false);
+        sr.onstart = () => { if (!isDeadRef.current) setIsListening(true); };
+        sr.onend = () => { if (!isDeadRef.current) setIsListening(false); };
         sr.onerror = (ev) => {
+            if (isDeadRef.current) return;
             setIsListening(false);
             if (ev.error !== 'no-speech' && ev.error !== 'aborted') {
                 console.error('Speech recognition error:', ev.error);
             }
         };
         sr.onresult = (ev) => {
+            if (isDeadRef.current) return;
+            // Ignore if AI was speaking — captured its voice
+            if (isSpeakingRef.current || isAIRespondingRef.current) return;
             const text = ev.results[0][0].transcript.trim();
             if (!text) return;
             setIsListening(false);
@@ -269,17 +286,21 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    // Auto-start listening after AI is done
+    // Auto-start listening only after AI has fully stopped speaking and responding
     useEffect(() => {
         if (phase === 'connected' && !isSpeaking && !isAIResponding && !isMuted) {
-            startListening.current?.();
+            // Small delay so the AI audio buffer fully drains before mic opens
+            const t = setTimeout(() => startListeningRef.current?.(), 400);
+            return () => clearTimeout(t);
         }
     }, [phase, isSpeaking, isAIResponding, isMuted]);
 
     // ── Core AI messaging ─────────────────────────────────────────────────────
     const sendAIMessage = async (userText) => {
+        if (isDeadRef.current) return;
         setIsAIResponding(true);
-        try { recognitionRef.current?.stop(); } catch (_) {}
+        // Kill mic immediately so AI can't hear itself
+        try { recognitionRef.current?.abort(); } catch (_) {}
 
         const history = transcriptRef.current.map(t => ({
             speaker: t.speaker, text: t.text, timestamp: String(t.timestamp)
@@ -287,19 +308,21 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
 
         try {
             const data = await aiRoleplay({ userText, prospect, transcriptHistory: history, knowledgeMaterialIds });
+            if (isDeadRef.current) return;
             const aiEntry = { speaker: 'ai', text: data.text || '...', timestamp: new Date() };
             setTranscript(prev => { const next = [...prev, aiEntry]; transcriptRef.current = next; return next; });
+            setIsAIResponding(false); // clear before audio so auto-listen waits on isSpeaking instead
             if (data.audio) {
-                playAudio(data.audio);
+                await playAudio(data.audio); // isSpeaking=true during playback, suppresses mic
             } else {
                 setIsSpeaking(false);
             }
         } catch (err) {
+            if (isDeadRef.current) return;
             console.error('AI message error:', err);
             const fallback = { speaker: 'ai', text: "Could you say that again?", timestamp: new Date() };
             setTranscript(prev => [...prev, fallback]);
             setIsSpeaking(false);
-        } finally {
             setIsAIResponding(false);
         }
     };
@@ -338,16 +361,18 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
                         const greeting = { speaker: 'ai', text: data.text || 'Hello?', timestamp: new Date() };
                         setTranscript([greeting]);
                         transcriptRef.current = [greeting];
+                        setIsAIResponding(false);
                         if (data.audio) {
-                            playAudio(data.audio);
+                            await playAudio(data.audio);
                         } else {
                             setIsSpeaking(false);
                         }
                     } catch (err) {
-                        console.error('Greeting error:', err);
-                        setIsSpeaking(false);
-                    } finally {
-                        if (!dead) setIsAIResponding(false);
+                        if (!dead) {
+                            console.error('Greeting error:', err);
+                            setIsSpeaking(false);
+                            setIsAIResponding(false);
+                        }
                     }
                 }, 800);
             }
@@ -357,6 +382,7 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
 
         return () => {
             dead = true;
+            isDeadRef.current = true;
             stopAudio();
             try { recognitionRef.current?.abort(); } catch (_) {}
             if (audioCtxRef.current && audioCtxRef.current.state !== 'closed') {
