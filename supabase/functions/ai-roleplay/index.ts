@@ -274,8 +274,10 @@ Deno.serve(async (req: Request) => {
       return data?.value || undefined;
     };
 
-    const openaiApiKey = await getSettingKey("OPENAI_API_KEY");
-    const elevenlabsApiKey = await getSettingKey("ELEVENLABS_API_KEY");
+    const [openaiApiKey, elevenlabsApiKey] = await Promise.all([
+      getSettingKey("OPENAI_API_KEY"),
+      getSettingKey("ELEVENLABS_API_KEY"),
+    ]);
 
     const {
       userText,
@@ -471,9 +473,10 @@ Respond to the sales rep's last message.`;
 
           if (elevenlabsResponse.ok) {
             const audioArrayBuffer = await elevenlabsResponse.arrayBuffer();
-            audioBase64 = btoa(
-              String.fromCharCode(...new Uint8Array(audioArrayBuffer))
-            );
+            const bytes = new Uint8Array(audioArrayBuffer);
+            let binary = "";
+            for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+            audioBase64 = btoa(binary);
           } else {
             console.log("ElevenLabs API error:", elevenlabsResponse.status);
             audioBase64 = generateMockAudio(responseText);
