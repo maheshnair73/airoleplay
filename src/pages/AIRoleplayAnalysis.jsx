@@ -1164,12 +1164,18 @@ export default function AIRoleplayAnalysis() {
         const rawImprove  = md.areas_for_improvement || sessionData.areas_for_improvement || [];
         const rawScorecard = md.scorecard || sessionData.scorecard || [];
 
-        // Normalise scorecard: may be {category,passed,note} or {category,criteria:[...]}
+        // Normalise scorecard: may be {category,passed,note,examples,...} or {category,criteria:[...]}
         const normalisedScorecard = rawScorecard.map((s) => {
             if (Array.isArray(s.criteria)) return s; // already correct shape
             return {
                 category: s.category || '',
-                criteria: [{ text: s.note || s.category || '', passed: s.passed ?? false }],
+                criteria: [{
+                    text: s.note || s.category || '',
+                    passed: s.passed ?? false,
+                    explanation: s.explanation || '',
+                    examples: Array.isArray(s.examples) ? s.examples : [],
+                    improvement: s.improvement || '',
+                }],
             };
         });
 
@@ -1412,10 +1418,27 @@ export default function AIRoleplayAnalysis() {
                                                         </div>
                                                     )}
 
+                                                    {criterion.examples?.length > 0 && (
+                                                        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                                                            <h5 className="font-semibold text-sm text-green-900 mb-2 flex items-center gap-1.5">
+                                                                <MessageSquare className="w-4 h-4" />
+                                                                Example phrases to try
+                                                            </h5>
+                                                            <ul className="space-y-2">
+                                                                {criterion.examples.map((ex, i) => (
+                                                                    <li key={i} className="flex items-start gap-2">
+                                                                        <span className="text-green-600 font-bold text-xs mt-0.5 flex-shrink-0">{i + 1}.</span>
+                                                                        <p className="text-sm text-green-800 italic">"{ex}"</p>
+                                                                    </li>
+                                                                ))}
+                                                            </ul>
+                                                        </div>
+                                                    )}
+
                                                     {criterion.improvement && (
                                                         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                                                             <h5 className="font-semibold text-sm text-blue-900 mb-2">
-                                                                What could you do differently next time?
+                                                                What to do differently next time
                                                             </h5>
                                                             <p className="text-sm text-blue-800 leading-relaxed">
                                                                 {criterion.improvement}

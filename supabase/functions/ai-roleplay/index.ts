@@ -178,26 +178,63 @@ Deno.serve(async (req: Request) => {
               model: "gpt-4o-mini",
               messages: [{
                 role: "user",
-                content: `Analyze this sales roleplay conversation. Return ONLY valid JSON with these exact keys:
+                content: `You are an expert sales coach. Analyze this sales roleplay conversation and return ONLY valid JSON — no markdown, no explanation, just the JSON object.
+
+JSON schema:
 {
-  "overall_score": <number 0-100>,
-  "feedback_summary": "<2-3 sentences of coaching feedback>",
-  "what_went_well": ["<point 1>", "<point 2>"],
-  "areas_for_improvement": ["<point 1>", "<point 2>"],
+  "overall_score": <integer 0-100>,
+  "feedback_summary": "<3-4 sentence coaching overview — be specific to what was actually said>",
+  "what_went_well": ["<specific observation tied to the actual conversation>", ...],
+  "areas_for_improvement": ["<specific observation tied to the actual conversation>", ...],
   "scorecard": [
-    {"category": "Opening & Rapport", "passed": <bool>, "note": "<brief note>"},
-    {"category": "Discovery Questions", "passed": <bool>, "note": "<brief note>"},
-    {"category": "Value Articulation", "passed": <bool>, "note": "<brief note>"},
-    {"category": "Objection Handling", "passed": <bool>, "note": "<brief note>"},
-    {"category": "Closing & Next Steps", "passed": <bool>, "note": "<brief note>"}
+    {
+      "category": "Opening & Rapport",
+      "passed": <bool>,
+      "note": "<one sentence on what the rep did or failed to do>",
+      "explanation": "<2-3 sentences explaining the scoring with reference to specific moments in the call>",
+      "examples": ["<exact example phrase or question the rep could have used>", "<another example>", "<a third example>"],
+      "improvement": "<one actionable coaching tip for next time>"
+    },
+    {
+      "category": "Discovery Questions",
+      "passed": <bool>,
+      "note": "<one sentence>",
+      "explanation": "<2-3 sentences with specifics from the call>",
+      "examples": ["<e.g. 'What does your current process look like for X?'>", "<e.g. 'What's the biggest challenge your team faces with Y?'>", "<e.g. 'What would success look like for you in 6 months?'>"],
+      "improvement": "<one actionable tip>"
+    },
+    {
+      "category": "Value Articulation",
+      "passed": <bool>,
+      "note": "<one sentence>",
+      "explanation": "<2-3 sentences with specifics>",
+      "examples": ["<example value statement tied to a pain point>", "<another example>"],
+      "improvement": "<one actionable tip>"
+    },
+    {
+      "category": "Objection Handling",
+      "passed": <bool>,
+      "note": "<one sentence>",
+      "explanation": "<2-3 sentences with specifics>",
+      "examples": ["<example reframe or response to the objection raised>", "<alternative approach>"],
+      "improvement": "<one actionable tip>"
+    },
+    {
+      "category": "Closing & Next Steps",
+      "passed": <bool>,
+      "note": "<one sentence>",
+      "explanation": "<2-3 sentences with specifics>",
+      "examples": ["<example closing question>", "<example next-step ask>"],
+      "improvement": "<one actionable tip>"
+    }
   ]
 }
 
-Conversation:
+Conversation to analyze:
 ${transcript}`
               }],
               temperature: 0.3,
-              max_tokens: 600,
+              max_tokens: 1500,
             }),
             signal: AbortSignal.timeout(20000),
           });
