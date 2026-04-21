@@ -175,6 +175,13 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
     const sendAIMessageRef = useRef(null);
     const wasInterruptedRef = useRef(false); // tracks if user interrupted AI mid-speech
 
+    // ── Recording refs ────────────────────────────────────────────────────────
+    const micStreamRef = useRef(null);       // raw getUserMedia stream
+    const recorderRef = useRef(null);        // MediaRecorder
+    const recChunksRef = useRef([]);         // accumulated audio chunks
+    const recDestRef = useRef(null);         // MediaStreamDestination for AI audio
+    const recordingStartRef = useRef(null);  // Date.now() when recording began
+
     // Sync state → refs every render
     isListeningRef.current = isListening;
     isAIRespondingRef.current = isAIResponding;
@@ -189,9 +196,59 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
     const getAudioCtx = () => {
         if (!audioCtxRef.current || audioCtxRef.current.state === 'closed') {
             audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
+            // Create a MediaStreamDestination to capture AI audio for recording
+            recDestRef.current = audioCtxRef.current.createMediaStreamDestination();
         }
         return audioCtxRef.current;
     };
+
+    // Start recording by merging mic + AI audio streams
+    const startRecording = async () => {
+        try {
+            const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            micStreamRef.current = micStream;
+
+            const ctx = getAudioCtx();
+            // Route mic into AudioContext so we can capture it alongside AI audio
+            const micSource = ctx.createMediaStreamSource(micStream);
+            micSource.connect(recDestRef.current);
+
+            // Merge mic stream tracks + AI destination tracks into one recorder stream
+            const combinedStream = new MediaStream([
+                ...micStream.getAudioTracks(),
+                ...recDestRef.current.stream.getAudioTracks(),
+            ]);
+
+            // Pick best supported format
+            const mimeType = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/ogg']
+                .find(t => MediaRecorder.isTypeSupported(t)) || '';
+
+            const recorder = new MediaRecorder(combinedStream, mimeType ? { mimeType } : {});
+            recChunksRef.current = [];
+            recorder.ondataavailable = (e) => { if (e.data.size > 0) recChunksRef.current.push(e.data); };
+            recorder.start(1000); // collect chunks every second
+            recorderRef.current = recorder;
+            recordingStartRef.current = Date.now();
+        } catch (e) {
+            console.warn('Recording setup failed (non-fatal):', e);
+        }
+    };
+
+    // Stop recording and return a Blob (or null)
+    const stopRecording = () => new Promise((resolve) => {
+        const recorder = recorderRef.current;
+        if (!recorder || recorder.state === 'inactive') { resolve(null); return; }
+        recorder.onstop = () => {
+            const blob = recChunksRef.current.length
+                ? new Blob(recChunksRef.current, { type: recorder.mimeType || 'audio/webm' })
+                : null;
+            resolve(blob);
+        };
+        try { recorder.stop(); } catch (_) { resolve(null); }
+        // Clean up mic
+        micStreamRef.current?.getTracks().forEach(t => t.stop());
+        micStreamRef.current = null;
+    });
 
     const stopAudio = (fromInterrupt = false) => {
         const src = audioPlayer.current;
@@ -227,6 +284,8 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
             const src = ctx.createBufferSource();
             src.buffer = audioBuffer;
             src.connect(ctx.destination);
+            // Also route AI audio into recording stream if recording is active
+            if (recDestRef.current) src.connect(recDestRef.current);
             audioPlayer.current = src;
             setIsSpeaking(true);
             src.onended = () => {
@@ -452,6 +511,7 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
                     if (dead) return;
                     setPhase('connected');
                     setIsAIResponding(true);
+                    startRecording(); // begin capturing both streams
                     try {
                         const data = await greetingPromise;
                         if (dead) return;
@@ -504,6 +564,9 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
 
         const sessionDuration = Math.floor((Date.now() - callStartTime.current) / 1000);
         const finalTranscript = transcriptRef.current;
+
+        // Stop recording and get blob in parallel with analysis
+        const recordingBlobPromise = stopRecording();
 
         // Need at least one exchange to analyze
         const userMsgs = finalTranscript.filter(t => t.speaker === 'user').length;
@@ -564,6 +627,38 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
         try {
             const { data: { user } } = await supabase.auth.getUser();
             if (user) {
+                // Upload recording in parallel — non-blocking for the session save
+                let audioUrl = null;
+                try {
+                    const blob = await recordingBlobPromise;
+                    if (blob && blob.size > 1000) {
+                        const ext = blob.type.includes('ogg') ? 'ogg' : 'webm';
+                        const path = `${user.id}/${Date.now()}.${ext}`;
+                        const { error: upErr } = await supabase.storage
+                            .from('call-recordings')
+                            .upload(path, blob, { contentType: blob.type, upsert: false });
+                        if (!upErr) {
+                            const { data: urlData } = await supabase.storage
+                                .from('call-recordings')
+                                .createSignedUrl(path, 60 * 60 * 24 * 7); // 7-day signed URL
+                            audioUrl = urlData?.signedUrl || null;
+                        }
+                    }
+                } catch (recErr) {
+                    console.warn('Recording upload failed (non-fatal):', recErr);
+                }
+
+                // Add relative timestamps to transcript for audio seeking
+                const callStart = recordingStartRef.current || (Date.now() - sessionDuration * 1000);
+                const transcriptWithOffsets = finalTranscript.map(t => ({
+                    speaker: t.speaker,
+                    text: t.text,
+                    timestamp: String(t.timestamp),
+                    timeInSeconds: t.timestamp
+                        ? Math.max(0, Math.round((new Date(t.timestamp).getTime() - callStart) / 1000))
+                        : 0,
+                }));
+
                 const saved = await RoleplaySession.create({
                     user_id: user.id,
                     session_type: "human_ai",
@@ -576,8 +671,9 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
                     score: Math.round(analysisData.overall_score),
                     status: 'completed',
                     session_status: 'completed',
-                    transcript: finalTranscript.map(t => ({ speaker: t.speaker, text: t.text, timestamp: String(t.timestamp) })),
+                    transcript: transcriptWithOffsets,
                     feedback: analysisData.feedback_summary,
+                    audio_url: audioUrl,
                     meeting_details: {
                         bot_name: prospect.name,
                         bot_title: prospect.title,

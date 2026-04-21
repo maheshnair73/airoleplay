@@ -1175,6 +1175,7 @@ export default function AIRoleplayAnalysis() {
 
         return {
             id: sessionData.id,
+            audio_url: sessionData.audio_url || null,
             bot_name: md.bot_name || 'AI Bot',
             bot_personality: md.bot_personality || md.bot_configuration?.personality || 'Professional',
             scenario: sessionData.session_name || sessionData.scenario_type || 'Roleplay Session',
@@ -1238,6 +1239,16 @@ export default function AIRoleplayAnalysis() {
         loadSession();
     }, [loadSession]);
 
+    // Auto-scroll transcript to active message while audio plays
+    useEffect(() => {
+        if (!isPlaying) return;
+        const container = document.querySelector('[data-transcript-scroll]');
+        const activeEl = document.querySelector(`[data-index="${currentTranscriptIndex}"]`);
+        if (container && activeEl) {
+            activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    }, [currentTranscriptIndex, isPlaying]);
+
     const formatDuration = (seconds) => {
         const mins = Math.floor(seconds / 60);
         const secs = seconds % 60;
@@ -1277,7 +1288,11 @@ export default function AIRoleplayAnalysis() {
         return `${mins}:${secs.toString().padStart(2, '0')}`;
     };
 
+    const transcriptScrollRef = React.useRef(null);
+
     const TranscriptViewer = ({ transcript }) => {
+        const hasAudio = !!session?.audio_url;
+
         if (!transcript || transcript.length === 0) {
             return (
                 <div className="text-center py-12 text-slate-400">
@@ -1286,38 +1301,48 @@ export default function AIRoleplayAnalysis() {
                 </div>
             );
         }
+
         return (
-            <div className="space-y-3 max-h-[600px] overflow-y-auto pr-1">
-                {transcript.map((item, index) => (
-                    <div
-                        key={index}
-                        className={`flex gap-3 ${item.speaker === 'user' ? 'justify-end' : 'justify-start'}`}
-                    >
-                        {item.speaker !== 'user' && (
-                            <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-600 flex-shrink-0 mt-1">
-                                {session?.bot_name?.[0] || 'A'}
+            <div ref={transcriptScrollRef} data-transcript-scroll className="space-y-3 max-h-[600px] overflow-y-auto pr-1 scroll-smooth">
+                {transcript.map((item, index) => {
+                    const isActive = hasAudio && index === currentTranscriptIndex;
+                    const isUser = item.speaker === 'user';
+                    return (
+                        <div
+                            key={index}
+                            data-index={index}
+                            className={`flex gap-3 ${isUser ? 'justify-end' : 'justify-start'} transition-opacity duration-200 ${hasAudio && !isActive ? 'opacity-60' : 'opacity-100'}`}
+                        >
+                            {!isUser && (
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-1 transition-colors ${isActive ? 'bg-slate-700 text-white' : 'bg-slate-200 text-slate-600'}`}>
+                                    {session?.bot_name?.[0] || 'A'}
+                                </div>
+                            )}
+                            <div
+                                onClick={() => hasAudio && handleSeekToTime(item.timeInSeconds || 0)}
+                                className={`max-w-[75%] px-4 py-3 rounded-2xl text-sm leading-relaxed transition-all duration-200 ${
+                                    isUser
+                                        ? `${isActive ? 'bg-blue-700 ring-2 ring-blue-400 ring-offset-1' : 'bg-blue-600'} text-white rounded-br-sm`
+                                        : `${isActive ? 'bg-slate-200 ring-2 ring-slate-400 ring-offset-1' : 'bg-slate-100'} text-slate-800 rounded-bl-sm`
+                                } ${hasAudio ? 'cursor-pointer hover:brightness-110' : ''}`}
+                            >
+                                <p className="font-semibold text-xs mb-1 opacity-60 flex items-center gap-1.5">
+                                    {isUser ? 'You' : session?.bot_name}
+                                    {item.timeInSeconds > 0 && (
+                                        <span className="font-mono font-normal">{formatTime(item.timeInSeconds)}</span>
+                                    )}
+                                    {hasAudio && <Play className="w-2.5 h-2.5 opacity-50" />}
+                                </p>
+                                <p>{item.text}</p>
                             </div>
-                        )}
-                        <div className={`max-w-[75%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${
-                            item.speaker === 'user'
-                                ? 'bg-blue-600 text-white rounded-br-sm'
-                                : 'bg-slate-100 text-slate-800 rounded-bl-sm'
-                        }`}>
-                            <p className="font-semibold text-xs mb-1 opacity-60">
-                                {item.speaker === 'user' ? 'You' : session?.bot_name}
-                                {item.timeInSeconds > 0 && (
-                                    <span className="ml-2 font-normal">{formatTime(item.timeInSeconds)}</span>
-                                )}
-                            </p>
-                            <p>{item.text}</p>
+                            {isUser && (
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-1 transition-colors ${isActive ? 'bg-blue-700 ring-2 ring-blue-300' : 'bg-blue-600'} text-white`}>
+                                    Y
+                                </div>
+                            )}
                         </div>
-                        {item.speaker === 'user' && (
-                            <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-xs font-bold text-white flex-shrink-0 mt-1">
-                                Y
-                            </div>
-                        )}
-                    </div>
-                ))}
+                    );
+                })}
             </div>
         );
     };
@@ -1493,54 +1518,77 @@ export default function AIRoleplayAnalysis() {
 
                 {/* Audio Player */}
                 {session.audio_url && (
-                    <Card className="mb-6">
-                        <CardContent className="pt-6">
-                            <div className="flex items-center gap-4">
+                    <Card className="mb-6 border-slate-200 shadow-sm">
+                        <CardContent className="pt-5 pb-4">
+                            <div className="flex items-center gap-3 mb-3">
                                 <Button
                                     size="icon"
-                                    variant="outline"
                                     onClick={togglePlayPause}
-                                    className="h-12 w-12 rounded-full"
+                                    className="h-10 w-10 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex-shrink-0 shadow"
                                 >
-                                    {isPlaying ? (
-                                        <Pause className="h-5 w-5" />
-                                    ) : (
-                                        <Play className="h-5 w-5 ml-0.5" />
-                                    )}
+                                    {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4 ml-0.5" />}
                                 </Button>
-                                <div className="flex-1">
-                                    <div className="flex items-center justify-between mb-1 text-sm text-slate-600">
-                                        <span>{formatTime(currentTime)}</span>
-                                        <span>{formatTime(duration)}</span>
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
+                                        <span className="font-mono">{formatTime(currentTime)}</span>
+                                        <span className="text-slate-400 text-[11px]">Call Recording</span>
+                                        <span className="font-mono">{formatTime(duration)}</span>
                                     </div>
-                                    <input
-                                        type="range"
-                                        min="0"
-                                        max={duration || 0}
-                                        value={currentTime}
-                                        onChange={(e) => {
-                                            const time = parseFloat(e.target.value);
-                                            setCurrentTime(time);
-                                            if (audioRef.current) {
-                                                audioRef.current.currentTime = time;
-                                            }
-                                        }}
-                                        className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
-                                    />
+                                    {/* Progress bar with segment markers */}
+                                    <div className="relative">
+                                        <input
+                                            type="range"
+                                            min="0"
+                                            max={duration || 1}
+                                            step="0.1"
+                                            value={currentTime}
+                                            onChange={(e) => {
+                                                const time = parseFloat(e.target.value);
+                                                setCurrentTime(time);
+                                                if (audioRef.current) audioRef.current.currentTime = time;
+                                            }}
+                                            className="w-full h-2 rounded-full appearance-none cursor-pointer accent-blue-600 bg-slate-200"
+                                            style={{ background: duration ? `linear-gradient(to right, #2563eb ${(currentTime/duration)*100}%, #e2e8f0 ${(currentTime/duration)*100}%)` : '#e2e8f0' }}
+                                        />
+                                        {/* Transcript timestamp markers */}
+                                        {duration > 0 && session.transcript?.filter(m => m.timeInSeconds > 0).map((msg, i) => (
+                                            <button
+                                                key={i}
+                                                title={`${msg.speaker === 'user' ? 'You' : session.bot_name}: ${msg.text?.substring(0, 60)}...`}
+                                                onClick={() => handleSeekToTime(msg.timeInSeconds)}
+                                                className="absolute top-0 w-1 h-2 rounded-full -translate-x-0.5 cursor-pointer opacity-70 hover:opacity-100 transition-opacity"
+                                                style={{
+                                                    left: `${(msg.timeInSeconds / duration) * 100}%`,
+                                                    background: msg.speaker === 'user' ? '#3b82f6' : '#64748b',
+                                                }}
+                                            />
+                                        ))}
+                                    </div>
                                 </div>
-                                <Volume2 className="h-5 w-5 text-slate-400" />
+                                <Volume2 className="h-4 w-4 text-slate-400 flex-shrink-0" />
                             </div>
+                            <p className="text-[11px] text-slate-400 text-center">
+                                Click any message in the transcript to jump to that moment — blue markers = you, grey = {session.bot_name}
+                            </p>
                             <audio
                                 ref={audioRef}
                                 src={session.audio_url}
-                                onTimeUpdate={(e) => setCurrentTime(e.target.currentTime)}
+                                onTimeUpdate={(e) => {
+                                    const t = e.target.currentTime;
+                                    setCurrentTime(t);
+                                    // Update active transcript message
+                                    if (session.transcript?.length) {
+                                        let active = 0;
+                                        for (let i = 0; i < session.transcript.length; i++) {
+                                            if ((session.transcript[i].timeInSeconds || 0) <= t) active = i;
+                                        }
+                                        setCurrentTranscriptIndex(active);
+                                    }
+                                }}
                                 onLoadedMetadata={(e) => setDuration(e.target.duration)}
                                 onEnded={() => setIsPlaying(false)}
                                 className="hidden"
                             />
-                            <p className="text-xs text-slate-500 mt-2 text-center">
-                                Click on any transcript message to jump to that timestamp
-                            </p>
                         </CardContent>
                     </Card>
                 )}
