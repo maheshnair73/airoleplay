@@ -50,6 +50,7 @@ const ApiKeyCard = ({
     const [isSaving, setIsSaving] = useState(false);
     const [isTesting, setIsTesting] = useState(false);
     const [testStatus, setTestStatus] = useState(null); // null, 'success', 'error'
+    const [isSaved, setIsSaved] = useState(false);
 
     useEffect(() => {
         loadApiKey();
@@ -59,7 +60,8 @@ const ApiKeyCard = ({
         const key = await getApiKey(keyName);
         setApiKey(key);
         if (key) {
-            setTestStatus('success'); // Assume valid if saved
+            setTestStatus('success');
+            setIsSaved(true);
         }
     };
 
@@ -70,10 +72,12 @@ const ApiKeyCard = ({
         }
 
         setIsSaving(true);
+        setIsSaved(false);
         try {
             await saveApiKey(keyName, apiKey);
             toast.success(`${name} API key saved successfully!`);
             setTestStatus('success');
+            setIsSaved(true);
         } catch (error) {
             toast.error(`Failed to save ${name} API key`);
             setTestStatus('error');
@@ -152,7 +156,7 @@ const ApiKeyCard = ({
                                 id={keyName}
                                 type={isVisible ? "text" : "password"}
                                 value={apiKey}
-                                onChange={(e) => setApiKey(e.target.value)}
+                                onChange={(e) => { setApiKey(e.target.value); setIsSaved(false); }}
                                 placeholder={placeholder}
                                 className="pr-10"
                             />
@@ -166,12 +170,14 @@ const ApiKeyCard = ({
                                 {isVisible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                             </Button>
                         </div>
-                        <Button 
-                            onClick={handleSave} 
+                        <Button
+                            onClick={handleSave}
                             disabled={isSaving}
                             size="sm"
+                            variant={isSaved ? 'outline' : 'default'}
+                            className={isSaved ? 'text-green-600 border-green-400' : ''}
                         >
-                            {isSaving ? 'Saving...' : 'Save'}
+                            {isSaving ? 'Saving...' : isSaved ? 'Saved' : 'Save'}
                         </Button>
                     </div>
                 </div>
