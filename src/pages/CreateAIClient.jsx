@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { AIClient, User as UserAPI } from '@/api/entities';
 import { Product } from '@/api/entities';
-import { getDefaultVoiceForGender, getVoicesByGender, GENDER_OPTIONS } from '@/utils/voiceMapping';
+import { getDefaultVoiceForGender, getVoicesByGender, GENDER_OPTIONS, NATIONALITY_OPTIONS, getVoiceDescription } from '@/utils/voiceMapping';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -162,7 +162,8 @@ export default function CreateAIClient() {
         selling_context: '',
         call_goal: '',
         buyer_awareness_level: 'Is Aware of Problem',
-        background: ''
+        background: '',
+        nationality: 'US'
     });
     const [isLoading, setIsLoading] = useState(false);
     const [customRoleplayType, setCustomRoleplayType] = useState('');
@@ -518,32 +519,36 @@ export default function CreateAIClient() {
                                             <SelectItem value="Male">Male Voice</SelectItem>
                                         </SelectContent>
                                     </Select>
-                                    <p className="text-xs text-slate-500 mt-1">
-                                        We'll automatically select the best voice based on gender and personality.
-                                    </p>
                                 </div>
                             </div>
 
+                            {/* Nationality / Accent selector */}
+                            <div className="space-y-2">
+                                <Label>Nationality / Accent Region</Label>
+                                <Select value={formData.nationality} onValueChange={(v) => handleInputChange('nationality', v)}>
+                                    <SelectTrigger><SelectValue placeholder="Select region…" /></SelectTrigger>
+                                    <SelectContent>
+                                        {NATIONALITY_OPTIONS.map(opt => (
+                                            <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <p className="text-xs text-slate-500 mt-1">
+                                    Sets the accent and regional speech style for this persona's AI voice.
+                                </p>
+                            </div>
+
                             {/* Voice Preview Section */}
-                            <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-4">
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                                 <div className="flex items-center gap-2 mb-2">
                                     <Mic className="w-4 h-4 text-blue-600" />
-                                    <span className="text-sm font-medium text-blue-900">Voice Selection</span>
+                                    <span className="text-sm font-medium text-blue-900">Voice Preview</span>
                                 </div>
-                                <p className="text-sm text-blue-700">
-                                    <strong>Selected:</strong> {formData.gender} voice with {formData.personality.toLowerCase()} personality
+                                <p className="text-sm text-blue-700 capitalize">
+                                    {getVoiceDescription(formData)}
                                 </p>
-                                <p className="text-xs text-blue-600 mt-1">
-                                    {formData.gender === 'Female' && formData.personality === 'Nice' && "Will use warm, approachable female voice"}
-                                    {formData.gender === 'Female' && formData.personality === 'Analytical' && "Will use precise, analytical female voice"}
-                                    {formData.gender === 'Female' && formData.personality === 'Formal' && "Will use professional female voice"}
-                                    {formData.gender === 'Female' && formData.personality === 'Rude' && "Will use confident, direct female voice"}
-                                    {formData.gender === 'Female' && formData.personality === 'Chatty' && "Will use warm, conversational female voice"}
-                                    {formData.gender === 'Male' && formData.personality === 'Nice' && "Will use friendly, approachable male voice"}
-                                    {formData.gender === 'Male' && formData.personality === 'Analytical' && "Will use thoughtful, measured male voice"}
-                                    {formData.gender === 'Male' && formData.personality === 'Formal' && "Will use professional male voice"}
-                                    {formData.gender === 'Male' && formData.personality === 'Rude' && "Will use authoritative, direct male voice"}
-                                    {formData.gender === 'Male' && formData.personality === 'Chatty' && "Will use friendly, conversational male voice"}
+                                <p className="text-xs text-blue-500 mt-1">
+                                    Voice is automatically matched to nationality, gender, and personality.
                                 </p>
                             </div>
 

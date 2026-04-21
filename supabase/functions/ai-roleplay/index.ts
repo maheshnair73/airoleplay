@@ -1,8 +1,52 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
-// ElevenLabs voice IDs by voice key (mirrors voiceMapping.js on the frontend)
-const ELEVENLABS_VOICES: Record<string, string> = {
+// ─── ElevenLabs regional voice map (mirrors voiceMapping.js) ─────────────────
+type VoiceStyleMap = Record<string, string>;
+type GenderMap = Record<string, VoiceStyleMap>;
+type RegionMap = Record<string, GenderMap>;
+
+const REGIONAL_VOICES: RegionMap = {
+  US: {
+    Male:   { default: 'TxGEqnHWrfWFTfGW9XjX', professional: 'TxGEqnHWrfWFTfGW9XjX', authoritative: 'ErXwobaYiN019PkySvjV', casual: 'VR6AewLTigWG4xSOukaG', warm: 'VR6AewLTigWG4xSOukaG' },
+    Female: { default: 'EXAVITQu4vr4xnSDxMaL', professional: 'EXAVITQu4vr4xnSDxMaL', confident: 'jsCqWAovK2LkecY7zXl4', authoritative: 'jsCqWAovK2LkecY7zXl4', warm: '21m00Tcm4TlvDq8ikWAM', casual: 'MF3mGyEYCl7XYWbV9V6O' },
+  },
+  UK: {
+    Male:   { default: 'N2lVS1w4EtoT3dr4eOWO', professional: 'N2lVS1w4EtoT3dr4eOWO', authoritative: 'N2lVS1w4EtoT3dr4eOWO', casual: 'CYw3kZ02Hs0563khs1Fj', warm: 'CYw3kZ02Hs0563khs1Fj' },
+    Female: { default: 'ThT5KcBeYPX3keUQqHPh', professional: 'ThT5KcBeYPX3keUQqHPh', confident: 'ThT5KcBeYPX3keUQqHPh', warm: 'AZnzlk1XvdvUeBnXmlld', casual: 'AZnzlk1XvdvUeBnXmlld' },
+  },
+  Indian: {
+    Male:   { default: 'giB9SBGRjhHhRPW4JKCE', professional: 'giB9SBGRjhHhRPW4JKCE', authoritative: 'giB9SBGRjhHhRPW4JKCE', casual: 'giB9SBGRjhHhRPW4JKCE', warm: 'giB9SBGRjhHhRPW4JKCE' },
+    Female: { default: 'nPczCjzI2devNBz1zQrb', professional: 'nPczCjzI2devNBz1zQrb', confident: 'nPczCjzI2devNBz1zQrb', warm: 'nPczCjzI2devNBz1zQrb', casual: 'nPczCjzI2devNBz1zQrb' },
+  },
+  Australian: {
+    Male:   { default: 'ZQe5CZNOzWyzPSCn5a3c', professional: 'ZQe5CZNOzWyzPSCn5a3c', authoritative: 'ZQe5CZNOzWyzPSCn5a3c', casual: 'ZQe5CZNOzWyzPSCn5a3c', warm: 'ZQe5CZNOzWyzPSCn5a3c' },
+    Female: { default: 'Zlb1dXrM653N07WRdFW3', professional: 'Zlb1dXrM653N07WRdFW3', confident: 'Zlb1dXrM653N07WRdFW3', warm: 'Zlb1dXrM653N07WRdFW3', casual: 'Zlb1dXrM653N07WRdFW3' },
+  },
+  Nigerian: {
+    Male:   { default: 'pNInz6obpgDQGcFmaJgB', professional: 'TxGEqnHWrfWFTfGW9XjX', authoritative: 'ErXwobaYiN019PkySvjV', casual: 'VR6AewLTigWG4xSOukaG', warm: 'pNInz6obpgDQGcFmaJgB' },
+    Female: { default: '21m00Tcm4TlvDq8ikWAM', professional: 'EXAVITQu4vr4xnSDxMaL', confident: 'jsCqWAovK2LkecY7zXl4', warm: '21m00Tcm4TlvDq8ikWAM', casual: 'MF3mGyEYCl7XYWbV9V6O' },
+  },
+  Ghanaian: {
+    Male:   { default: 'pNInz6obpgDQGcFmaJgB', professional: 'TxGEqnHWrfWFTfGW9XjX', authoritative: 'ErXwobaYiN019PkySvjV', casual: 'VR6AewLTigWG4xSOukaG', warm: 'pNInz6obpgDQGcFmaJgB' },
+    Female: { default: '21m00Tcm4TlvDq8ikWAM', professional: 'EXAVITQu4vr4xnSDxMaL', confident: 'jsCqWAovK2LkecY7zXl4', warm: '21m00Tcm4TlvDq8ikWAM', casual: 'MF3mGyEYCl7XYWbV9V6O' },
+  },
+  'South African': {
+    Male:   { default: 'pNInz6obpgDQGcFmaJgB', professional: 'TxGEqnHWrfWFTfGW9XjX', authoritative: 'ErXwobaYiN019PkySvjV', casual: 'VR6AewLTigWG4xSOukaG', warm: 'pNInz6obpgDQGcFmaJgB' },
+    Female: { default: 'EXAVITQu4vr4xnSDxMaL', professional: 'EXAVITQu4vr4xnSDxMaL', confident: 'jsCqWAovK2LkecY7zXl4', warm: '21m00Tcm4TlvDq8ikWAM', casual: 'MF3mGyEYCl7XYWbV9V6O' },
+  },
+  Arabic: {
+    Male:   { default: 'ErXwobaYiN019PkySvjV', professional: 'ErXwobaYiN019PkySvjV', authoritative: 'ErXwobaYiN019PkySvjV', casual: 'TxGEqnHWrfWFTfGW9XjX', warm: 'TxGEqnHWrfWFTfGW9XjX' },
+    Female: { default: 'jsCqWAovK2LkecY7zXl4', professional: 'jsCqWAovK2LkecY7zXl4', confident: 'jsCqWAovK2LkecY7zXl4', warm: 'EXAVITQu4vr4xnSDxMaL', casual: 'MF3mGyEYCl7XYWbV9V6O' },
+  },
+  Canadian: {
+    Male:   { default: 'TxGEqnHWrfWFTfGW9XjX', professional: 'TxGEqnHWrfWFTfGW9XjX', authoritative: 'ErXwobaYiN019PkySvjV', casual: 'VR6AewLTigWG4xSOukaG', warm: 'VR6AewLTigWG4xSOukaG' },
+    Female: { default: '21m00Tcm4TlvDq8ikWAM', professional: 'EXAVITQu4vr4xnSDxMaL', confident: 'jsCqWAovK2LkecY7zXl4', warm: '21m00Tcm4TlvDq8ikWAM', casual: 'MF3mGyEYCl7XYWbV9V6O' },
+  },
+};
+
+// Legacy flat-key fallback
+const LEGACY_VOICE_KEYS: Record<string, string> = {
   english_male: 'TxGEqnHWrfWFTfGW9XjX',
   english_male_casual: 'VR6AewLTigWG4xSOukaG',
   english_male_authoritative: 'ErXwobaYiN019PkySvjV',
@@ -15,32 +59,47 @@ const ELEVENLABS_VOICES: Record<string, string> = {
   english_neutral_warm: 'yoZ06aMxZJJ28mfd3POQ',
 };
 
-function resolveVoiceId(prospect: { voiceId?: string; voice?: string; gender?: string; personality?: string }): string | null {
-  // 1. Use explicit voiceId if it looks like an ElevenLabs ID (not a key name)
-  if (prospect.voiceId && !ELEVENLABS_VOICES[prospect.voiceId]) {
-    return prospect.voiceId;
+function personalityToStyle(personality: string): string {
+  const p = personality.toLowerCase();
+  if (/authoritative|aggressive|assertive|rude|direct/i.test(p)) return 'authoritative';
+  if (/confident|skeptical|formal|professional/i.test(p)) return 'confident';
+  if (/casual|chatty|friendly|nice|enthusiastic|cooperative/i.test(p)) return 'casual';
+  if (/warm|empathetic/i.test(p)) return 'warm';
+  return 'default';
+}
+
+function resolveVoiceId(prospect: {
+  voiceId?: string;
+  voice?: string;
+  gender?: string;
+  personality?: string;
+  nationality?: string;
+}): string {
+  const { voiceId, voice, gender = 'Male', personality = '', nationality = '' } = prospect;
+
+  // 1. Raw ElevenLabs ID passed directly (not a named key, longer than any key)
+  if (voiceId && !LEGACY_VOICE_KEYS[voiceId] && voiceId.length > 15) {
+    return voiceId;
   }
-  // 2. Resolve from voiceId or voice key
-  const key = prospect.voiceId || prospect.voice;
-  if (key && ELEVENLABS_VOICES[key]) {
-    return ELEVENLABS_VOICES[key];
+
+  // 2. Legacy voice key
+  const legacyKey = voiceId || voice;
+  if (legacyKey && LEGACY_VOICE_KEYS[legacyKey]) {
+    return LEGACY_VOICE_KEYS[legacyKey];
   }
-  // 3. Infer from gender + personality
-  const gender = prospect.gender || 'Male';
-  const personality = prospect.personality || '';
-  if (gender === 'Female') {
-    if (/confident|assertive|aggressive|authoritative/i.test(personality)) return ELEVENLABS_VOICES.english_female_confident;
-    if (/warm|friendly|nice|enthusiastic|cooperative/i.test(personality)) return ELEVENLABS_VOICES.english_female_friendly;
-    return ELEVENLABS_VOICES.english_female;
+
+  const style = personalityToStyle(personality);
+  const genderKey = gender === 'Female' ? 'Female' : 'Male';
+
+  // 3. Region-specific voice
+  if (nationality && REGIONAL_VOICES[nationality]) {
+    const gMap = REGIONAL_VOICES[nationality][genderKey] || REGIONAL_VOICES[nationality]['Male'];
+    return gMap[style] || gMap['professional'] || gMap['default'];
   }
-  if (gender === 'Non-binary') {
-    if (/warm|friendly/i.test(personality)) return ELEVENLABS_VOICES.english_neutral_warm;
-    return ELEVENLABS_VOICES.english_neutral;
-  }
-  // Default: Male
-  if (/authoritative|aggressive|assertive|skeptical|formal/i.test(personality)) return ELEVENLABS_VOICES.english_male_authoritative;
-  if (/casual|friendly|enthusiastic|cooperative/i.test(personality)) return ELEVENLABS_VOICES.english_male_casual;
-  return ELEVENLABS_VOICES.english_male;
+
+  // 4. Default to US voices
+  const fallback = REGIONAL_VOICES.US[genderKey];
+  return fallback[style] || fallback['professional'] || fallback['default'];
 }
 
 const corsHeaders = {
@@ -65,6 +124,9 @@ interface RoleplayRequest {
     painPoints?: string[];
     industry?: string;
     voiceId?: string;
+    voice?: string;
+    gender?: string;
+    nationality?: string;
   };
   transcriptHistory: TranscriptMessage[];
   knowledgeMaterialIds?: string[];
