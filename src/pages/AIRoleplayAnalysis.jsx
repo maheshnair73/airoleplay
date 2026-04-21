@@ -1130,43 +1130,52 @@ export default function AIRoleplayAnalysis() {
         return { ...baseMockSession, ...(variations[id] || {}) };
     }, []);
 
+    const buildSessionFromData = useCallback((sessionData) => {
+        const md = sessionData.meeting_details || {};
+        const rawTranscript = Array.isArray(sessionData.transcript) ? sessionData.transcript : [];
+        return {
+            id: sessionData.id,
+            bot_name: md.bot_name || 'AI Bot',
+            bot_personality: md.bot_personality || md.bot_configuration?.personality || 'Professional',
+            scenario: sessionData.session_name || sessionData.scenario_type || 'Roleplay Session',
+            created_date: sessionData.created_at || new Date().toISOString(),
+            session_duration: sessionData.duration || 0,
+            call_type: sessionData.scenario_type || 'Cold Call',
+            transcript: rawTranscript,
+            analysis_results: {
+                overall_score: sessionData.score || sessionData.overall_score || 0,
+                summary: sessionData.feedback || sessionData.feedback_summary || 'Session completed.',
+                feedback_summary: sessionData.feedback || sessionData.feedback_summary || '',
+                objections: [],
+                questions_asked: [],
+                what_went_well: md.what_went_well || sessionData.what_went_well || [],
+                areas_for_improvement: md.areas_for_improvement || sessionData.areas_for_improvement || [],
+                scorecard: md.scorecard || sessionData.scorecard || [],
+            },
+            bot_configuration: JSON.stringify(md.bot_configuration || { name: md.bot_name || 'AI Bot' }),
+        };
+    }, []);
+
     const loadSession = useCallback(async () => {
         setIsLoading(true);
+
+        // Check for inline session passed via router state (when DB save failed)
+        const inlineSession = location.state?.inlineSession;
+        if (inlineSession) {
+            setSession(buildSessionFromData({ ...inlineSession, transcript: [] }));
+            setSessionNotFound(false);
+            setIsLoading(false);
+            return;
+        }
+
         if (sessionId) {
             try {
                 const sessionData = await RoleplaySession.get(sessionId);
-
-                // Transform database session to match the expected format
-                const transformedSession = {
-                    id: sessionData.id,
-                    bot_name: sessionData.transcript?.bot_name || 'AI Bot',
-                    bot_personality: sessionData.transcript?.bot_personality || 'AI Assistant',
-                    scenario: sessionData.session_name || sessionData.scenario_type,
-                    created_date: sessionData.created_at,
-                    session_duration: sessionData.duration,
-                    call_type: sessionData.scenario_type,
-                    transcript: sessionData.transcript?.exchanges || [],
-                    analysis_results: {
-                        overall_score: sessionData.score || 0,
-                        summary: sessionData.feedback || 'Session completed successfully.',
-                        objections: [],
-                        questions_asked: [],
-                        what_went_well: [],
-                        areas_for_improvement: [],
-                        scorecard: []
-                    },
-                    bot_configuration: JSON.stringify({
-                        name: sessionData.transcript?.bot_name || 'AI Bot',
-                        personality: sessionData.transcript?.bot_personality || 'Professional'
-                    })
-                };
-
-                setSession(transformedSession);
+                setSession(buildSessionFromData(sessionData));
                 setSessionNotFound(false);
                 setIsLoading(false);
             } catch (error) {
                 console.error('Error loading session:', error);
-                // If database fetch fails, check if it's a demo session ID or dummy ID
                 if (/^[1-9]$|^1[0-9]$|^20$/.test(sessionId) || sessionId?.startsWith('dummy-')) {
                     setSession(createMockSession(sessionId));
                     setSessionNotFound(false);
@@ -1179,7 +1188,7 @@ export default function AIRoleplayAnalysis() {
             setSessionNotFound(true);
             setIsLoading(false);
         }
-    }, [sessionId, createMockSession]);
+    }, [sessionId, createMockSession, buildSessionFromData, location.state]);
 
     useEffect(() => {
         loadSession();

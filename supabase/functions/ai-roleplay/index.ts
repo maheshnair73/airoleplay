@@ -131,7 +131,7 @@ Deno.serve(async (req: Request) => {
       return data?.value || undefined;
     };
 
-    const { userText, prospect, transcriptHistory = [], knowledgeMaterialIds = [], wasInterrupted = false } = await req.json();
+    const { userText, prospect, transcriptHistory = [], knowledgeMaterialIds = [], wasInterrupted = false, analyzeOnly = false } = await req.json();
 
     console.log("[ai-roleplay] Request:", { name: prospect?.name, hasUserText: !!userText, materialCount: knowledgeMaterialIds?.length });
 
@@ -162,6 +162,66 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    // ── analyzeOnly: post-call analysis (replaces broken InvokeLLM path) ────────
+    if (analyzeOnly) {
+      const transcript = (transcriptHistory as any[])
+        .map((m: any) => `${m.speaker === "ai" ? (prospect?.name || "Prospect") : "Sales Rep"}: ${m.text}`)
+        .join("\n");
+
+      let analysisResult = null;
+      if (openaiApiKey && openaiApiKey !== "test-key") {
+        try {
+          const res = await fetch("https://api.openai.com/v1/chat/completions", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${openaiApiKey}` },
+            body: JSON.stringify({
+              model: "gpt-4o-mini",
+              messages: [{
+                role: "user",
+                content: `Analyze this sales roleplay conversation. Return ONLY valid JSON with these exact keys:
+{
+  "overall_score": <number 0-100>,
+  "feedback_summary": "<2-3 sentences of coaching feedback>",
+  "what_went_well": ["<point 1>", "<point 2>"],
+  "areas_for_improvement": ["<point 1>", "<point 2>"],
+  "scorecard": [
+    {"category": "Opening & Rapport", "passed": <bool>, "note": "<brief note>"},
+    {"category": "Discovery Questions", "passed": <bool>, "note": "<brief note>"},
+    {"category": "Value Articulation", "passed": <bool>, "note": "<brief note>"},
+    {"category": "Objection Handling", "passed": <bool>, "note": "<brief note>"},
+    {"category": "Closing & Next Steps", "passed": <bool>, "note": "<brief note>"}
+  ]
+}
+
+Conversation:
+${transcript}`
+              }],
+              temperature: 0.3,
+              max_tokens: 600,
+            }),
+            signal: AbortSignal.timeout(20000),
+          });
+          if (res.ok) {
+            const json = await res.json();
+            const raw = json.choices?.[0]?.message?.content || "";
+            const jsonMatch = raw.match(/\{[\s\S]*\}/);
+            if (jsonMatch) analysisResult = JSON.parse(jsonMatch[0]);
+          }
+        } catch (e) {
+          console.error("[ai-roleplay] analyzeOnly error:", e);
+        }
+      }
+
+      return new Response(
+        JSON.stringify({ analysis: analysisResult }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // ── Farewell detection ────────────────────────────────────────────────────
+    const farewellPattern = /\b(bye|goodbye|hang up|hanging up|gotta go|got to go|i('ll| will) let you go|talk (to you )?later|have a good|take care|that('s| is) all|end the call|i('m| am) done|no thanks|not interested anymore|thanks? for your time)\b/i;
+    const isFarewell = userText && farewellPattern.test(userText);
+
     // Build prompts
     const conversationHistory = (transcriptHistory as any[])
       .map((msg) => `${msg.speaker === "ai" ? "assistant" : "user"}: ${msg.text}`)
@@ -183,16 +243,23 @@ Deno.serve(async (req: Request) => {
 
 You just received an unexpected sales call. Respond ONLY with 1-5 words exactly as you would when picking up: e.g. "Hello?", "Yes?", "Yeah, who's this?". Do NOT introduce yourself. Do NOT say your name or company. Just answer the phone briefly.${knowledgeContext}`;
       userPrompt = "You just picked up the phone.";
+    } else if (isFarewell) {
+      // Sales rep is ending the call — respond with a brief, natural goodbye
+      systemPrompt = `${basePersona}
+
+The sales rep is ending the call. Respond with a short, natural farewell — 1 sentence only. Be genuine and in character. e.g. "Alright, thanks for calling." or "Sure, take care." or "Okay, speak soon."${knowledgeContext}`;
+      userPrompt = conversationHistory
+        ? `Conversation:\n${conversationHistory}\n\nSales Rep: ${userText}\n\nYour brief farewell:`
+        : `Sales Rep said: ${userText}\n\nYour brief farewell:`;
     } else if (wasInterrupted) {
-      // The caller interrupted while you were speaking — acknowledge naturally based on conversation stage
       const msgCount = (transcriptHistory as any[]).length;
       let interruptStyle = "";
       if (msgCount <= 2) {
-        interruptStyle = "You were just introducing yourself or answering the phone. React naturally — pause and let them speak, e.g. 'Oh sure, go ahead.' or 'Of course, what's up?'";
+        interruptStyle = "You were just answering the phone. React naturally — pause and let them speak, e.g. 'Oh sure, go ahead.' or 'Of course, what's up?'";
       } else if (msgCount <= 6) {
-        interruptStyle = "You were mid-explanation early in the call. Acknowledge the interruption warmly and invite them to continue, e.g. 'Sorry, please go ahead.' or 'Sure, what were you saying?'";
+        interruptStyle = "You were mid-explanation early in the call. Acknowledge the interruption warmly, e.g. 'Sorry, please go ahead.' or 'Sure, what were you saying?'";
       } else {
-        interruptStyle = "You were deep in conversation. React naturally to being cut off — could be curious, slightly surprised, or simply attentive. e.g. 'Oh, please — go ahead.' or 'Sorry, you were saying?' or 'No no, I want to hear this.'";
+        interruptStyle = "You were deep in conversation. React naturally, e.g. 'Oh, please — go ahead.' or 'Sorry, you were saying?' or 'No no, I want to hear this.'";
       }
 
       systemPrompt = `${basePersona}
@@ -260,7 +327,7 @@ You are in the middle of a sales call roleplay. Rules:
 
     if (!responseText) {
       usedFallback = true;
-      responseText = generateRealisticResponse(userText);
+      responseText = isFarewell ? "Alright, take care. Bye." : generateRealisticResponse(userText);
       console.log("[ai-roleplay] Using fallback response");
     }
 
@@ -305,7 +372,7 @@ You are in the middle of a sales call roleplay. Rules:
     }
 
     return new Response(
-      JSON.stringify({ text: responseText, audio: audioBase64, openai_fallback: usedFallback }),
+      JSON.stringify({ text: responseText, audio: audioBase64, openai_fallback: usedFallback, callEnded: isFarewell }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 

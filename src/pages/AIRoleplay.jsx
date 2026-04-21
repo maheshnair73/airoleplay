@@ -19,7 +19,6 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { format, formatDistanceToNow } from 'date-fns';
 import AIRoleplayInsights from '@/components/roleplay/AIRoleplayInsights';
-import { InvokeLLM } from '@/api/integrations';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { User } from '@/api/entities';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -202,12 +201,11 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
         }
         setIsSpeaking(false);
         if (fromInterrupt) {
-            // Open mic immediately — don't wait for the normal 700ms drain delay
             setTimeout(() => {
                 if (!isDeadRef.current && !isAIRespondingRef.current && !isMutedRef.current) {
                     startListeningRef.current?.();
                 }
-            }, 150);
+            }, 80);
         }
     };
 
@@ -350,13 +348,12 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
                 if (isDeadRef.current) return;
                 setIsListening(false);
                 setInterimText('');
-                // Only auto-restart if AI is still idle (not after user spoke)
                 clearTimeout(silenceTimerRef.current);
                 silenceTimerRef.current = setTimeout(() => {
                     if (!isDeadRef.current && !isAIRespondingRef.current && !isSpeakingRef.current && !isMutedRef.current) {
                         createAndStart();
                     }
-                }, 400);
+                }, 150);
             };
 
             try { sr.start(); } catch (_) {}
@@ -375,8 +372,8 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
     // Kick off listening once call is connected and AI has finished speaking/responding
     useEffect(() => {
         if (phase === 'connected' && !isSpeaking && !isAIResponding && !isMuted) {
-            // Wait for audio buffer to fully drain before opening mic
-            const t = setTimeout(() => startListeningRef.current?.(), 700);
+            // 200ms is enough for the audio buffer to drain without noticeable gap
+            const t = setTimeout(() => startListeningRef.current?.(), 200);
             return () => clearTimeout(t);
         }
     }, [phase, isSpeaking, isAIResponding, isMuted]);
@@ -411,6 +408,10 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
                 await playAudio(data.audio);
             } else {
                 setIsSpeaking(false);
+            }
+            // If the prospect said goodbye in response to us, auto-end the call after audio plays
+            if (data.callEnded) {
+                setTimeout(() => { if (!isDeadRef.current) handleEndCall(); }, 1200);
             }
         } catch (err) {
             if (isDeadRef.current) return;
@@ -494,84 +495,127 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
 
     // ── End call + analysis ───────────────────────────────────────────────────
     const handleEndCall = async () => {
+        if (phase === 'ending') return; // prevent double-trigger
         setPhase('ending');
+        isDeadRef.current = true;
+        clearTimeout(silenceTimerRef.current);
         stopAudio();
-        try { recognitionRef.current?.stop(); } catch (_) {}
+        try { recognitionRef.current?.abort(); } catch (_) {}
 
         const sessionDuration = Math.floor((Date.now() - callStartTime.current) / 1000);
         const finalTranscript = transcriptRef.current;
 
-        toast.info("Analyzing your performance...", { duration: 15000 });
+        // Need at least one exchange to analyze
+        const userMsgs = finalTranscript.filter(t => t.speaker === 'user').length;
 
-        // Build analysis
-        let analysisData;
-        try {
-            const { data } = await InvokeLLM({
-                prompt: `Analyze this sales roleplay. Score 0-100 and give 2-3 sentence feedback.\n\nConversation:\n${finalTranscript.map(t => `${t.speaker === 'ai' ? prospect.name : 'Sales Rep'}: ${t.text}`).join('\n')}\n\nReturn JSON with keys: overall_score (number), feedback_summary (string).`,
-                response_json_schema: {
-                    type: "object",
-                    properties: { overall_score: { type: "number" }, feedback_summary: { type: "string" } },
-                    required: ["overall_score", "feedback_summary"]
+        toast.info("Analyzing your performance...", { duration: 20000 });
+
+        // Use aiRoleplay analyzeOnly — same edge function, no broken InvokeLLM dependency
+        let analysisData = null;
+        if (finalTranscript.length > 1) {
+            try {
+                const result = await aiRoleplay({
+                    analyzeOnly: true,
+                    prospect,
+                    transcriptHistory: finalTranscript.map(t => ({
+                        speaker: t.speaker, text: t.text, timestamp: String(t.timestamp)
+                    })),
+                    userText: null,
+                    knowledgeMaterialIds,
+                });
+                if (result?.analysis?.overall_score != null) {
+                    const a = result.analysis;
+                    analysisData = {
+                        overall_score: a.overall_score,
+                        feedback_summary: a.feedback_summary || '',
+                        scorecard: (a.scorecard || []).map((s) => ({
+                            category: s.category,
+                            criteria: [{ text: s.note || s.category, passed: s.passed }]
+                        })),
+                        what_went_well: a.what_went_well || [],
+                        areas_for_improvement: a.areas_for_improvement || [],
+                    };
                 }
-            });
-            if (data?.overall_score != null) {
-                const s = data.overall_score;
-                analysisData = {
-                    ...data,
-                    scorecard: [
-                        { category: "Rapport & Opening", criteria: [{ text: "Clear introduction", passed: s > 50 }, { text: "Built rapport", passed: s > 70 }] },
-                        { category: "Discovery", criteria: [{ text: "Asked qualifying questions", passed: s > 60 }, { text: "Active listening", passed: s > 75 }] },
-                        { category: "Value & Closing", criteria: [{ text: "Articulated value", passed: s > 65 }, { text: "Set next step", passed: s > 80 }] }
-                    ]
-                };
-                toast.success("Analysis complete!");
+            } catch (e) {
+                console.error('Analysis error:', e);
             }
-        } catch (_) {}
+        }
 
+        // Always have a fallback so we never get stuck
         if (!analysisData) {
-            const userMsgs = finalTranscript.filter(t => t.speaker === 'user').length;
-            const s = Math.min(95, 50 + (sessionDuration > 60 ? 15 : 0) + (userMsgs > 3 ? 20 : 0) + (finalTranscript.length > 6 ? 15 : 0));
+            const s = Math.min(95, 45 + (sessionDuration > 60 ? 15 : 0) + (userMsgs > 3 ? 20 : 0) + (finalTranscript.length > 6 ? 15 : 0));
             analysisData = {
                 overall_score: s,
-                feedback_summary: `You completed a ${Math.round(sessionDuration / 60)}-minute roleplay. ${userMsgs > 3 ? 'Good engagement.' : 'Try asking more open-ended questions.'}`,
-                scorecard: [{ category: "Session Completion", criteria: [{ text: "Completed roleplay", passed: true }] }]
+                feedback_summary: finalTranscript.length <= 1
+                    ? 'The call was too short to analyze. Try a longer conversation next time.'
+                    : `You completed a ${Math.round(sessionDuration / 60)}-minute roleplay with ${userMsgs} exchanges. ${userMsgs > 3 ? 'Good engagement.' : 'Try asking more open-ended questions next time.'}`,
+                scorecard: [
+                    { category: "Rapport & Opening", criteria: [{ text: "Clear introduction", passed: userMsgs > 1 }] },
+                    { category: "Discovery", criteria: [{ text: "Asked qualifying questions", passed: userMsgs > 2 }] },
+                    { category: "Engagement", criteria: [{ text: "Maintained conversation", passed: finalTranscript.length > 4 }] },
+                ],
+                what_went_well: [],
+                areas_for_improvement: [],
             };
         }
 
+        // Save session — always navigate regardless of whether save succeeds
+        let savedSessionId = null;
         try {
             const { data: { user } } = await supabase.auth.getUser();
-            if (!user) throw new Error('Not authenticated');
-
-            const savedSession = await RoleplaySession.create({
-                user_id: user.id,
-                session_type: "human_ai",
-                session_name: `${prospect.roleplay_type || 'Roleplay'} with ${prospect.name}`,
-                initiator_email: user.email,
-                user_email: user.email,
-                scenario_type: prospect.roleplay_type || 'Cold Call',
-                difficulty: prospect.difficulty || 'Medium',
-                duration: sessionDuration,
-                score: Math.round(analysisData.overall_score),
-                status: 'completed',
-                session_status: 'completed',
-                transcript: finalTranscript.map(t => ({ speaker: t.speaker, text: t.text, timestamp: String(t.timestamp) })),
-                feedback: analysisData.feedback_summary,
-                meeting_details: {
-                    bot_name: prospect.name,
-                    bot_title: prospect.title,
-                    bot_company: prospect.company_name || prospect.company,
-                    bot_personality: prospect.personality,
-                    scorecard: analysisData.scorecard,
-                    bot_configuration: { name: prospect.name, title: prospect.title, company_name: prospect.company_name || prospect.company, personality: prospect.personality, roleplay_type: prospect.roleplay_type, voice: prospect.voice || 'english_male', language: prospect.language || 'english', traits: prospect.traits || [], painPoints: prospect.painPoints || [], background: prospect.background || '', difficulty: prospect.difficulty || 'Medium', industry: prospect.industry }
-                },
-                framework_scores: { overall_score: analysisData.overall_score },
-                completed_at: new Date().toISOString(),
-            });
-            onAnalysisComplete(savedSession);
+            if (user) {
+                const saved = await RoleplaySession.create({
+                    user_id: user.id,
+                    session_type: "human_ai",
+                    session_name: `${prospect.roleplay_type || 'Roleplay'} with ${prospect.name}`,
+                    initiator_email: user.email,
+                    user_email: user.email,
+                    scenario_type: prospect.roleplay_type || 'Cold Call',
+                    difficulty: prospect.difficulty || 'Medium',
+                    duration: sessionDuration,
+                    score: Math.round(analysisData.overall_score),
+                    status: 'completed',
+                    session_status: 'completed',
+                    transcript: finalTranscript.map(t => ({ speaker: t.speaker, text: t.text, timestamp: String(t.timestamp) })),
+                    feedback: analysisData.feedback_summary,
+                    meeting_details: {
+                        bot_name: prospect.name,
+                        bot_title: prospect.title,
+                        bot_company: prospect.company_name || prospect.company,
+                        bot_personality: prospect.personality,
+                        scorecard: analysisData.scorecard,
+                        what_went_well: analysisData.what_went_well,
+                        areas_for_improvement: analysisData.areas_for_improvement,
+                        bot_configuration: {
+                            name: prospect.name, title: prospect.title,
+                            company_name: prospect.company_name || prospect.company,
+                            personality: prospect.personality,
+                            roleplay_type: prospect.roleplay_type,
+                            voice: prospect.voice || 'english_male',
+                            language: prospect.language || 'english',
+                            traits: prospect.traits || [],
+                            painPoints: prospect.painPoints || [],
+                            background: prospect.background || '',
+                            difficulty: prospect.difficulty || 'Medium',
+                            industry: prospect.industry,
+                        }
+                    },
+                    framework_scores: { overall_score: analysisData.overall_score },
+                    completed_at: new Date().toISOString(),
+                });
+                savedSessionId = saved?.id || null;
+            }
         } catch (err) {
             console.error('Save session error:', err);
-            toast.error("Could not save session.");
-            onEndCall();
+        }
+
+        toast.success("Analysis complete!");
+        // Navigate with session id if available, otherwise pass data inline via state
+        if (savedSessionId) {
+            onAnalysisComplete({ id: savedSessionId, ...analysisData });
+        } else {
+            // Save failed but still show analysis via passed data
+            onAnalysisComplete({ id: null, _inline: analysisData });
         }
     };
 
@@ -1362,14 +1406,15 @@ export default function AIRoleplay() {
     };
 
     const handleAnalysisComplete = (session) => {
-        setShowCallModal(false); // Close the call modal when analysis is complete
-        setSelectedBot(null); // Clear selected bot
-        if (session && session.id) {
-            toast.success("Call analysis complete!");
-            // Navigate to dedicated analysis page with unique URL using navigate
+        setShowCallModal(false);
+        setSelectedBot(null);
+        if (session?.id) {
             navigate(createPageUrl(`AIRoleplayAnalysis?id=${session.id}`));
+        } else if (session?._inline) {
+            // Save failed but we still have analysis data — pass it via router state
+            navigate(createPageUrl('AIRoleplayAnalysis'), { state: { inlineSession: session._inline } });
         } else {
-            toast.error("Could not retrieve analysis results.");
+            navigate(createPageUrl('AIRoleplayHistory'));
         }
     };
 
