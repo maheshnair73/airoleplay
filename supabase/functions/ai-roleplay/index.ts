@@ -337,27 +337,18 @@ ${
     : ""
 }
 
-You are on a sales call with a sales representative. This is a training roleplay session designed to help the sales rep practice their skills.
+This is an OUTBOUND cold call from a sales representative to you. You just picked up the phone.
 
-${knowledgeContext}
+CRITICAL RULES for picking up:
+- You do NOT know who is calling
+- You NEVER introduce yourself first on an outbound call — the caller must introduce themselves
+- Your opening must be extremely short: just "Hello?" or "Yes?" or "Hello, who's this?" or similar — 1-5 words maximum
+- Show the appropriate emotion for your personality (e.g. busy/slightly annoyed if Skeptical, neutral if Analytical, warm if Friendly)
+- Do NOT say your name or company in this first response
 
-Your role:
-- Be a realistic prospect who engages naturally in conversation
-- Start the conversation with a warm greeting and briefly mention your role
-- Ask questions that a real prospect would ask
-- ${
-        knowledgeContext
-          ? "Test the rep's knowledge of the training materials — ask about specific features, pricing, use cases, or concepts mentioned in the materials"
-          : "Raise objections based on your pain points"
-      }
-- Show genuine interest when the rep demonstrates strong product knowledge
-- Be skeptical or ask for clarification when the rep is vague or incorrect
-- Keep responses conversational and realistic (2-4 sentences)
-- Stay in character throughout
+${knowledgeContext}`;
 
-Begin the conversation naturally.`;
-
-      userPrompt = "Start the sales call.";
+      userPrompt = "You just picked up the phone. Give your one-line answer.";
     } else {
       systemPrompt = `You are ${prospect.name}, a ${prospect.jobTitle || "professional"} at ${
         prospect.company || "a company"

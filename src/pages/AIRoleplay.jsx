@@ -136,14 +136,16 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
     const [isSpeaking, setIsSpeaking] = useState(false);
     const [isMuted, setIsMuted] = useState(false);
     const [isAudioMuted, setIsAudioMuted] = useState(false);
-    const [isSidebarOpen, setIsSidebarOpen] = useState(true); // State for sidebar
+    const [ringCount, setRingCount] = useState(0);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const audioPlayer = useRef(null);
     const recognition = useRef(null);
     const messagesEndRef = useRef(null);
-    const conversationState = useRef('idle'); // 'idle', 'ai_speaking', 'user_listening'
-    const callStartTime = useRef(null); // Added: To track call duration
-    const audioContext = useRef(null); // Added: As per outline, for audio context management
-    const currentAudioPromise = useRef(null); // Track current audio playback promise
+    const conversationState = useRef('idle');
+    const callStartTime = useRef(null);
+    const audioContext = useRef(null);
+    const currentAudioPromise = useRef(null);
+    const ringAudioCtx = useRef(null);
 
     // Update transcriptRef whenever transcript state changes
     useEffect(() => {
@@ -299,9 +301,55 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
         }
     }, [prospect, playAudio]); // Removed 'transcript' from dependencies due to transcriptRef
 
+    // Play a telephone ring tone using Web Audio API
+    const playRingTone = useCallback(() => {
+        try {
+            if (!ringAudioCtx.current || ringAudioCtx.current.state === 'closed') {
+                ringAudioCtx.current = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            const ctx = ringAudioCtx.current;
+            const now = ctx.currentTime;
+
+            // Classic double-ring pattern: two 400ms tones with a short gap
+            [[0, 0.4], [0.5, 0.9]].forEach(([start, end]) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.frequency.setValueAtTime(440, now + start);
+                osc.frequency.setValueAtTime(480, now + start + 0.01);
+                gain.gain.setValueAtTime(0, now + start);
+                gain.gain.linearRampToValueAtTime(0.3, now + start + 0.02);
+                gain.gain.setValueAtTime(0.3, now + end - 0.05);
+                gain.gain.linearRampToValueAtTime(0, now + end);
+                osc.start(now + start);
+                osc.stop(now + end);
+            });
+        } catch (e) {
+            console.warn('Ring tone error:', e);
+        }
+    }, []);
+
     const handleStartGreeting = useCallback(async () => {
         setCallStatus('connected');
-        callStartTime.current = Date.now(); // Set call start time
+        callStartTime.current = Date.now();
+
+        // Close ring audio context
+        if (ringAudioCtx.current && ringAudioCtx.current.state !== 'closed') {
+            ringAudioCtx.current.close().catch(() => {});
+        }
+
+        // Pre-warm audio context with a silent buffer so subsequent playback isn't blocked
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const buf = ctx.createBuffer(1, 1, 22050);
+            const src = ctx.createBufferSource();
+            src.buffer = buf;
+            src.connect(ctx.destination);
+            src.start(0);
+            audioContext.current = ctx;
+        } catch (e) {}
+
         setIsAIResponding(true);
         try {
             const data = await aiRoleplay({
@@ -311,20 +359,6 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
                 knowledgeMaterialIds
             });
 
-            // Handle different response modes
-            if (data.error || data.fallback_mode) {
-                if (data.openai_fallback) {
-                    toast.warning("Using simplified AI responses", {
-                        description: "OpenAI service is temporarily unavailable"
-                    });
-                } else if (data.error && data.error.includes("ElevenLabs")) {
-                    toast.info("Text-only mode active", {
-                        description: "Voice features are currently unavailable"
-                    });
-                }
-            }
-
-            // Play audio if available, otherwise just continue with text
             if (data.audio) {
                 playAudio(data.audio);
             } else {
@@ -342,10 +376,30 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
         }
     }, [prospect, playAudio, onEndCall]);
 
+    // Ringing sequence: 3 rings over ~6 seconds, then connect
+    useEffect(() => {
+        let ring = 0;
+        const MAX_RINGS = 3;
+
+        const doRing = () => {
+            ring++;
+            setRingCount(ring);
+            playRingTone();
+            if (ring < MAX_RINGS) {
+                setTimeout(doRing, 2000);
+            } else {
+                setTimeout(() => handleStartGreeting(), 1500);
+            }
+        };
+
+        // Small delay so component is fully mounted
+        const t = setTimeout(doRing, 600);
+        return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
     // Initialize and handle the call flow
     useEffect(() => {
-        // This effect runs only ONCE on mount
-        handleStartGreeting();
 
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (SpeechRecognition) {
@@ -623,6 +677,52 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
         });
     };
 
+    // Ringing overlay shown before the call connects
+    if (callStatus === 'connecting') {
+        return (
+            <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50">
+                <div className="text-center text-white space-y-8">
+                    {/* Avatar with pulsing ring animation */}
+                    <div className="relative mx-auto w-32 h-32">
+                        <div className="absolute inset-0 rounded-full bg-blue-500 opacity-20 animate-ping" />
+                        <div className="absolute inset-2 rounded-full bg-blue-500 opacity-30 animate-ping" style={{ animationDelay: '0.3s' }} />
+                        <div className="relative w-32 h-32 bg-gradient-to-br from-blue-500 to-blue-700 rounded-full flex items-center justify-center text-4xl font-bold shadow-xl">
+                            {prospect.name?.split(' ').map(n => n[0]).join('') || '?'}
+                        </div>
+                    </div>
+
+                    <div>
+                        <h2 className="text-2xl font-semibold">{prospect.name}</h2>
+                        <p className="text-slate-400 mt-1">{prospect.title} at {prospect.company_name || prospect.company}</p>
+                    </div>
+
+                    {/* Ring dots */}
+                    <div className="flex items-center justify-center gap-3">
+                        {[1, 2, 3].map(n => (
+                            <div
+                                key={n}
+                                className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                                    ringCount >= n ? 'bg-blue-400 scale-125' : 'bg-slate-600'
+                                }`}
+                            />
+                        ))}
+                    </div>
+                    <p className="text-slate-400 text-sm tracking-widest uppercase">
+                        {ringCount === 0 ? 'Dialing...' : ringCount < 3 ? 'Ringing...' : 'Connecting...'}
+                    </p>
+
+                    <button
+                        onClick={onEndCall}
+                        className="mx-auto flex items-center justify-center w-16 h-16 bg-red-500 hover:bg-red-600 rounded-full transition-colors"
+                    >
+                        <Phone className="w-7 h-7 rotate-[135deg]" />
+                    </button>
+                    <p className="text-slate-500 text-xs">Hang up</p>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
             <div className="w-full max-w-7xl h-[90vh] bg-white rounded-lg shadow-2xl flex overflow-hidden transition-all duration-300">
@@ -640,7 +740,7 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
                                      <Button variant="ghost" size="icon" onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="text-slate-500 hover:text-slate-900">
                                         {isSidebarOpen ? <ChevronLeft className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
                                     </Button>
-                                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold">
+                                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-700 rounded-full flex items-center justify-center text-white font-bold">
                                         {prospect.name?.split(' ').map(n => n[0]).join('') || 'B'}
                                     </div>
                                     <div>
@@ -649,7 +749,6 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
                                         </CardTitle>
                                         <CardDescription>{prospect.title} at {prospect.company_name || prospect.company}</CardDescription>
                                     </div>
-
                                 </div>
                                 <div className="flex items-center gap-2 text-green-600">
                                     <Phone className="w-5 h-5 animate-pulse" />
