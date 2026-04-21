@@ -931,50 +931,62 @@ export default function AIRoleplay() {
                 try {
                     let botData = null;
 
-                    const { data, error } = await supabase
-                        .from('ai_clients')
-                        .select('*')
-                        .eq('id', botId)
-                        .maybeSingle();
+                    if (!botId.startsWith('dummy_')) {
+                        const { data, error } = await supabase
+                            .from('ai_clients')
+                            .select('*')
+                            .eq('id', botId)
+                            .maybeSingle();
 
-                    if (error && error.code !== 'PGRST116') throw error;
+                        if (error && error.code !== 'PGRST116') throw error;
 
-                    if (data) {
-                        const fullName = `${data.first_name || ''} ${data.last_name || ''}`.trim() || 'Practice Partner';
-                        botData = {
-                            ...data,
-                            name: fullName,
-                            first_name: data.first_name || fullName.split(' ')[0],
-                            last_name: data.last_name || fullName.split(' ').slice(1).join(' ') || '',
-                            title: data.title || 'Professional',
-                            company: data.company_name || data.company || 'Company',
-                            company_name: data.company_name || data.company || 'Company',
-                            personas: data.personas_config || [{}],
-                            isLibraryPractice: true
-                        };
-                    } else if (botId.startsWith('dummy_')) {
+                        if (data) {
+                            const fullName = `${data.first_name || ''} ${data.last_name || ''}`.trim() || 'Practice Partner';
+                            botData = {
+                                ...data,
+                                name: fullName,
+                                first_name: data.first_name || fullName.split(' ')[0],
+                                last_name: data.last_name || fullName.split(' ').slice(1).join(' ') || '',
+                                title: data.title || 'Professional',
+                                company: data.company_name || data.company || 'Company',
+                                company_name: data.company_name || data.company || 'Company',
+                                personas: data.personas_config || [{}],
+                                isLibraryPractice: true
+                            };
+                        }
+                    }
+
+                    if (!botData && botId.startsWith('dummy_')) {
                         const DUMMY_BOTS = [
-                            { id: 'dummy_cold_call_tech', name: 'Cold Call - Tech Decision Maker', company: 'TechCorp Inc', personas_config: [{ name: 'Sarah Johnson', title: 'CTO' }] },
-                            { id: 'dummy_discovery_finance', name: 'Discovery Call - Finance Director', company: 'GlobalFinance Solutions', personas_config: [{ name: 'Michael Chen', title: 'Finance Director' }] },
-                            { id: 'dummy_warm_call_ecommerce', name: 'Warm Call - E-commerce Manager', company: 'ShopHub Co', personas_config: [{ name: 'Rachel Martinez', title: 'E-commerce Manager' }] },
-                            { id: 'dummy_objection_healthcare', name: 'Objection Handling - Healthcare IT', company: 'MediTech Solutions', personas_config: [{ name: 'Dr. James Wilson', title: 'IT Director' }] },
-                            { id: 'dummy_renewal_call_mfg', name: 'Renewal Call - Manufacturing VP', company: 'Industrial Solutions Inc', personas_config: [{ name: 'David Kumar', title: 'VP Operations' }] },
-                            { id: 'dummy_negotiation_enterprise', name: 'Negotiation - Enterprise Account', company: 'Fortune500 Corp', personas_config: [{ name: 'Patricia Adams', title: 'VP Procurement' }] },
-                            { id: 'dummy_multistakeholder_deal', name: 'Multi-Stakeholder Sales Call', company: 'BigTech Solutions', personas_config: [{ name: 'Lisa Thompson', title: 'Head of IT' }] },
-                            { id: 'dummy_executive_brief', name: 'Executive Briefing', company: 'McKinsey Advisory', personas_config: [{ name: 'Richard Blackwell', title: 'CEO' }] },
-                            { id: 'dummy_value_based_selling', name: 'Value-Based Selling', company: 'Accenture Services', personas_config: [{ name: 'Angela Foster', title: 'Operations Director' }] },
-                            { id: 'dummy_complex_sale', name: 'Complex Enterprise Sale', company: 'Goldman Sachs', personas_config: [{ name: 'Jennifer Park', title: 'Chief Risk Officer' }] }
+                            { id: 'dummy_cold_call_tech',        persona: { name: 'Sarah Johnson',    title: 'CTO',                gender: 'Female', personality: 'Skeptical',    nationality: 'US' }, company: 'TechCorp Inc',           roleplay_type: 'Cold Call' },
+                            { id: 'dummy_discovery_finance',     persona: { name: 'Michael Chen',     title: 'Finance Director',   gender: 'Male',   personality: 'Analytical',   nationality: 'US' }, company: 'GlobalFinance Solutions', roleplay_type: 'Discovery Call' },
+                            { id: 'dummy_warm_call_ecommerce',   persona: { name: 'Rachel Martinez',  title: 'E-commerce Manager', gender: 'Female', personality: 'Friendly',     nationality: 'US' }, company: 'ShopHub Co',              roleplay_type: 'Warm Call' },
+                            { id: 'dummy_objection_healthcare',  persona: { name: 'Dr. James Wilson', title: 'IT Director',        gender: 'Male',   personality: 'Aggressive',   nationality: 'US' }, company: 'MediTech Solutions',      roleplay_type: 'Objection Handling' },
+                            { id: 'dummy_renewal_call_mfg',      persona: { name: 'David Kumar',      title: 'VP Operations',      gender: 'Male',   personality: 'Reserved',     nationality: 'Indian' }, company: 'Industrial Solutions Inc', roleplay_type: 'Renewal Call' },
+                            { id: 'dummy_negotiation_enterprise', persona: { name: 'Patricia Adams',  title: 'VP Procurement',     gender: 'Female', personality: 'Aggressive',   nationality: 'US' }, company: 'Fortune500 Corp',         roleplay_type: 'Negotiation' },
+                            { id: 'dummy_multistakeholder_deal', persona: { name: 'Lisa Thompson',    title: 'Head of IT',         gender: 'Female', personality: 'Analytical',   nationality: 'UK' }, company: 'BigTech Solutions',       roleplay_type: 'Discovery Call' },
+                            { id: 'dummy_executive_brief',       persona: { name: 'Richard Blackwell',title: 'CEO',                gender: 'Male',   personality: 'Authoritative',nationality: 'UK' }, company: 'McKinsey Advisory',       roleplay_type: 'Cold Call' },
+                            { id: 'dummy_value_based_selling',   persona: { name: 'Angela Foster',    title: 'Operations Director',gender: 'Female', personality: 'Cooperative',  nationality: 'US' }, company: 'Accenture Services',      roleplay_type: 'Discovery Call' },
+                            { id: 'dummy_complex_sale',          persona: { name: 'Jennifer Park',    title: 'Chief Risk Officer', gender: 'Female', personality: 'Skeptical',    nationality: 'US' }, company: 'Goldman Sachs',           roleplay_type: 'Negotiation' },
                         ];
 
                         const dummyBot = DUMMY_BOTS.find(b => b.id === botId);
                         if (dummyBot) {
+                            const p = dummyBot.persona;
                             botData = {
-                                ...dummyBot,
-                                title: dummyBot.personas_config[0]?.title || 'Sales Representative',
+                                id: dummyBot.id,
+                                name: p.name,
+                                first_name: p.name.split(' ')[0],
+                                last_name: p.name.split(' ').slice(1).join(' '),
+                                title: p.title,
+                                company: dummyBot.company,
                                 company_name: dummyBot.company,
-                                first_name: dummyBot.personas_config[0]?.name?.split(' ')[0] || 'Practice',
-                                last_name: dummyBot.personas_config[0]?.name?.split(' ').slice(1).join(' ') || 'Partner',
-                                personas: dummyBot.personas_config,
+                                gender: p.gender,
+                                personality: p.personality,
+                                nationality: p.nationality,
+                                roleplay_type: dummyBot.roleplay_type,
+                                personas_config: [p],
+                                personas: [p],
                                 isLibraryPractice: true
                             };
                         }
