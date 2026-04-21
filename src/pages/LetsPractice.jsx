@@ -163,18 +163,35 @@ export default function LetsPractice() {
     }
   };
 
+  const normalizeBot = (bot) => {
+    const fullName = `${bot.first_name || ''} ${bot.last_name || ''}`.trim();
+    return {
+      ...bot,
+      name: bot.name || fullName || 'Practice Partner',
+      description: bot.description || bot.persona_details || `Practice with ${fullName || 'an AI prospect'} from ${bot.company_name || bot.company || 'their company'}.`,
+      industry: bot.industry,
+      difficulty_level: bot.difficulty || bot.difficulty_level || 'intermediate',
+      company: bot.company_name || bot.company || '',
+      personas_config: bot.personas_config || [{
+        name: fullName || 'Practice Partner',
+        title: bot.title || 'Professional',
+        traits: bot.traits || [],
+      }],
+    };
+  };
+
   const loadBots = async (userId) => {
     try {
       const { data, error } = await supabase
         .from('ai_clients')
         .select('*')
-        .eq('is_scenario_template', false)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      const userBots = data?.filter(b => b.created_by === userId) || [];
-      const publicBots = data?.filter(b => b.is_public && b.created_by !== userId) || [];
+      const normalized = (data || []).map(normalizeBot);
+      const userBots = normalized.filter(b => b.created_by === userId);
+      const publicBots = normalized.filter(b => b.visibility === 'all_users' && b.created_by !== userId);
 
       setMyBots(userBots);
       setBots([...DUMMY_BOTS, ...publicBots]);
@@ -184,21 +201,8 @@ export default function LetsPractice() {
     }
   };
 
-  const handleStartPractice = async (bot) => {
-    try {
-      await supabase
-        .from('user_bot_sessions')
-        .insert([{
-          user_id: currentUser.id,
-          bot_id: bot.id,
-          started_at: new Date().toISOString()
-        }]);
-
-      navigate(`/AIRoleplay?botId=${bot.id}`);
-    } catch (error) {
-      console.error('Error starting practice:', error);
-      toast.error('Failed to start practice session');
-    }
+  const handleStartPractice = (bot) => {
+    navigate(`/AIRoleplay?botId=${bot.id}`);
   };
 
   const handleCreateNew = () => {

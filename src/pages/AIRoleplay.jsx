@@ -940,13 +940,15 @@ export default function AIRoleplay() {
                     if (error && error.code !== 'PGRST116') throw error;
 
                     if (data) {
+                        const fullName = `${data.first_name || ''} ${data.last_name || ''}`.trim() || 'Practice Partner';
                         botData = {
                             ...data,
-                            name: data.name || 'Practice Partner',
-                            title: data.company || 'Sales Representative',
-                            company_name: data.company || 'Company',
-                            first_name: (data.name || '').split(' ')[0],
-                            last_name: (data.name || '').split(' ').slice(1).join(' ') || '',
+                            name: fullName,
+                            first_name: data.first_name || fullName.split(' ')[0],
+                            last_name: data.last_name || fullName.split(' ').slice(1).join(' ') || '',
+                            title: data.title || 'Professional',
+                            company: data.company_name || data.company || 'Company',
+                            company_name: data.company_name || data.company || 'Company',
                             personas: data.personas_config || [{}],
                             isLibraryPractice: true
                         };
