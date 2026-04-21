@@ -143,8 +143,7 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
     const messagesEndRef = useRef(null);
     const conversationState = useRef('idle');
     const callStartTime = useRef(null);
-    const sharedAudioCtx = useRef(null); // single AudioContext for both ring and voice
-    const currentAudioSource = useRef(null); // currently playing BufferSource
+    const sharedAudioCtx = useRef(null); // AudioContext for ring tones
     const currentAudioPromise = useRef(null);
 
     // Update transcriptRef whenever transcript state changes
@@ -171,7 +170,7 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
         }
     }, [isMuted]);
 
-    // Ensure the shared AudioContext is created/resumed (must be called from user gesture or after one)
+    // Shared AudioContext — created once on first ring (user gesture), kept alive
     const getAudioCtx = useCallback(() => {
         if (!sharedAudioCtx.current || sharedAudioCtx.current.state === 'closed') {
             sharedAudioCtx.current = new (window.AudioContext || window.webkitAudioContext)();
@@ -182,52 +181,78 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
         return sharedAudioCtx.current;
     }, []);
 
-    const playAudio = useCallback(async (audioBase64) => {
+    // Play AI voice audio. Uses a hidden <audio> element attached to the document
+    // so browser autoplay policy is satisfied (user gesture already happened for ringing).
+    const playAudio = useCallback((audioBase64) => {
         if (!audioBase64) {
             setIsSpeaking(false);
             conversationState.current = 'idle';
             return;
         }
+
+        if (isAudioMuted) {
+            setIsSpeaking(false);
+            conversationState.current = 'idle';
+            return;
+        }
+
         try {
-            // Stop any currently playing source
-            if (currentAudioSource.current) {
-                try { currentAudioSource.current.stop(); } catch (_) {}
-                currentAudioSource.current = null;
+            // Stop previous playback
+            if (audioPlayer.current) {
+                audioPlayer.current.pause();
+                if (audioPlayer.current._blobUrl) {
+                    URL.revokeObjectURL(audioPlayer.current._blobUrl);
+                }
+                audioPlayer.current.src = '';
+                audioPlayer.current.remove();
+                audioPlayer.current = null;
             }
 
-            const ctx = getAudioCtx();
-            if (isAudioMuted) {
-                // Still track state but don't play
-                setIsSpeaking(false);
-                conversationState.current = 'idle';
-                return;
-            }
-
-            // Decode base64 → ArrayBuffer → AudioBuffer
+            // Convert base64 → Blob → object URL (avoids data-URI autoplay block)
             const binary = atob(audioBase64);
             const bytes = new Uint8Array(binary.length);
             for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-            const audioBuffer = await ctx.decodeAudioData(bytes.buffer);
+            const blob = new Blob([bytes], { type: 'audio/mpeg' });
+            const blobUrl = URL.createObjectURL(blob);
 
-            const source = ctx.createBufferSource();
-            source.buffer = audioBuffer;
-            source.connect(ctx.destination);
-            currentAudioSource.current = source;
+            const el = document.createElement('audio');
+            el._blobUrl = blobUrl;
+            el.src = blobUrl;
+            el.volume = 1.0;
+            // Must be in DOM for autoplay to work reliably
+            el.style.display = 'none';
+            document.body.appendChild(el);
+            audioPlayer.current = el;
             conversationState.current = 'ai_speaking';
-            setIsSpeaking(true);
 
-            source.onended = () => {
+            el.onplay = () => setIsSpeaking(true);
+            el.onended = () => {
                 setIsSpeaking(false);
                 conversationState.current = 'idle';
-                currentAudioSource.current = null;
+                URL.revokeObjectURL(blobUrl);
+                el.remove();
+                if (audioPlayer.current === el) audioPlayer.current = null;
             };
-            source.start(0);
+            el.onerror = (err) => {
+                console.error('Audio element error:', err);
+                setIsSpeaking(false);
+                conversationState.current = 'idle';
+                URL.revokeObjectURL(blobUrl);
+                el.remove();
+                if (audioPlayer.current === el) audioPlayer.current = null;
+            };
+
+            el.play().catch(err => {
+                console.error('Audio play() rejected:', err);
+                setIsSpeaking(false);
+                conversationState.current = 'idle';
+            });
         } catch (e) {
-            console.error('Audio playback error:', e);
+            console.error('playAudio error:', e);
             setIsSpeaking(false);
             conversationState.current = 'idle';
         }
-    }, [getAudioCtx, isAudioMuted]);
+    }, [isAudioMuted]);
 
     const sendTextToAI = useCallback(async (userText) => {
         setIsAIResponding(true);
@@ -267,7 +292,6 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
                 console.log('Using OpenAI fallback responses');
             }
 
-            // Play audio if available, otherwise just continue with text
             if (data.audio) {
                 playAudio(data.audio);
             } else {
@@ -354,6 +378,7 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
             } else {
                 setIsSpeaking(false);
                 conversationState.current = 'idle';
+                toast.info("Voice unavailable — ElevenLabs API key not configured. Running in text-only mode.", { duration: 5000 });
             }
 
             setTranscript([{ speaker: 'ai', text: data.text, timestamp: new Date() }]);
@@ -433,12 +458,11 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
                 recognition.current.abort();
                 recognition.current = null;
             }
-            if (currentAudioSource.current) {
-                try { currentAudioSource.current.stop(); } catch (_) {}
-                currentAudioSource.current = null;
-            }
-            if (sharedAudioCtx.current && sharedAudioCtx.current.state !== 'closed') {
-                sharedAudioCtx.current.close().catch(() => {});
+            if (audioPlayer.current) {
+                audioPlayer.current.pause();
+                if (audioPlayer.current._blobUrl) URL.revokeObjectURL(audioPlayer.current._blobUrl);
+                audioPlayer.current.remove();
+                audioPlayer.current = null;
             }
         };
         // Dependencies are stable callbacks and state setters
@@ -452,11 +476,12 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
     }, [callStatus, isSpeaking, isAIResponding, isMuted, startListening]);
 
     const stopAudio = () => {
-        if (currentAudioSource.current) {
-            try { currentAudioSource.current.stop(); } catch (_) {}
-            currentAudioSource.current = null;
+        if (audioPlayer.current) {
+            audioPlayer.current.pause();
+            if (audioPlayer.current._blobUrl) URL.revokeObjectURL(audioPlayer.current._blobUrl);
+            audioPlayer.current.remove();
+            audioPlayer.current = null;
         }
-        currentAudioPromise.current = null;
         setIsSpeaking(false);
         conversationState.current = 'idle';
     };
@@ -641,13 +666,7 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
     const toggleAudioMute = () => {
         setIsAudioMuted(prev => {
             const next = !prev;
-            // If muting while speaking, stop current audio
-            if (next && currentAudioSource.current) {
-                try { currentAudioSource.current.stop(); } catch (_) {}
-                currentAudioSource.current = null;
-                setIsSpeaking(false);
-                conversationState.current = 'idle';
-            }
+            if (next) stopAudio();
             toast.info(next ? "AI audio muted" : "AI audio on");
             return next;
         });

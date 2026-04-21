@@ -132,23 +132,18 @@ interface RoleplayRequest {
   knowledgeMaterialIds?: string[];
 }
 
-function generateMockAudio(text: string): string {
-  const audioDataLength = Math.ceil((text.length / 4) * 1000);
-  const audioData = new Uint8Array(audioDataLength);
-
-  for (let i = 0; i < audioDataLength; i++) {
-    audioData[i] = Math.floor(Math.random() * 256);
-  }
-
-  return btoa(String.fromCharCode(...audioData));
+// No ElevenLabs key — return null so frontend shows text-only mode
+function generateMockAudio(_text: string): null {
+  return null;
 }
 
 function generateRealisticResponse(userText: string | null, prospect: any, knowledgeContext: string): string {
   const responses = {
     opening: [
-      `Hi, this is ${prospect.name}. Thanks for taking the time to speak with me today. What did you want to discuss?`,
-      `Hello, I'm ${prospect.name} from ${prospect.company || "our company"}. Nice to meet you. What brings you to our call today?`,
-      `Thanks for scheduling this call. I'm ${prospect.name}, ${prospect.jobTitle || "a professional"} here. How can I help?`,
+      "Hello?",
+      "Yes?",
+      "Hello, who's this?",
+      "Yeah, hello?",
     ],
     engagement: [
       "That's an interesting point. Could you elaborate on how that would specifically help with our current situation?",
