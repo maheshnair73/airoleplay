@@ -259,10 +259,23 @@ Deno.serve(async (req: Request) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
-    const elevenlabsApiKey = Deno.env.get("ELEVENLABS_API_KEY");
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Read API keys: prefer env secrets, fall back to app_settings table
+    const getSettingKey = async (envName: string): Promise<string | undefined> => {
+      const envVal = Deno.env.get(envName);
+      if (envVal) return envVal;
+      const { data } = await supabase
+        .from("app_settings")
+        .select("value")
+        .eq("key", envName)
+        .maybeSingle();
+      return data?.value || undefined;
+    };
+
+    const openaiApiKey = await getSettingKey("OPENAI_API_KEY");
+    const elevenlabsApiKey = await getSettingKey("ELEVENLABS_API_KEY");
 
     const {
       userText,

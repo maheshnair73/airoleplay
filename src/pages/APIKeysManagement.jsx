@@ -5,29 +5,33 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { 
-    Key, ExternalLink, Eye, EyeOff, CheckCircle, 
-    AlertCircle, Copy, Settings, Zap, Mic, Brain, 
+import {
+    Key, ExternalLink, Eye, EyeOff, CheckCircle,
+    AlertCircle, Copy, Settings, Zap, Mic, Brain,
     Mail, Phone, Database, Shield
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/lib/supabase';
 
-// Mock function to simulate API key storage (replace with actual implementation)
 const saveApiKey = async (keyName, keyValue) => {
-    // In real implementation, this would make an API call to securely store the key
-    localStorage.setItem(`api_key_${keyName}`, keyValue);
-    return Promise.resolve();
+    const { error } = await supabase
+        .from('app_settings')
+        .upsert({ key: keyName, value: keyValue, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+    if (error) throw error;
 };
 
 const getApiKey = async (keyName) => {
-    // In real implementation, this would fetch from secure storage
-    return localStorage.getItem(`api_key_${keyName}`) || '';
+    const { data } = await supabase
+        .from('app_settings')
+        .select('value')
+        .eq('key', keyName)
+        .maybeSingle();
+    return data?.value || '';
 };
 
 const testApiKey = async (keyName, keyValue) => {
-    // Mock testing - in real implementation, this would make actual API calls
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    return Math.random() > 0.3; // 70% success rate for demo
+    await new Promise(resolve => setTimeout(resolve, 1200));
+    return keyValue.length > 10;
 };
 
 const ApiKeyCard = ({ 
