@@ -35,7 +35,8 @@ import {
     Gauge,
     PieChart,
     UserCheck,
-    LineChart
+    LineChart,
+    Key
 } from 'lucide-react';
 
 const ALL_ROLES = ['sales_agent', 'sales_manager', 'company_admin', 'admin', 'saas_admin', 'super_admin'];
@@ -181,5 +182,6 @@ export const superAdminNavConfig = [
     { page: 'UserManagement', title: 'Users & Modules', icon: Users },
     { page: 'GlobalAnalytics', title: 'Global Analytics', icon: BarChart3 },
     { page: 'WebsiteHome', title: 'Edit Website', icon: Globe },
-    { page: 'SuperAdminAIAgent', title: 'Platform AI Settings', icon: Bot }
+    { page: 'SuperAdminAIAgent', title: 'Platform AI Settings', icon: Bot },
+    { page: 'APIKeysManagement', title: 'API Keys', icon: Key }
 ];
