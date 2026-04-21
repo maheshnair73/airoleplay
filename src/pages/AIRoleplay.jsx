@@ -239,72 +239,95 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
 
     // ── Speech recognition ────────────────────────────────────────────────────
     const startListeningRef = useRef(null);
+    // Track whether a silence timeout is pending so we don't double-fire
+    const silenceTimerRef = useRef(null);
 
     useEffect(() => {
         const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SR) return;
 
-        const sr = new SR();
-        sr.continuous = false;
-        sr.interimResults = false;
-        sr.lang = 'en-US';
-        recognitionRef.current = sr;
-
-        // Only start if nothing is happening and we're not muted
-        const tryStart = () => {
+        // Browsers require a fresh instance after each session ends — reuse causes silent failures
+        const createAndStart = () => {
             if (isDeadRef.current) return;
             if (isAIRespondingRef.current || isListeningRef.current || isSpeakingRef.current || isMutedRef.current) return;
+
+            // Tear down any previous instance
+            try { recognitionRef.current?.abort(); } catch (_) {}
+
+            const sr = new SR();
+            sr.continuous = true;        // keep listening across pauses
+            sr.interimResults = true;    // show partial results so user sees something happening
+            sr.lang = 'en-US';
+            recognitionRef.current = sr;
+
+            sr.onstart = () => { if (!isDeadRef.current) setIsListening(true); };
+
+            sr.onresult = (ev) => {
+                if (isDeadRef.current) return;
+                if (isSpeakingRef.current || isAIRespondingRef.current) return;
+
+                // Find the latest final result
+                let finalText = '';
+                for (let i = ev.resultIndex; i < ev.results.length; i++) {
+                    if (ev.results[i].isFinal) {
+                        finalText += ev.results[i][0].transcript;
+                    }
+                }
+                if (!finalText.trim()) return;
+
+                // Stop listening and send
+                try { sr.stop(); } catch (_) {}
+                setIsListening(false);
+                const text = finalText.trim();
+                const entry = { speaker: 'user', text, timestamp: new Date() };
+                setTranscript(prev => { const next = [...prev, entry]; transcriptRef.current = next; return next; });
+                sendAIMessageRef.current?.(text);
+            };
+
+            sr.onerror = (ev) => {
+                if (isDeadRef.current) return;
+                setIsListening(false);
+                if (ev.error !== 'no-speech' && ev.error !== 'aborted') {
+                    console.error('SR error:', ev.error);
+                }
+                // Restart after a brief pause on recoverable errors
+                clearTimeout(silenceTimerRef.current);
+                silenceTimerRef.current = setTimeout(() => {
+                    if (!isDeadRef.current && !isAIRespondingRef.current && !isSpeakingRef.current && !isMutedRef.current) {
+                        createAndStart();
+                    }
+                }, 800);
+            };
+
+            sr.onend = () => {
+                if (isDeadRef.current) return;
+                setIsListening(false);
+                // Only auto-restart if AI is still idle (not after user spoke)
+                clearTimeout(silenceTimerRef.current);
+                silenceTimerRef.current = setTimeout(() => {
+                    if (!isDeadRef.current && !isAIRespondingRef.current && !isSpeakingRef.current && !isMutedRef.current) {
+                        createAndStart();
+                    }
+                }, 400);
+            };
+
             try { sr.start(); } catch (_) {}
         };
-        startListeningRef.current = tryStart;
 
-        sr.onstart = () => { if (!isDeadRef.current) setIsListening(true); };
-        sr.onend = () => {
-            if (isDeadRef.current) return;
-            setIsListening(false);
-            // Auto-restart: if AI is idle and mic is not muted, keep listening
-            setTimeout(() => {
-                if (!isDeadRef.current && !isAIRespondingRef.current && !isSpeakingRef.current && !isMutedRef.current) {
-                    tryStart();
-                }
-            }, 300);
-        };
-        sr.onerror = (ev) => {
-            if (isDeadRef.current) return;
-            setIsListening(false);
-            if (ev.error !== 'no-speech' && ev.error !== 'aborted') {
-                console.error('Speech recognition error:', ev.error);
-            }
-            // Restart on recoverable errors
-            setTimeout(() => {
-                if (!isDeadRef.current && !isAIRespondingRef.current && !isSpeakingRef.current && !isMutedRef.current) {
-                    tryStart();
-                }
-            }, 500);
-        };
-        sr.onresult = (ev) => {
-            if (isDeadRef.current) return;
-            // Ignore if AI was speaking — captured its voice
-            if (isSpeakingRef.current || isAIRespondingRef.current) return;
-            const text = ev.results[0][0].transcript.trim();
-            if (!text) return;
-            setIsListening(false);
-            const entry = { speaker: 'user', text, timestamp: new Date() };
-            setTranscript(prev => { const next = [...prev, entry]; transcriptRef.current = next; return next; });
-            sendAIMessageRef.current?.(text);
-        };
+        startListeningRef.current = createAndStart;
 
         return () => {
-            try { sr.abort(); } catch (_) {}
+            clearTimeout(silenceTimerRef.current);
+            try { recognitionRef.current?.abort(); } catch (_) {}
             recognitionRef.current = null;
         };
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    // Auto-start listening only after AI has fully stopped speaking and responding
+    // Kick off listening once call is connected and AI has finished speaking/responding
     useEffect(() => {
         if (phase === 'connected' && !isSpeaking && !isAIResponding && !isMuted) {
-            // 700ms lets the audio buffer fully drain and avoids capturing AI voice tail
+            // Wait for audio buffer to fully drain before opening mic
             const t = setTimeout(() => startListeningRef.current?.(), 700);
             return () => clearTimeout(t);
         }
@@ -314,7 +337,8 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
     const sendAIMessage = async (userText) => {
         if (isDeadRef.current) return;
         setIsAIResponding(true);
-        // Kill mic immediately so AI can't hear itself
+        // Kill mic and cancel any pending restart so AI can't hear itself
+        clearTimeout(silenceTimerRef.current);
         try { recognitionRef.current?.abort(); } catch (_) {}
 
         const history = transcriptRef.current.map(t => ({
@@ -645,7 +669,10 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
                                 <Button
                                     onClick={() => {
                                         setIsMuted(m => {
-                                            if (!m) { try { recognitionRef.current?.stop(); } catch (_) {} }
+                                            if (!m) {
+                                                clearTimeout(silenceTimerRef.current);
+                                                try { recognitionRef.current?.abort(); } catch (_) {}
+                                            }
                                             return !m;
                                         });
                                     }}
