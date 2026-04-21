@@ -126,11 +126,10 @@ const CallAssistantSidebar = ({ prospect }) => {
 };
 
 
-// Call in progress component with conversational flow
+// ─── CallInProgress ────────────────────────────────────────────────────────────
 const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMaterialIds = [] }) => {
-    const [callStatus, setCallStatus] = useState('connecting');
+    const [phase, setPhase] = useState('ringing'); // ringing | connected | ending
     const [transcript, setTranscript] = useState([]);
-    const transcriptRef = useRef(transcript); // Ref to hold the latest transcript for stable callbacks
     const [isAIResponding, setIsAIResponding] = useState(false);
     const [isListening, setIsListening] = useState(false);
     const [isSpeaking, setIsSpeaking] = useState(false);
@@ -138,717 +137,489 @@ const CallInProgress = ({ prospect, onEndCall, onAnalysisComplete, knowledgeMate
     const [isAudioMuted, setIsAudioMuted] = useState(false);
     const [ringCount, setRingCount] = useState(0);
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+    const [userInput, setUserInput] = useState('');
+
+    const transcriptRef = useRef([]);
     const audioPlayer = useRef(null);
-    const recognition = useRef(null);
+    const recognitionRef = useRef(null);
     const messagesEndRef = useRef(null);
-    const conversationState = useRef('idle');
     const callStartTime = useRef(null);
-    const sharedAudioCtx = useRef(null); // AudioContext for ring tones
-    const currentAudioPromise = useRef(null);
+    const audioCtxRef = useRef(null);
+    isListeningRef.current = isListening;
+    isAIRespondingRef.current = isAIResponding;
 
-    // Update transcriptRef whenever transcript state changes
-    useEffect(() => {
-        transcriptRef.current = transcript;
-    }, [transcript]);
+    // Keep transcriptRef in sync
+    useEffect(() => { transcriptRef.current = transcript; }, [transcript]);
+    useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [transcript]);
 
-    const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    // ── Audio helpers ────────────────────────────────────────────────────────
+    const stopAudio = () => {
+        const el = audioPlayer.current;
+        if (el) {
+            el.pause();
+            if (el._blobUrl) URL.revokeObjectURL(el._blobUrl);
+            el.remove();
+            audioPlayer.current = null;
+        }
+        setIsSpeaking(false);
     };
 
-    useEffect(scrollToBottom, [transcript]);
-
-    const startListening = useCallback(() => {
-        if (recognition.current && conversationState.current === 'idle' && !isMuted) {
-            try {
-                recognition.current.start();
-            } catch (e) {
-                // Ignore DOMException if recognition is already started
-                if (e.name !== "InvalidStateError") {
-                    console.error("Error starting speech recognition:", e);
-                }
-            }
-        }
-    }, [isMuted]);
-
-    // Shared AudioContext — created once on first ring (user gesture), kept alive
-    const getAudioCtx = useCallback(() => {
-        if (!sharedAudioCtx.current || sharedAudioCtx.current.state === 'closed') {
-            sharedAudioCtx.current = new (window.AudioContext || window.webkitAudioContext)();
-        }
-        if (sharedAudioCtx.current.state === 'suspended') {
-            sharedAudioCtx.current.resume().catch(() => {});
-        }
-        return sharedAudioCtx.current;
-    }, []);
-
-    // Play AI voice audio. Uses a hidden <audio> element attached to the document
-    // so browser autoplay policy is satisfied (user gesture already happened for ringing).
-    const playAudio = useCallback((audioBase64) => {
-        if (!audioBase64) {
-            setIsSpeaking(false);
-            conversationState.current = 'idle';
-            return;
-        }
-
-        if (isAudioMuted) {
-            setIsSpeaking(false);
-            conversationState.current = 'idle';
-            return;
-        }
-
+    const playAudio = (base64) => {
+        if (!base64 || isAudioMuted) { setIsSpeaking(false); return; }
+        stopAudio();
         try {
-            // Stop previous playback
-            if (audioPlayer.current) {
-                audioPlayer.current.pause();
-                if (audioPlayer.current._blobUrl) {
-                    URL.revokeObjectURL(audioPlayer.current._blobUrl);
-                }
-                audioPlayer.current.src = '';
-                audioPlayer.current.remove();
-                audioPlayer.current = null;
-            }
-
-            // Convert base64 → Blob → object URL (avoids data-URI autoplay block)
-            const binary = atob(audioBase64);
-            const bytes = new Uint8Array(binary.length);
-            for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+            const bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
             const blob = new Blob([bytes], { type: 'audio/mpeg' });
-            const blobUrl = URL.createObjectURL(blob);
-
+            const url = URL.createObjectURL(blob);
             const el = document.createElement('audio');
-            el._blobUrl = blobUrl;
-            el.src = blobUrl;
+            el._blobUrl = url;
+            el.src = url;
             el.volume = 1.0;
-            // Must be in DOM for autoplay to work reliably
             el.style.display = 'none';
             document.body.appendChild(el);
             audioPlayer.current = el;
-            conversationState.current = 'ai_speaking';
-
             el.onplay = () => setIsSpeaking(true);
             el.onended = () => {
                 setIsSpeaking(false);
-                conversationState.current = 'idle';
-                URL.revokeObjectURL(blobUrl);
+                URL.revokeObjectURL(url);
                 el.remove();
                 if (audioPlayer.current === el) audioPlayer.current = null;
             };
-            el.onerror = (err) => {
-                console.error('Audio element error:', err);
+            el.onerror = () => {
                 setIsSpeaking(false);
-                conversationState.current = 'idle';
-                URL.revokeObjectURL(blobUrl);
+                URL.revokeObjectURL(url);
                 el.remove();
                 if (audioPlayer.current === el) audioPlayer.current = null;
             };
-
-            el.play().catch(err => {
-                console.error('Audio play() rejected:', err);
-                setIsSpeaking(false);
-                conversationState.current = 'idle';
-            });
+            el.play().catch(() => setIsSpeaking(false));
         } catch (e) {
             console.error('playAudio error:', e);
             setIsSpeaking(false);
-            conversationState.current = 'idle';
         }
-    }, [isAudioMuted]);
+    };
 
-    const sendTextToAI = useCallback(async (userText) => {
-        setIsAIResponding(true);
-        if (recognition.current) {
-             recognition.current.stop(); // Stop listening while AI is processing
-        }
-
-        // Access transcript via ref to make this useCallback stable
-        const currentTranscript = transcriptRef.current;
-
-        console.log('Sending to AI:', {
-            userText,
-            currentTranscriptLength: currentTranscript.length,
-            lastFewMessages: currentTranscript.slice(-3).map(t => `${t.speaker}: ${t.text}`)
-        });
-
+    // ── Ring tone ─────────────────────────────────────────────────────────────
+    const playRingTone = () => {
         try {
-            // Ensure we're sending the complete conversation history
-            const history = currentTranscript.map(t => ({
-                speaker: t.speaker,
-                text: t.text,
-                timestamp: t.timestamp
-            }));
-
-            const data = await aiRoleplay({
-                userText,
-                prospect,
-                transcriptHistory: history,
-                knowledgeMaterialIds
-            });
-
-            console.log('Received from AI:', data.text);
-
-            // Handle fallback modes
-            if (data.openai_fallback) {
-                // Show subtle indicator for fallback mode
-                console.log('Using OpenAI fallback responses');
+            if (!audioCtxRef.current || audioCtxRef.current.state === 'closed') {
+                audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
             }
-
-            if (data.audio) {
-                playAudio(data.audio);
-            } else {
-                setIsSpeaking(false);
-                conversationState.current = 'idle';
-            }
-
-            setTranscript(prev => [...prev, { speaker: 'ai', text: data.text, timestamp: new Date() }]);
-        } catch (error) {
-            console.error("Error sending text to AI:", error);
-            // Fallback response for complete failures
-            const fallbackText = "I'm having some technical difficulties. Could you repeat that?";
-            setTranscript(prev => [...prev, { speaker: 'ai', text: fallbackText, timestamp: new Date() }]);
-            toast.error("Connection issue - please try again");
-        } finally {
-            setIsAIResponding(false);
-        }
-    }, [prospect, playAudio]); // Removed 'transcript' from dependencies due to transcriptRef
-
-    // Natural PSTN-style ring: dual-tone (440+480 Hz) with proper cadence
-    const playRingTone = useCallback(() => {
-        try {
-            const ctx = getAudioCtx();
+            const ctx = audioCtxRef.current;
+            if (ctx.state === 'suspended') ctx.resume();
             const now = ctx.currentTime;
-
-            // US phone ring cadence: two 0.8s bursts separated by 0.4s gap
-            [[0, 0.8], [1.2, 2.0]].forEach(([start, end]) => {
-                const osc1 = ctx.createOscillator();
-                const osc2 = ctx.createOscillator();
-                const gainNode = ctx.createGain();
-                const masterGain = ctx.createGain();
-
-                osc1.type = 'sine';
-                osc2.type = 'sine';
-                osc1.frequency.value = 440;
-                osc2.frequency.value = 480;
-
-                // Slight AM tremolo to sound like real phone
-                const lfo = ctx.createOscillator();
-                const lfoGain = ctx.createGain();
-                lfo.frequency.value = 20;
-                lfoGain.gain.value = 0.15;
-                lfo.connect(lfoGain);
-                lfoGain.connect(gainNode.gain);
-
-                osc1.connect(gainNode);
-                osc2.connect(gainNode);
-                gainNode.connect(masterGain);
-                masterGain.connect(ctx.destination);
-
-                masterGain.gain.setValueAtTime(0, now + start);
-                masterGain.gain.linearRampToValueAtTime(0.18, now + start + 0.04);
-                masterGain.gain.setValueAtTime(0.18, now + end - 0.04);
-                masterGain.gain.linearRampToValueAtTime(0, now + end);
-
-                gainNode.gain.value = 1;
-
-                lfo.start(now + start);
-                lfo.stop(now + end);
-                osc1.start(now + start);
-                osc1.stop(now + end);
-                osc2.start(now + start);
-                osc2.stop(now + end);
+            [[0, 0.8], [1.2, 2.0]].forEach(([s, e]) => {
+                [440, 480].forEach(freq => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.frequency.value = freq;
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    gain.gain.setValueAtTime(0, now + s);
+                    gain.gain.linearRampToValueAtTime(0.12, now + s + 0.05);
+                    gain.gain.setValueAtTime(0.12, now + e - 0.05);
+                    gain.gain.linearRampToValueAtTime(0, now + e);
+                    osc.start(now + s);
+                    osc.stop(now + e);
+                });
             });
-        } catch (e) {
-            console.warn('Ring tone error:', e);
-        }
-    }, [getAudioCtx]);
+        } catch (_) {}
+    };
 
-    const handleStartGreeting = useCallback(async () => {
-        setCallStatus('connected');
-        callStartTime.current = Date.now();
-        setIsAIResponding(true);
-        try {
-            const data = await aiRoleplay({
-                userText: null,
-                prospect,
-                transcriptHistory: [],
-                knowledgeMaterialIds
-            });
+    // ── Speech recognition ────────────────────────────────────────────────────
+    const startListening = useRef(null);
 
-            console.log('[AI Roleplay] Greeting response:', { hasAudio: !!data.audio, hasText: !!data.text, fallback: data.openai_fallback });
-
-            // Show text immediately
-            setTranscript([{ speaker: 'ai', text: data.text || 'Hello?', timestamp: new Date() }]);
-
-            if (data.audio) {
-                playAudio(data.audio);
-            } else {
-                setIsSpeaking(false);
-                conversationState.current = 'idle';
-                toast.info("Running in text-only mode — no audio returned from AI.", { duration: 4000 });
-            }
-        } catch (error) {
-            console.error("[AI Roleplay] Greeting error:", error);
-            // Don't end the call — show a fallback greeting so the session is usable
-            const fallbackText = "Hello? Who's calling?";
-            setTranscript([{ speaker: 'ai', text: fallbackText, timestamp: new Date() }]);
-            setIsSpeaking(false);
-            conversationState.current = 'idle';
-            toast.warning(`AI connection slow — running in text-only mode. (${error.message})`, { duration: 6000 });
-        } finally {
-            setIsAIResponding(false);
-        }
-    }, [prospect, playAudio, onEndCall]);
-
-    // Ringing sequence: request mic permission first, then ring
     useEffect(() => {
-        let cancelled = false;
-        let micStream = null;
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SR) return;
 
-        const startRinging = () => {
-            if (cancelled) return;
-            let ring = 0;
-            const MAX_RINGS = 3;
-            const doRing = () => {
-                if (cancelled) return;
-                ring++;
-                setRingCount(ring);
-                playRingTone();
-                if (ring < MAX_RINGS) {
-                    setTimeout(doRing, 2000);
-                } else {
-                    setTimeout(() => { if (!cancelled) handleStartGreeting(); }, 1500);
-                }
-            };
-            setTimeout(doRing, 600);
+        const sr = new SR();
+        sr.continuous = false;
+        sr.interimResults = false;
+        sr.lang = 'en-US';
+        recognitionRef.current = sr;
+
+        const tryStart = () => {
+            if (isAIRespondingRef.current || isListeningRef.current) return;
+            try { sr.start(); } catch (_) {}
+        };
+        startListening.current = tryStart;
+
+        sr.onstart = () => setIsListening(true);
+        sr.onend = () => setIsListening(false);
+        sr.onerror = (ev) => {
+            setIsListening(false);
+            if (ev.error !== 'no-speech' && ev.error !== 'aborted') {
+                console.error('Speech recognition error:', ev.error);
+            }
+        };
+        sr.onresult = (ev) => {
+            const text = ev.results[0][0].transcript.trim();
+            if (!text) return;
+            setIsListening(false);
+            const entry = { speaker: 'user', text, timestamp: new Date() };
+            setTranscript(prev => { transcriptRef.current = [...prev, entry]; return transcriptRef.current; });
+            sendAIMessage(text);
         };
 
-        // Request mic permission before anything starts so the browser shows the prompt
-        navigator.mediaDevices.getUserMedia({ audio: true })
-            .then((stream) => {
-                micStream = stream;
-                // Keep stream alive until call ends; SpeechRecognition will reuse the permission
-                startRinging();
-            })
-            .catch((err) => {
-                console.warn('Mic permission denied or unavailable:', err);
-                toast.error('Microphone access is required for the call. Please allow microphone in your browser and try again.');
-                // Still start ringing so text/AI response works even without mic
-                startRinging();
-            });
-
         return () => {
-            cancelled = true;
-            if (micStream) micStream.getTracks().forEach(t => t.stop());
+            try { sr.abort(); } catch (_) {}
+            recognitionRef.current = null;
         };
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    // Initialize and handle the call flow
+    // Auto-start listening after AI is done
     useEffect(() => {
-
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (SpeechRecognition) {
-            recognition.current = new SpeechRecognition();
-            recognition.current.continuous = false;
-            recognition.current.interimResults = false;
-            recognition.current.lang = 'en-US';
-
-            recognition.current.onstart = () => {
-                setIsListening(true);
-                conversationState.current = 'user_listening';
-            };
-
-            recognition.current.onresult = (event) => {
-                const userText = event.results[0][0].transcript;
-                setIsListening(false);
-                setTranscript(prev => [...prev, { speaker: 'user', text: userText, timestamp: new Date() }]);
-                sendTextToAI(userText); // sendTextToAI is now stable
-            };
-
-            recognition.current.onerror = (event) => {
-                setIsListening(false);
-                if (event.error !== 'no-speech' && event.error !== 'aborted') {
-                    console.error("Speech recognition error:", event.error); // Log actual error for debugging
-                    toast.error("Speech recognition error. Please check mic permissions.");
-                }
-            };
-
-            recognition.current.onend = () => {
-                setIsListening(false);
-                conversationState.current = 'idle';
-                // The decision to start listening again is handled by the OTHER useEffect
-            };
-        } else {
-            toast.error("Speech recognition is not supported in this browser.");
+        if (phase === 'connected' && !isSpeaking && !isAIResponding && !isMuted) {
+            startListening.current?.();
         }
+    }, [phase, isSpeaking, isAIResponding, isMuted]);
 
-        // Cleanup function
-        return () => {
-            if (recognition.current) {
-                recognition.current.abort();
-                recognition.current = null;
+    // ── Core AI messaging ─────────────────────────────────────────────────────
+    const sendAIMessage = async (userText) => {
+        setIsAIResponding(true);
+        try { recognitionRef.current?.stop(); } catch (_) {}
+
+        const history = transcriptRef.current.map(t => ({
+            speaker: t.speaker, text: t.text, timestamp: String(t.timestamp)
+        }));
+
+        try {
+            const data = await aiRoleplay({ userText, prospect, transcriptHistory: history, knowledgeMaterialIds });
+            const aiEntry = { speaker: 'ai', text: data.text || '...', timestamp: new Date() };
+            setTranscript(prev => { transcriptRef.current = [...prev, aiEntry]; return transcriptRef.current; });
+            if (data.audio) {
+                playAudio(data.audio);
+            } else {
+                setIsSpeaking(false);
             }
-            if (audioPlayer.current) {
-                audioPlayer.current.pause();
-                if (audioPlayer.current._blobUrl) URL.revokeObjectURL(audioPlayer.current._blobUrl);
-                audioPlayer.current.remove();
-                audioPlayer.current = null;
-            }
-        };
-        // Dependencies are stable callbacks and state setters
-    }, [handleStartGreeting, sendTextToAI, setIsListening, setTranscript]);
-
-    // Effect to start listening after AI finishes speaking or on state changes
-    useEffect(() => {
-        if (callStatus === 'connected' && !isSpeaking && !isAIResponding && !isMuted) {
-            startListening();
+        } catch (err) {
+            console.error('AI message error:', err);
+            const fallback = { speaker: 'ai', text: "Could you say that again?", timestamp: new Date() };
+            setTranscript(prev => [...prev, fallback]);
+            setIsSpeaking(false);
+        } finally {
+            setIsAIResponding(false);
         }
-    }, [callStatus, isSpeaking, isAIResponding, isMuted, startListening]);
-
-    const stopAudio = () => {
-        if (audioPlayer.current) {
-            audioPlayer.current.pause();
-            if (audioPlayer.current._blobUrl) URL.revokeObjectURL(audioPlayer.current._blobUrl);
-            audioPlayer.current.remove();
-            audioPlayer.current = null;
-        }
-        setIsSpeaking(false);
-        conversationState.current = 'idle';
     };
 
-    const handleEndCall = async () => {
-        setCallStatus('ending');
+    // ── Ringing → connected flow ──────────────────────────────────────────────
+    useEffect(() => {
+        let dead = false;
+        callStartTime.current = Date.now();
 
-        // Stop all audio and recognition
+        // Request mic early so permission prompt shows before ringing
+        navigator.mediaDevices.getUserMedia({ audio: true }).catch(() => {});
+
+        let ring = 0;
+        const doRing = () => {
+            if (dead) return;
+            ring++;
+            setRingCount(ring);
+            playRingTone();
+            if (ring < 3) {
+                setTimeout(doRing, 2000);
+            } else {
+                // Connect: show greeting immediately, don't wait for API
+                setTimeout(async () => {
+                    if (dead) return;
+                    setPhase('connected');
+                    // Show instant placeholder so UI doesn't hang
+                    const placeholder = { speaker: 'ai', text: 'Hello?', timestamp: new Date() };
+                    setTranscript([placeholder]);
+                    transcriptRef.current = [placeholder];
+                    setIsAIResponding(true);
+                    try {
+                        const data = await aiRoleplay({ userText: null, prospect, transcriptHistory: [], knowledgeMaterialIds });
+                        if (dead) return;
+                        const greeting = { speaker: 'ai', text: data.text || 'Hello?', timestamp: new Date() };
+                        setTranscript([greeting]);
+                        transcriptRef.current = [greeting];
+                        if (data.audio) {
+                            playAudio(data.audio);
+                        } else {
+                            setIsSpeaking(false);
+                        }
+                    } catch (err) {
+                        console.error('Greeting error:', err);
+                        setIsSpeaking(false);
+                    } finally {
+                        if (!dead) setIsAIResponding(false);
+                    }
+                }, 800);
+            }
+        };
+
+        setTimeout(doRing, 600);
+
+        return () => {
+            dead = true;
+            stopAudio();
+            try { recognitionRef.current?.abort(); } catch (_) {}
+            if (audioCtxRef.current && audioCtxRef.current.state !== 'closed') {
+                audioCtxRef.current.close().catch(() => {});
+            }
+        };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // ── End call + analysis ───────────────────────────────────────────────────
+    const handleEndCall = async () => {
+        setPhase('ending');
         stopAudio();
-        if (recognition.current) {
-            recognition.current.stop();
-        }
-        if (sharedAudioCtx.current && sharedAudioCtx.current.state !== 'closed') {
-            sharedAudioCtx.current.close().catch(() => {});
-        }
+        try { recognitionRef.current?.stop(); } catch (_) {}
 
         const sessionDuration = Math.floor((Date.now() - callStartTime.current) / 1000);
-
-        let analysisData;
-        let llmSucceeded = false;
-        const maxRetries = 2;
+        const finalTranscript = transcriptRef.current;
 
         toast.info("Analyzing your performance...", { duration: 15000 });
 
-        for (let attempt = 1; attempt <= maxRetries; attempt++) {
-            try {
-                const analysisPrompt = `
-                Analyze this sales roleplay transcript. Provide a numerical overall score (0-100) and a brief 2-3 sentence feedback summary.
-
-                **Conversation:**
-                ${transcript.map(t => `${t.speaker === 'ai' ? prospect.name : 'Sales Rep'}: ${t.text}`).join('\n')}
-
-                Return a valid JSON response with ONLY these two keys: "overall_score" and "feedback_summary".
-                Example:
-                {
-                  "overall_score": 82,
-                  "feedback_summary": "You did a great job building rapport and asking discovery questions. However, you could have pushed harder to secure a next step."
-                }`;
-
-                const { data } = await InvokeLLM({
-                    prompt: analysisPrompt,
-                    response_json_schema: {
-                        type: "object",
-                        properties: {
-                            overall_score: { type: "number" },
-                            feedback_summary: { type: "string" },
-                        },
-                        required: ["overall_score", "feedback_summary"]
-                    }
-                });
-
-                if (data && typeof data.overall_score === 'number' && data.feedback_summary) {
-                    const score = data.overall_score;
-                    const scorecard = [
-                        { category: "Rapport & Opening", criteria: [{ text: "Made a clear introduction", passed: score > 50 }, { text: "Established rapport effectively", passed: score > 70 }] },
-                        { category: "Discovery & Listening", criteria: [{ text: "Asked relevant qualifying questions", passed: score > 60 }, { text: "Listened actively to responses", passed: score > 75 }] },
-                        { category: "Value & Closing", criteria: [{ text: "Clearly articulated value", passed: score > 65 }, { text: "Attempted to set a next step", passed: score > 80 }] }
-                    ];
-                    analysisData = { ...data, scorecard };
-                    llmSucceeded = true;
-                    toast.success("Analysis complete!");
-                    break; // Exit loop on success
-                } else {
-                    // Invalid structure, will be caught as a failure and retried
-                    throw new Error(`Invalid response structure on attempt ${attempt}`);
+        // Build analysis
+        let analysisData;
+        try {
+            const { data } = await InvokeLLM({
+                prompt: `Analyze this sales roleplay. Score 0-100 and give 2-3 sentence feedback.\n\nConversation:\n${finalTranscript.map(t => `${t.speaker === 'ai' ? prospect.name : 'Sales Rep'}: ${t.text}`).join('\n')}\n\nReturn JSON with keys: overall_score (number), feedback_summary (string).`,
+                response_json_schema: {
+                    type: "object",
+                    properties: { overall_score: { type: "number" }, feedback_summary: { type: "string" } },
+                    required: ["overall_score", "feedback_summary"]
                 }
-            } catch (error) {
-                console.warn(`LLM analysis attempt ${attempt} failed:`, error.message);
-                if (attempt === maxRetries) {
-                    // Last attempt failed, proceed to fallback
-                    toast.warning("AI analysis failed, using basic scoring.", {
-                        description: "We'll still save your session."
-                    });
-                }
+            });
+            if (data?.overall_score != null) {
+                const s = data.overall_score;
+                analysisData = {
+                    ...data,
+                    scorecard: [
+                        { category: "Rapport & Opening", criteria: [{ text: "Clear introduction", passed: s > 50 }, { text: "Built rapport", passed: s > 70 }] },
+                        { category: "Discovery", criteria: [{ text: "Asked qualifying questions", passed: s > 60 }, { text: "Active listening", passed: s > 75 }] },
+                        { category: "Value & Closing", criteria: [{ text: "Articulated value", passed: s > 65 }, { text: "Set next step", passed: s > 80 }] }
+                    ]
+                };
+                toast.success("Analysis complete!");
             }
-        }
-        
-        if (!llmSucceeded) {
-            const messageCount = transcript.length;
-            const userMessages = transcript.filter(t => t.speaker === 'user').length;
-            let score = 50 + Math.floor(Math.random() * 10);
-            if (sessionDuration > 60) score += 15;
-            if (userMessages > 3) score += 20;
-            if (messageCount > 6) score += 15;
+        } catch (_) {}
 
+        if (!analysisData) {
+            const userMsgs = finalTranscript.filter(t => t.speaker === 'user').length;
+            const s = Math.min(95, 50 + (sessionDuration > 60 ? 15 : 0) + (userMsgs > 3 ? 20 : 0) + (finalTranscript.length > 6 ? 15 : 0));
             analysisData = {
-                overall_score: Math.min(score, 95), // Cap at 95 for fallback
-                feedback_summary: `You completed a ${Math.round(sessionDuration/60)}-minute roleplay. ${userMessages > 3 ? 'Good engagement.' : 'Try to ask more open-ended questions.'}`,
-                scorecard: [
-                    { category: "Session Completion", criteria: [{ text: "Successfully completed roleplay", passed: true }, { text: "Maintained conversation flow", passed: messageCount > 4 }] }
-                ]
+                overall_score: s,
+                feedback_summary: `You completed a ${Math.round(sessionDuration / 60)}-minute roleplay. ${userMsgs > 3 ? 'Good engagement.' : 'Try asking more open-ended questions.'}`,
+                scorecard: [{ category: "Session Completion", criteria: [{ text: "Completed roleplay", passed: true }] }]
             };
         }
 
         try {
-            // Get current user for required fields
             const currentUser = await User.me();
-            if (!currentUser || !currentUser.email) {
-                throw new Error("User not found or email not available. Cannot save session.");
-            }
-
-            const sessionData = {
-                session_type: "human_ai", // Required field
-                lead_id: "ai_roleplay_" + Date.now(), // Generate a placeholder lead_id for AI roleplay
-                initiator_email: currentUser.email, // Required field
+            const savedSession = await RoleplaySession.create({
+                session_type: "human_ai",
+                lead_id: "ai_roleplay_" + Date.now(),
+                initiator_email: currentUser?.email || "demo@effysalespro.com",
                 bot_name: prospect.name,
                 bot_personality: prospect.personality,
-                scenario: `${prospect.roleplay_type || 'Roleplay'} with ${prospect.name}`, // Using roleplay_type
+                scenario: `${prospect.roleplay_type || 'Roleplay'} with ${prospect.name}`,
                 session_duration: sessionDuration,
-                transcript: transcript.map(t => ({
-                    speaker: t.speaker,
-                    text: t.text,
-                    timestamp: t.timestamp.toISOString()
-                })),
+                transcript: finalTranscript.map(t => ({ speaker: t.speaker, text: t.text, timestamp: String(t.timestamp) })),
                 analysis_results: analysisData,
-                call_type: (prospect.roleplay_type || 'roleplay').toLowerCase().replace(' ', '_'), // Using roleplay_type
-                tags: [prospect.personality, prospect.roleplay_type].filter(Boolean), // Using roleplay_type
-                // Store complete bot configuration for "Practice Again" functionality
-                bot_configuration: JSON.stringify({
-                    name: prospect.name,
-                    title: prospect.title,
-                    company_name: prospect.company_name || prospect.company,
-                    personality: prospect.personality,
-                    roleplay_type: prospect.roleplay_type,
-                    voice: prospect.voice || 'english_male',
-                    language: prospect.language || 'english',
-                    traits: prospect.traits || [],
-                    painPoints: prospect.painPoints || [],
-                    background: prospect.background || '',
-                    difficulty: prospect.difficulty || 'Medium',
-                    industry: prospect.industry,
-                    // Include any other relevant bot properties
-                    isLeadSpecific: prospect.isLeadSpecific,
-                    isLibraryPractice: prospect.isLibraryPractice,
-                    referenceSubmissionId: prospect.referenceSubmissionId
-                }),
-                // Additional fields for AI roleplay context
-                feedback: {
-                    ai_analysis: JSON.stringify(analysisData)
-                },
-                evaluation_scores: {
-                    overall_score: analysisData.overall_score,
-                    communication_clarity: Math.max(0, Math.min(100, analysisData.overall_score + Math.floor(Math.random() * 10) - 5)),
-                    product_knowledge: Math.max(0, Math.min(100, analysisData.overall_score + Math.floor(Math.random() * 10) - 5)),
-                    objection_handling: Math.max(0, Math.min(100, analysisData.overall_score + Math.floor(Math.random() * 10) - 5)),
-                    closing_technique: Math.max(0, Math.min(100, analysisData.overall_score + Math.floor(Math.random() * 10) - 5))
-                }
-            };
-
-            console.log('Attempting to save session data:', JSON.stringify(sessionData, null, 2));
-            const savedSession = await RoleplaySession.create(sessionData);
-
-            if (!savedSession || !savedSession.id) {
-                throw new Error("Session creation in database did not return a valid ID.");
-            }
-
-            console.log('Session created successfully in database with ID:', savedSession.id);
-
+                call_type: (prospect.roleplay_type || 'roleplay').toLowerCase().replace(' ', '_'),
+                tags: [prospect.personality, prospect.roleplay_type].filter(Boolean),
+                bot_configuration: JSON.stringify({ name: prospect.name, title: prospect.title, company_name: prospect.company_name || prospect.company, personality: prospect.personality, roleplay_type: prospect.roleplay_type, voice: prospect.voice || 'english_male', language: prospect.language || 'english', traits: prospect.traits || [], painPoints: prospect.painPoints || [], background: prospect.background || '', difficulty: prospect.difficulty || 'Medium', industry: prospect.industry }),
+                evaluation_scores: { overall_score: analysisData.overall_score }
+            });
             onAnalysisComplete(savedSession);
-
-        } catch (saveError) {
-            console.error('Fatal error saving roleplay session:', saveError);
-            toast.error("Could not save your session. Please copy the transcript if needed.", { duration: 10000 });
+        } catch (err) {
+            console.error('Save session error:', err);
+            toast.error("Could not save session.");
             onEndCall();
         }
     };
 
-    const toggleMute = () => {
-        setIsMuted(prev => {
-            const newMutedState = !prev;
-            if (newMutedState) {
-                if (recognition.current) recognition.current.stop();
-                toast.info("Microphone muted");
-            } else {
-                toast.success("Microphone on");
-                startListening();
-            }
-            return newMutedState;
-        });
+    // ── Text input fallback (for when speech fails) ────────────────────────────
+    const handleSendText = () => {
+        const text = userInput.trim();
+        if (!text || isAIResponding) return;
+        setUserInput('');
+        const entry = { speaker: 'user', text, timestamp: new Date() };
+        setTranscript(prev => { transcriptRef.current = [...prev, entry]; return transcriptRef.current; });
+        sendAIMessage(text);
     };
 
-    const toggleAudioMute = () => {
-        setIsAudioMuted(prev => {
-            const next = !prev;
-            if (next) stopAudio();
-            toast.info(next ? "AI audio muted" : "AI audio on");
-            return next;
-        });
-    };
-
-    // Ringing overlay shown before the call connects
-    if (callStatus === 'connecting') {
+    // ── Ringing screen ────────────────────────────────────────────────────────
+    if (phase === 'ringing') {
         return (
-            <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50">
+            <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50">
                 <div className="text-center text-white space-y-8">
-                    {/* Avatar with pulsing ring animation */}
                     <div className="relative mx-auto w-32 h-32">
-                        <div className="absolute inset-0 rounded-full bg-blue-500 opacity-20 animate-ping" />
-                        <div className="absolute inset-2 rounded-full bg-blue-500 opacity-30 animate-ping" style={{ animationDelay: '0.3s' }} />
+                        <div className="absolute inset-0 rounded-full bg-blue-500/20 animate-ping" />
+                        <div className="absolute inset-2 rounded-full bg-blue-500/30 animate-ping" style={{ animationDelay: '0.3s' }} />
                         <div className="relative w-32 h-32 bg-gradient-to-br from-blue-500 to-blue-700 rounded-full flex items-center justify-center text-4xl font-bold shadow-xl">
-                            {prospect.name?.split(' ').map(n => n[0]).join('') || '?'}
+                            {(prospect.name || '?').split(' ').map(n => n[0]).join('')}
                         </div>
                     </div>
-
                     <div>
                         <h2 className="text-2xl font-semibold">{prospect.name}</h2>
                         <p className="text-slate-400 mt-1">{prospect.title} at {prospect.company_name || prospect.company}</p>
                     </div>
-
-                    {/* Ring dots */}
                     <div className="flex items-center justify-center gap-3">
                         {[1, 2, 3].map(n => (
-                            <div
-                                key={n}
-                                className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                                    ringCount >= n ? 'bg-blue-400 scale-125' : 'bg-slate-600'
-                                }`}
-                            />
+                            <div key={n} className={`w-3 h-3 rounded-full transition-all duration-300 ${ringCount >= n ? 'bg-blue-400 scale-125' : 'bg-slate-600'}`} />
                         ))}
                     </div>
                     <p className="text-slate-400 text-sm tracking-widest uppercase">
                         {ringCount === 0 ? 'Dialing...' : ringCount < 3 ? 'Ringing...' : 'Connecting...'}
                     </p>
-
-                    <button
-                        onClick={onEndCall}
-                        className="mx-auto flex items-center justify-center w-16 h-16 bg-red-500 hover:bg-red-600 rounded-full transition-colors"
-                    >
+                    <button onClick={onEndCall} className="mx-auto flex items-center justify-center w-16 h-16 bg-red-500 hover:bg-red-600 rounded-full transition-colors">
                         <Phone className="w-7 h-7 rotate-[135deg]" />
                     </button>
-                    <p className="text-slate-500 text-xs">Hang up</p>
                 </div>
             </div>
         );
     }
 
+    // ── Connected call screen ─────────────────────────────────────────────────
+    const prospectInitials = (prospect.name || '?').split(' ').map(n => n[0]).join('');
+
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
-            <div className="w-full max-w-7xl h-[90vh] bg-white rounded-lg shadow-2xl flex overflow-hidden transition-all duration-300">
-                {/* Assistant Sidebar */}
-                <div className={`transition-all duration-300 ease-in-out ${isSidebarOpen ? 'w-96' : 'w-0'} overflow-hidden`}>
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+            <div className="w-full max-w-7xl h-[90vh] bg-white rounded-2xl shadow-2xl flex overflow-hidden">
+
+                {/* Sidebar */}
+                <div className={`transition-all duration-300 ease-in-out ${isSidebarOpen ? 'w-96' : 'w-0'} overflow-hidden flex-shrink-0`}>
                     <CallAssistantSidebar prospect={prospect} />
                 </div>
 
-                {/* Main Call View */}
-                <div className="flex-1 flex flex-col">
-                    <Card className="w-full h-full flex flex-col bg-white shadow-none rounded-none border-0">
-                        <CardHeader className="flex-shrink-0 bg-slate-100/80 backdrop-blur-sm border-b">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-4">
-                                     <Button variant="ghost" size="icon" onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="text-slate-500 hover:text-slate-900">
-                                        {isSidebarOpen ? <ChevronLeft className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
-                                    </Button>
-                                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-700 rounded-full flex items-center justify-center text-white font-bold">
-                                        {prospect.name?.split(' ').map(n => n[0]).join('') || 'B'}
+                {/* Main */}
+                <div className="flex-1 flex flex-col min-w-0">
+                    {/* Header */}
+                    <div className="flex items-center justify-between px-5 py-4 bg-slate-50 border-b flex-shrink-0">
+                        <div className="flex items-center gap-3">
+                            <button onClick={() => setIsSidebarOpen(o => !o)} className="p-1.5 rounded-lg hover:bg-slate-200 text-slate-500 transition-colors">
+                                {isSidebarOpen ? <ChevronLeft className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
+                            </button>
+                            <div className="w-11 h-11 bg-gradient-to-br from-blue-500 to-blue-700 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                                {prospectInitials}
+                            </div>
+                            <div>
+                                <p className="font-semibold text-slate-900">On call with {prospect.name}</p>
+                                <p className="text-sm text-slate-500">{prospect.title} at {prospect.company_name || prospect.company}</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2 text-green-600 text-sm font-medium">
+                            <Phone className="w-4 h-4 animate-pulse" />
+                            Connected
+                        </div>
+                    </div>
+
+                    {/* Transcript */}
+                    <div className="flex-1 overflow-y-auto p-5 space-y-4">
+                        {transcript.map((item, i) => (
+                            <div key={i} className={`flex items-end gap-2.5 ${item.speaker === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                {item.speaker === 'ai' && (
+                                    <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-600 flex-shrink-0">
+                                        {prospectInitials}
                                     </div>
-                                    <div>
-                                        <CardTitle className="text-xl">
-                                            On call with {prospect.name}
-                                        </CardTitle>
-                                        <CardDescription>{prospect.title} at {prospect.company_name || prospect.company}</CardDescription>
-                                    </div>
+                                )}
+                                <div className={`max-w-[72%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${
+                                    item.speaker === 'user'
+                                        ? 'bg-blue-600 text-white rounded-br-sm'
+                                        : 'bg-slate-100 text-slate-800 rounded-bl-sm'
+                                }`}>
+                                    <p className="font-semibold text-xs mb-1 opacity-70">
+                                        {item.speaker === 'user' ? 'You' : prospect.name}
+                                    </p>
+                                    {item.text}
                                 </div>
-                                <div className="flex items-center gap-2 text-green-600">
-                                    <Phone className="w-5 h-5 animate-pulse" />
-                                    <span className="text-sm">Connected</span>
+                                {item.speaker === 'user' && (
+                                    <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-xs font-bold text-white flex-shrink-0">
+                                        Y
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+
+                        {isAIResponding && (
+                            <div className="flex items-end gap-2.5 justify-start">
+                                <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-600 flex-shrink-0">
+                                    {prospectInitials}
+                                </div>
+                                <div className="bg-slate-100 px-4 py-3 rounded-2xl rounded-bl-sm flex items-center gap-2">
+                                    <div className="flex gap-1">
+                                        <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                                        <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                                        <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                                    </div>
                                 </div>
                             </div>
-                        </CardHeader>
+                        )}
 
-                        <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
-                            {transcript.map((item, index) => (
-                                <div key={index} className={`flex items-start gap-3 ${item.speaker === 'user' ? 'justify-end' : ''}`}>
-                                    {item.speaker === 'ai' && (
-                                        <Avatar className="w-10 h-10">
-                                            <AvatarFallback className="bg-slate-200">
-                                                {prospect.name?.charAt(0) || 'B'}
-                                            </AvatarFallback>
-                                        </Avatar>
-                                    )}
-                                    <div className={`max-w-[70%] p-3 rounded-lg ${
-                                        item.speaker === 'user' ? 'bg-blue-500 text-white' : 'bg-slate-100'
-                                    }`}>
-                                        <p className="font-medium text-sm capitalize">
-                                            {item.speaker === 'user' ? 'You' : prospect.name}
-                                        </p>
-                                        <p>{item.text}</p>
-                                    </div>
-                                    {item.speaker === 'user' && (
-                                        <Avatar className="w-10 h-10">
-                                            <AvatarFallback className="bg-blue-500 text-white">Y</AvatarFallback>
-                                        </Avatar>
-                                    )}
-                                </div>
-                            ))}
-                            {isAIResponding && !isSpeaking && (
-                                <div className="flex justify-start items-center gap-2 text-slate-500">
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                    <span>{prospect.name} is thinking...</span>
-                                </div>
-                            )}
-                            {isListening && !isMuted && (
-                                 <div className="flex justify-center items-center gap-2 text-blue-600">
-                                     <Mic className="w-4 h-4 animate-pulse" />
-                                    <span>Listening...</span>
-                                </div>
-                            )}
-                            <div ref={messagesEndRef} />
-                        </CardContent>
+                        {isListening && !isMuted && (
+                            <div className="flex justify-center items-center gap-2 py-2 text-blue-600 text-sm">
+                                <Mic className="w-4 h-4 animate-pulse" />
+                                Listening...
+                            </div>
+                        )}
+                        <div ref={messagesEndRef} />
+                    </div>
 
-                        <CardFooter className="flex-shrink-0 border-t p-4 bg-slate-50/50">
-                            <div className="flex items-center justify-between w-full">
-                                <div className="flex items-center gap-4">
-                                    <Button
-                                        onClick={toggleMute}
-                                        variant="outline"
-                                        size="icon"
-                                        className={`w-14 h-14 rounded-full ${isMuted ? 'bg-red-500 text-white hover:bg-red-600' : ''}`}
-                                    >
-                                        {isMuted ? <MicOff className="w-6 h-6" /> : <Mic className="w-6 h-6" />}
-                                    </Button>
-                                    <Button
-                                        variant="outline"
-                                        size="icon"
-                                        onClick={toggleAudioMute}
-                                        className={`w-14 h-14 rounded-full ${isAudioMuted ? 'bg-orange-500 text-white hover:bg-orange-600' : ''}`}
-                                        title={isAudioMuted ? "Unmute AI audio" : "Mute AI audio"}
-                                    >
-                                        {isAudioMuted ? <VolumeX className="w-6 h-6" /> : <Volume2 className="w-6 h-6" />}
-                                    </Button>
-                                </div>
-                                <Button onClick={handleEndCall} variant="destructive" size="lg">
-                                    <Phone className="w-5 h-5 mr-2" />
-                                    End Call & Analyze
+                    {/* Footer */}
+                    <div className="border-t bg-slate-50 px-5 py-4 flex-shrink-0">
+                        {/* Text input fallback */}
+                        <div className="flex gap-2 mb-3">
+                            <input
+                                type="text"
+                                value={userInput}
+                                onChange={e => setUserInput(e.target.value)}
+                                onKeyDown={e => e.key === 'Enter' && handleSendText()}
+                                placeholder="Type your reply (or speak using the mic below)..."
+                                disabled={isAIResponding}
+                                className="flex-1 px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                            />
+                            <Button size="sm" onClick={handleSendText} disabled={!userInput.trim() || isAIResponding}>
+                                Send
+                            </Button>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <Button
+                                    onClick={() => {
+                                        setIsMuted(m => {
+                                            if (!m) { try { recognitionRef.current?.stop(); } catch (_) {} }
+                                            return !m;
+                                        });
+                                    }}
+                                    variant="outline"
+                                    size="icon"
+                                    className={`w-12 h-12 rounded-full ${isMuted ? 'bg-red-500 text-white border-red-500 hover:bg-red-600' : ''}`}
+                                    title={isMuted ? 'Unmute mic' : 'Mute mic'}
+                                >
+                                    {isMuted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
                                 </Button>
+                                <Button
+                                    onClick={() => {
+                                        setIsAudioMuted(m => { if (!m) stopAudio(); return !m; });
+                                    }}
+                                    variant="outline"
+                                    size="icon"
+                                    className={`w-12 h-12 rounded-full ${isAudioMuted ? 'bg-orange-500 text-white border-orange-500 hover:bg-orange-600' : ''}`}
+                                    title={isAudioMuted ? 'Unmute audio' : 'Mute audio'}
+                                >
+                                    {isAudioMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+                                </Button>
+                                {isSpeaking && (
+                                    <div className="flex items-center gap-1.5 text-sm text-blue-600">
+                                        <Volume2 className="w-4 h-4 animate-pulse" />
+                                        <span>{prospect.name} is speaking...</span>
+                                    </div>
+                                )}
                             </div>
-                        </CardFooter>
-                    </Card>
+
+                            <Button onClick={handleEndCall} variant="destructive" size="lg" className="gap-2">
+                                <Phone className="w-4 h-4 rotate-[135deg]" />
+                                End Call & Analyze
+                            </Button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
