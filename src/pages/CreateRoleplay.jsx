@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { createPageUrl } from '@/utils';
 import FrameworkSelector from '@/components/roleplay/FrameworkSelector';
+import { ALL_VOICES } from '@/utils/voiceMapping';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -72,6 +73,7 @@ const AVATARS = [
 const EMPTY_PERSONA = () => ({
   name: '', title: '', company: '', demeanor: '', traits: [],
   buyingStage: '', background: [], details: '', avatar_url: null,
+  voice: '',
   _mode: 'build', // 'build' | 'library'
   _libraryId: null,
 });
@@ -84,6 +86,102 @@ const steps = [
   { id: 'materials', label: 'Materials',   icon: BookOpen },
   { id: 'review',    label: 'Review',      icon: CheckCircle2 },
 ];
+
+// ── Voice groups for the picker ──────────────────────────────────────────────
+const VOICE_GROUPS = [
+  {
+    label: 'Male',
+    voices: [
+      { value: 'english_male',               name: 'Josh',    tag: 'Professional · American' },
+      { value: 'english_male_casual',        name: 'Arnold',  tag: 'Casual · American' },
+      { value: 'english_male_authoritative', name: 'Antoni',  tag: 'Authoritative · American' },
+      { value: 'english_male_deep',          name: 'Adam',    tag: 'Deep · Warm' },
+    ],
+  },
+  {
+    label: 'Female',
+    voices: [
+      { value: 'english_female',           name: 'Bella',    tag: 'Professional · American' },
+      { value: 'english_female_friendly',  name: 'Elli',     tag: 'Friendly · American' },
+      { value: 'english_female_confident', name: 'Dorothy',  tag: 'Confident · British' },
+      { value: 'english_female_warm',      name: 'Rachel',   tag: 'Warm · Neutral' },
+    ],
+  },
+  {
+    label: 'Accents',
+    voices: [
+      { value: 'english_male',   name: 'Callum',  tag: 'British · Male' },
+      { value: 'english_female', name: 'Nicole',  tag: 'Australian · Female' },
+      { value: 'english_male',   name: 'Rishi',   tag: 'Indian English · Male' },
+      { value: 'english_female', name: 'Meera',   tag: 'Indian English · Female' },
+    ],
+  },
+];
+
+// ── Voice Picker ──────────────────────────────────────────────────────────────
+function VoicePicker({ value, onChange }) {
+  const [activeGroup, setActiveGroup] = useState('Male');
+  const group = VOICE_GROUPS.find(g => g.label === activeGroup);
+
+  return (
+    <div>
+      <Label className="font-medium mb-2 block">Voice</Label>
+      <p className="text-xs text-slate-500 mb-3">Choose the voice this persona will speak in</p>
+
+      {/* Group tabs */}
+      <div className="flex gap-1 mb-3 bg-slate-100 p-1 rounded-lg w-fit">
+        {VOICE_GROUPS.map(g => (
+          <button
+            key={g.label}
+            type="button"
+            onClick={() => setActiveGroup(g.label)}
+            className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+              activeGroup === g.label ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            {g.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Voice cards */}
+      <div className="grid grid-cols-2 gap-2">
+        {group?.voices.map(v => {
+          const selected = value === v.value && (!value || true); // simplistic match
+          const isSelected = value === v.value;
+          return (
+            <button
+              key={v.value + v.name}
+              type="button"
+              onClick={() => onChange(value === v.value && false ? null : v.value)}
+              className={`flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all hover:shadow-sm ${
+                isSelected
+                  ? 'border-blue-600 bg-blue-50'
+                  : 'border-slate-200 bg-white hover:border-slate-300'
+              }`}
+            >
+              {/* Speaker icon */}
+              <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${isSelected ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500'}`}>
+                <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                  <path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6Z"/>
+                </svg>
+              </div>
+              <div className="min-w-0">
+                <p className={`text-sm font-semibold truncate ${isSelected ? 'text-blue-800' : 'text-slate-800'}`}>{v.name}</p>
+                <p className="text-[11px] text-slate-500 truncate">{v.tag}</p>
+              </div>
+              {isSelected && <Check className="w-4 h-4 text-blue-600 flex-shrink-0 ml-auto" />}
+            </button>
+          );
+        })}
+      </div>
+
+      {!value && (
+        <p className="text-[11px] text-slate-400 mt-2">No voice selected — a default will be assigned automatically</p>
+      )}
+    </div>
+  );
+}
 
 // ── Avatar Picker ─────────────────────────────────────────────────────────────
 function AvatarPicker({ value, onChange }) {
@@ -165,7 +263,12 @@ function PersonaForm({ persona, idx, onChange, onRemove, canRemove, libraryClien
     onChange('background', client.background ? [client.background] : []);
     onChange('details', client.background || '');
     onChange('avatar_url', client.avatar_url || null);
+    onChange('voice', client.voice || client.voiceId || '');
   };
+
+  const selectedVoiceName = persona.voice
+    ? (VOICE_GROUPS.flatMap(g => g.voices).find(v => v.value === persona.voice)?.name || persona.voice)
+    : null;
 
   const addBackground = () => {
     const val = bgInput.trim();
@@ -250,22 +353,33 @@ function PersonaForm({ persona, idx, onChange, onRemove, canRemove, libraryClien
             )}
 
             {persona._libraryId && (
-              <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200 flex items-center gap-3">
-                {persona.avatar_url && (
-                  <img src={persona.avatar_url} alt="" className="w-10 h-10 rounded-full object-cover" />
-                )}
-                <div>
-                  <p className="text-sm font-semibold text-blue-900">{persona.name}</p>
-                  <p className="text-xs text-blue-700">{persona.title}{persona.company ? ` · ${persona.company}` : ''}</p>
+              <>
+                <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200 flex items-center gap-3">
+                  {persona.avatar_url && (
+                    <img src={persona.avatar_url} alt="" className="w-10 h-10 rounded-full object-cover" />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-blue-900">{persona.name}</p>
+                    <p className="text-xs text-blue-700">{persona.title}{persona.company ? ` · ${persona.company}` : ''}</p>
+                    {selectedVoiceName && (
+                      <p className="text-xs text-blue-600 mt-0.5 flex items-center gap-1">
+                        <svg viewBox="0 0 24 24" fill="currentColor" className="w-3 h-3"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6Z"/></svg>
+                        {selectedVoiceName}
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => { onChange('_libraryId', null); onChange('name', ''); onChange('voice', ''); }}
+                    className="text-blue-400 hover:text-blue-600"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => { onChange('_libraryId', null); onChange('name', ''); }}
-                  className="ml-auto text-blue-400 hover:text-blue-600"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
+                <div className="pt-2 border-t border-slate-100">
+                  <VoicePicker value={persona.voice} onChange={v => onChange('voice', v)} />
+                </div>
+              </>
             )}
           </div>
         )}
@@ -383,6 +497,10 @@ function PersonaForm({ persona, idx, onChange, onRemove, canRemove, libraryClien
             </div>
 
             <AvatarPicker value={persona.avatar_url} onChange={url => onChange('avatar_url', url)} />
+
+            <div className="border-t border-slate-100 pt-4">
+              <VoicePicker value={persona.voice} onChange={v => onChange('voice', v)} />
+            </div>
           </>
         )}
       </CardContent>
