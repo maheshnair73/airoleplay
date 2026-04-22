@@ -87,97 +87,146 @@ const steps = [
   { id: 'review',    label: 'Review',      icon: CheckCircle2 },
 ];
 
-// ── Voice groups for the picker ──────────────────────────────────────────────
-const VOICE_GROUPS = [
-  {
-    label: 'Male',
-    voices: [
-      { value: 'english_male',               name: 'Josh',    tag: 'Professional · American' },
-      { value: 'english_male_casual',        name: 'Arnold',  tag: 'Casual · American' },
-      { value: 'english_male_authoritative', name: 'Antoni',  tag: 'Authoritative · American' },
-      { value: 'english_male_deep',          name: 'Adam',    tag: 'Deep · Warm' },
-    ],
-  },
-  {
-    label: 'Female',
-    voices: [
-      { value: 'english_female',           name: 'Bella',    tag: 'Professional · American' },
-      { value: 'english_female_friendly',  name: 'Elli',     tag: 'Friendly · American' },
-      { value: 'english_female_confident', name: 'Dorothy',  tag: 'Confident · British' },
-      { value: 'english_female_warm',      name: 'Rachel',   tag: 'Warm · Neutral' },
-    ],
-  },
-  {
-    label: 'Accents',
-    voices: [
-      { value: 'english_male',   name: 'Callum',  tag: 'British · Male' },
-      { value: 'english_female', name: 'Nicole',  tag: 'Australian · Female' },
-      { value: 'english_male',   name: 'Rishi',   tag: 'Indian English · Male' },
-      { value: 'english_female', name: 'Meera',   tag: 'Indian English · Female' },
-    ],
-  },
+// ── All voices with accent filter tags ────────────────────────────────────────
+const ALL_VOICE_OPTIONS = [
+  // American
+  { value: 'mark',        name: 'Mark',       accent: 'American', tag: 'Friendly',      gender: 'Male' },
+  { value: 'chris',       name: 'Chris',      accent: 'American', tag: 'Upbeat',         gender: 'Male' },
+  { value: 'austin',      name: 'Austin',     accent: 'American', tag: 'Southern',       gender: 'Male' },
+  { value: 'cassidy',     name: 'Cassidy',    accent: 'American', tag: 'Grounded',       gender: 'Male' },
+  { value: 'christopher', name: 'Christopher',accent: 'American', tag: 'Midwestern',     gender: 'Male' },
+  { value: 'edwin',       name: 'Edwin',      accent: 'American', tag: 'Confident',      gender: 'Male' },
+  { value: 'freya',       name: 'Freya',      accent: 'American', tag: 'Californian',    gender: 'Female' },
+  { value: 'geraldine',   name: 'Geraldine',  accent: 'American', tag: 'Southern',       gender: 'Female' },
+  { value: 'hope',        name: 'Hope',       accent: 'American', tag: 'Casual',         gender: 'Female' },
+  { value: 'jamal',       name: 'Jamal',      accent: 'American', tag: 'Smooth',         gender: 'Male' },
+  { value: 'jen',         name: 'Jen',        accent: 'American', tag: 'Bright',         gender: 'Female' },
+  { value: 'jerry',       name: 'Jerry',      accent: 'American', tag: 'Bostonian',      gender: 'Male' },
+  { value: 'joe',         name: 'Joe',        accent: 'American', tag: 'Confident',      gender: 'Male' },
+  { value: 'joseph',      name: 'Joseph',     accent: 'American', tag: 'Hesitant',       gender: 'Male' },
+  { value: 'karen',       name: 'Karen',      accent: 'American', tag: 'Professional',   gender: 'Female' },
+  { value: 'marcus',      name: 'Marcus',     accent: 'American', tag: 'Deep',           gender: 'Male' },
+  { value: 'naomi',       name: 'Naomi',      accent: 'American', tag: 'Warm',           gender: 'Female' },
+  // Australian
+  { value: 'emma',        name: 'Emma',       accent: 'Australian', tag: 'Confident',    gender: 'Female' },
+  { value: 'lee',         name: 'Lee',        accent: 'Australian', tag: 'Warm',         gender: 'Male' },
+  { value: 'mia',         name: 'Mia',        accent: 'Australian', tag: 'Friendly',     gender: 'Female' },
+  { value: 'ryan',        name: 'Ryan',       accent: 'Australian', tag: 'Casual',       gender: 'Male' },
+  // British
+  { value: 'alex',        name: 'Alex',       accent: 'British',    tag: 'Calm',         gender: 'Male' },
+  { value: 'isla',        name: 'Isla',       accent: 'British',    tag: 'Scottish',     gender: 'Female' },
+  { value: 'john',        name: 'John',       accent: 'British',    tag: 'Northern',     gender: 'Male' },
+  { value: 'lily',        name: 'Lily',       accent: 'British',    tag: 'Narrative',    gender: 'Female' },
+  { value: 'oliver',      name: 'Oliver',     accent: 'British',    tag: 'Professional', gender: 'Male' },
+  { value: 'sophie',      name: 'Sophie',     accent: 'British',    tag: 'Warm',         gender: 'Female' },
+  // French
+  { value: 'jean',        name: 'Jean',       accent: 'French',     tag: 'Pleasant',     gender: 'Male' },
+  { value: 'claire',      name: 'Claire',     accent: 'French',     tag: 'Elegant',      gender: 'Female' },
+  { value: 'pierre',      name: 'Pierre',     accent: 'French',     tag: 'Formal',       gender: 'Male' },
+  { value: 'amelie',      name: 'Amelie',     accent: 'French',     tag: 'Warm',         gender: 'Female' },
+  // Indian English
+  { value: 'gulab',       name: 'Gulab',      accent: 'Indian English', tag: 'Confident',gender: 'Male' },
+  { value: 'priya',       name: 'Priya',      accent: 'Indian English', tag: 'Friendly', gender: 'Female' },
+  { value: 'arjun',       name: 'Arjun',      accent: 'Indian English', tag: 'Professional', gender: 'Male' },
+  { value: 'meera',       name: 'Meera',      accent: 'Indian English', tag: 'Warm',     gender: 'Female' },
+  { value: 'rishi',       name: 'Rishi',      accent: 'Indian English', tag: 'Calm',     gender: 'Male' },
+  { value: 'kavya',       name: 'Kavya',      accent: 'Indian English', tag: 'Upbeat',   gender: 'Female' },
+  // Arabic
+  { value: 'haytham',     name: 'Haytham',    accent: 'Arabic',     tag: 'Warm',         gender: 'Male' },
+  { value: 'layla',       name: 'Layla',      accent: 'Arabic',     tag: 'Professional', gender: 'Female' },
+  { value: 'omar',        name: 'Omar',       accent: 'Arabic',     tag: 'Confident',    gender: 'Male' },
+  { value: 'sara',        name: 'Sara',       accent: 'Arabic',     tag: 'Friendly',     gender: 'Female' },
+  { value: 'khalid',      name: 'Khalid',     accent: 'Arabic',     tag: 'Formal',       gender: 'Male' },
+  { value: 'nour',        name: 'Nour',       accent: 'Arabic',     tag: 'Calm',         gender: 'Female' },
+  // Other
+  { value: 'ellen',       name: 'Ellen',      accent: 'Other',      tag: 'Calm · German',gender: 'Female' },
+  { value: 'akio',        name: 'Akio',       accent: 'Other',      tag: 'Formal · Japanese', gender: 'Male' },
+  { value: 'sofia',       name: 'Sofia',      accent: 'Other',      tag: 'Warm · Spanish', gender: 'Female' },
+  { value: 'luca',        name: 'Luca',       accent: 'Other',      tag: 'Friendly · Italian', gender: 'Male' },
 ];
 
+const ACCENT_FILTERS = ['All', 'American', 'Australian', 'British', 'French', 'Indian English', 'Arabic', 'Other'];
+
 // ── Voice Picker ──────────────────────────────────────────────────────────────
+const SpeakerIcon = () => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5">
+    <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/>
+  </svg>
+);
+
 function VoicePicker({ value, onChange }) {
-  const [activeGroup, setActiveGroup] = useState('Male');
-  const group = VOICE_GROUPS.find(g => g.label === activeGroup);
+  const [accent, setAccent] = useState('All');
+
+  const visible = accent === 'All'
+    ? ALL_VOICE_OPTIONS
+    : ALL_VOICE_OPTIONS.filter(v => v.accent === accent);
+
+  const selectedVoice = ALL_VOICE_OPTIONS.find(v => v.value === value);
 
   return (
     <div>
-      <Label className="font-medium mb-2 block">Voice</Label>
-      <p className="text-xs text-slate-500 mb-3">Choose the voice this persona will speak in</p>
+      <Label className="font-medium mb-1 block">Voice</Label>
+      <p className="text-xs text-slate-500 mb-3">Choose the primary voice for this persona</p>
 
-      {/* Group tabs */}
-      <div className="flex gap-1 mb-3 bg-slate-100 p-1 rounded-lg w-fit">
-        {VOICE_GROUPS.map(g => (
+      {/* Accent filter pills */}
+      <div className="flex flex-wrap gap-1.5 mb-4">
+        {ACCENT_FILTERS.map(f => (
           <button
-            key={g.label}
+            key={f}
             type="button"
-            onClick={() => setActiveGroup(g.label)}
-            className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
-              activeGroup === g.label ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+            onClick={() => setAccent(f)}
+            className={`px-3 py-1 rounded-full text-xs font-medium border transition-all ${
+              accent === f
+                ? 'bg-slate-800 text-white border-slate-800'
+                : 'bg-white text-slate-600 border-slate-300 hover:border-slate-400'
             }`}
           >
-            {g.label}
+            {f}
           </button>
         ))}
       </div>
 
-      {/* Voice cards */}
-      <div className="grid grid-cols-2 gap-2">
-        {group?.voices.map(v => {
-          const selected = value === v.value && (!value || true); // simplistic match
+      {/* Voice list — 3-col grid matching the reference */}
+      <div className="grid grid-cols-3 gap-2 max-h-64 overflow-y-auto pr-1">
+        {visible.map(v => {
           const isSelected = value === v.value;
           return (
             <button
               key={v.value + v.name}
               type="button"
-              onClick={() => onChange(value === v.value && false ? null : v.value)}
-              className={`flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all hover:shadow-sm ${
+              onClick={() => onChange(isSelected ? '' : v.value)}
+              className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg border text-left transition-all hover:shadow-sm ${
                 isSelected
-                  ? 'border-blue-600 bg-blue-50'
+                  ? 'border-blue-500 bg-blue-50'
                   : 'border-slate-200 bg-white hover:border-slate-300'
               }`}
             >
-              {/* Speaker icon */}
-              <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${isSelected ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500'}`}>
-                <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
-                  <path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6Z"/>
-                </svg>
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
+                isSelected ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500'
+              }`}>
+                <SpeakerIcon />
               </div>
-              <div className="min-w-0">
-                <p className={`text-sm font-semibold truncate ${isSelected ? 'text-blue-800' : 'text-slate-800'}`}>{v.name}</p>
-                <p className="text-[11px] text-slate-500 truncate">{v.tag}</p>
+              <div className="min-w-0 flex-1">
+                <p className={`text-xs font-semibold truncate ${isSelected ? 'text-blue-800' : 'text-slate-800'}`}>
+                  {v.name}
+                </p>
+                <p className="text-[10px] text-slate-400 uppercase tracking-wide truncate">{v.tag}{v.tag && ', '}{v.accent !== 'Other' ? v.accent : ''}</p>
               </div>
-              {isSelected && <Check className="w-4 h-4 text-blue-600 flex-shrink-0 ml-auto" />}
             </button>
           );
         })}
       </div>
 
-      {!value && (
-        <p className="text-[11px] text-slate-400 mt-2">No voice selected — a default will be assigned automatically</p>
+      {selectedVoice && (
+        <div className="mt-3 flex items-center gap-2 text-xs text-slate-600 bg-slate-50 px-3 py-2 rounded-lg border border-slate-200">
+          <div className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center flex-shrink-0">
+            <SpeakerIcon />
+          </div>
+          <span>Selected: <strong>{selectedVoice.name}</strong> — {selectedVoice.tag}, {selectedVoice.accent}</span>
+          <button type="button" onClick={() => onChange('')} className="ml-auto text-slate-400 hover:text-red-500">
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
       )}
     </div>
   );
@@ -267,7 +316,7 @@ function PersonaForm({ persona, idx, onChange, onRemove, canRemove, libraryClien
   };
 
   const selectedVoiceName = persona.voice
-    ? (VOICE_GROUPS.flatMap(g => g.voices).find(v => v.value === persona.voice)?.name || persona.voice)
+    ? (ALL_VOICE_OPTIONS.find(v => v.value === persona.voice)?.name || persona.voice)
     : null;
 
   const addBackground = () => {
