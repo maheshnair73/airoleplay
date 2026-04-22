@@ -404,7 +404,7 @@ function PersonaForm({ persona, idx, onChange, onRemove, canRemove, libraryClien
             </div>
 
             <div className="space-y-1.5">
-              <Label className="font-medium text-sm">Demeanor</Label>
+              <Label className="font-medium text-sm">Personality</Label>
               <div className="relative">
                 <select
                   value={persona.demeanor}
