@@ -148,6 +148,53 @@ const ALL_VOICE_OPTIONS = [
 const ACCENT_FILTERS = ['All', 'American', 'Australian', 'British', 'French', 'Indian English', 'Arabic', 'Other'];
 
 // ── Voice Picker ──────────────────────────────────────────────────────────────
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+// Cache audio blobs so repeat clicks don't re-fetch
+const voiceAudioCache = {};
+let currentAudio = null;
+
+async function previewVoice(voiceKey) {
+  // Stop any currently playing audio
+  if (currentAudio) {
+    currentAudio.pause();
+    currentAudio.currentTime = 0;
+    currentAudio = null;
+  }
+
+  if (!voiceAudioCache[voiceKey]) {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/voice-preview`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Apikey': SUPABASE_ANON_KEY,
+      },
+      body: JSON.stringify({ voiceKey }),
+    });
+    if (!res.ok) throw new Error('Preview unavailable');
+    const blob = await res.blob();
+    voiceAudioCache[voiceKey] = URL.createObjectURL(blob);
+  }
+
+  const audio = new Audio(voiceAudioCache[voiceKey]);
+  currentAudio = audio;
+  audio.play();
+}
+
+const PlayIcon = () => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className="w-3 h-3">
+    <path d="M8 5v14l11-7z"/>
+  </svg>
+);
+
+const StopIcon = () => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className="w-3 h-3">
+    <path d="M6 6h12v12H6z"/>
+  </svg>
+);
+
 const SpeakerIcon = () => (
   <svg viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5">
     <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/>
@@ -156,6 +203,8 @@ const SpeakerIcon = () => (
 
 function VoicePicker({ value, onChange }) {
   const [accent, setAccent] = useState('All');
+  const [loadingKey, setLoadingKey] = useState(null);
+  const [playingKey, setPlayingKey] = useState(null);
 
   const visible = accent === 'All'
     ? ALL_VOICE_OPTIONS
@@ -163,10 +212,36 @@ function VoicePicker({ value, onChange }) {
 
   const selectedVoice = ALL_VOICE_OPTIONS.find(v => v.value === value);
 
+  const handlePreview = async (e, voiceKey) => {
+    e.stopPropagation();
+
+    // If already playing this one, stop it
+    if (playingKey === voiceKey) {
+      if (currentAudio) { currentAudio.pause(); currentAudio.currentTime = 0; currentAudio = null; }
+      setPlayingKey(null);
+      return;
+    }
+
+    setLoadingKey(voiceKey);
+    setPlayingKey(null);
+    try {
+      await previewVoice(voiceKey);
+      setPlayingKey(voiceKey);
+      // Clear playing state when audio ends
+      if (currentAudio) {
+        currentAudio.onended = () => setPlayingKey(null);
+      }
+    } catch {
+      toast.error('Voice preview unavailable — ElevenLabs key not configured');
+    } finally {
+      setLoadingKey(null);
+    }
+  };
+
   return (
     <div>
       <Label className="font-medium mb-1 block">Voice</Label>
-      <p className="text-xs text-slate-500 mb-3">Choose the primary voice for this persona</p>
+      <p className="text-xs text-slate-500 mb-3">Choose the primary voice for this persona. Click the play button to preview.</p>
 
       {/* Accent filter pills */}
       <div className="flex flex-wrap gap-1.5 mb-4">
@@ -186,33 +261,62 @@ function VoicePicker({ value, onChange }) {
         ))}
       </div>
 
-      {/* Voice list — 3-col grid matching the reference */}
+      {/* Voice grid — 3-col */}
       <div className="grid grid-cols-3 gap-2 max-h-64 overflow-y-auto pr-1">
         {visible.map(v => {
           const isSelected = value === v.value;
+          const isLoading = loadingKey === v.value;
+          const isPlaying = playingKey === v.value;
+
           return (
-            <button
+            <div
               key={v.value + v.name}
-              type="button"
               onClick={() => onChange(isSelected ? '' : v.value)}
-              className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg border text-left transition-all hover:shadow-sm ${
+              className={`flex items-center gap-2 px-2.5 py-2 rounded-lg border cursor-pointer transition-all hover:shadow-sm ${
                 isSelected
                   ? 'border-blue-500 bg-blue-50'
                   : 'border-slate-200 bg-white hover:border-slate-300'
               }`}
             >
-              <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
-                isSelected ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500'
-              }`}>
-                <SpeakerIcon />
-              </div>
+              {/* Play/stop preview button */}
+              <button
+                type="button"
+                onClick={(e) => handlePreview(e, v.value)}
+                className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${
+                  isPlaying
+                    ? 'bg-emerald-500 text-white hover:bg-emerald-600'
+                    : isLoading
+                    ? 'bg-slate-200 text-slate-400'
+                    : isSelected
+                    ? 'bg-blue-600 text-white hover:bg-blue-700'
+                    : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                }`}
+                title={isPlaying ? 'Stop' : 'Preview voice'}
+              >
+                {isLoading ? (
+                  <svg className="animate-spin w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                  </svg>
+                ) : isPlaying ? (
+                  <StopIcon />
+                ) : (
+                  <PlayIcon />
+                )}
+              </button>
+
               <div className="min-w-0 flex-1">
                 <p className={`text-xs font-semibold truncate ${isSelected ? 'text-blue-800' : 'text-slate-800'}`}>
                   {v.name}
                 </p>
-                <p className="text-[10px] text-slate-400 uppercase tracking-wide truncate">{v.tag}{v.tag && ', '}{v.accent !== 'Other' ? v.accent : ''}</p>
+                <p className="text-[10px] text-slate-400 uppercase tracking-wide truncate leading-tight">
+                  {v.tag}{v.accent !== 'Other' ? `, ${v.accent}` : ''}
+                </p>
               </div>
-            </button>
+
+              {isSelected && (
+                <Check className="w-3 h-3 text-blue-600 flex-shrink-0" />
+              )}
+            </div>
           );
         })}
       </div>
